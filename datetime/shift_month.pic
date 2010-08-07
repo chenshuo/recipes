@@ -1,0 +1,134 @@
+.PS
+
+# days in month
+B1: box "30" width 0.2 height 0.16
+box "31" same
+
+box "31" same
+box "\fB28\fR" same fill 0.3
+box "31" same
+box "30" same
+box "31" same
+box "30" same
+box "31" same
+box "31" same
+box "30" same
+box "31" same
+box "30" same
+box "31" same
+
+box "31" same
+box "\fB29\fR" same fill 0.3
+box "31" same
+box "30" same
+box "31" same
+box "30" same
+box "31" same
+box "31" same
+box "30" same
+box "31" same
+box "30" same
+box "31" same
+
+box "31" same
+box "\fB28\fR" same fill 0.3
+box "31" same
+box "30" same
+
+# months
+box "\s-211" invis same at B1+(0, 0.18)
+box "12" invis same
+
+box "1" invis same
+box "2" invis same
+box "3" invis same
+box "4" invis same
+box "5" invis same
+box "6" invis same
+box "7" invis same
+box "8" invis same
+box "9" invis same
+box "10" invis same
+box "11" invis same
+box "12" invis same
+
+box "1" invis same
+box "2" invis same
+box "3" invis same
+box "4" invis same
+box "5" invis same
+box "6" invis same
+box "7" invis same
+box "8" invis same
+box "9" invis same
+box "10" invis same
+box "11" invis same
+box "12" invis same
+
+box "1" invis same
+box "2" invis same
+box "3" invis same
+box "4" invis same
+
+# shifted months
+
+box "8" invis same at B1-(0, 0.18)
+box "9" invis same
+
+box "10" invis same
+box "11" invis same
+box "0" invis same
+box "1" invis same
+box "2" invis same
+box "3" invis same
+box "4" invis same
+box "5" invis same
+box "6" invis same
+box "7" invis same
+box "8" invis same
+box "9" invis same
+
+box "10" invis same
+box "11" invis same
+box "0" invis same
+box "1" invis same
+box "2" invis same
+box "3" invis same
+box "4" invis same
+box "5" invis same
+box "6" invis same
+box "7" invis same
+box "8" invis same
+box "9" invis same
+
+box "10" invis same
+box "11" invis same
+box "0" invis same
+box "1" invis same
+
+# labels and years
+
+box "month" invis same at B1-(0.3, -0.18)
+box "\fBmonth'\fR" invis same at B1-(0.3, 0.18)
+
+box "year" invis width 0.4 at B1-(0.3, -0.36)
+
+Y1: box "\s+2 2006" width 0.4 invis
+Y2: box "2007" width 2.4 invis
+Y3: box "2008" width 2.4 invis
+box "2009" width 0.8 invis
+
+box "\s-2\fByear'\fR" invis width 0.4 at B1-(0.3, 0.36)
+Y4: box "\s+2 2006" width 0.8 invis
+Y5: box "2007" width 2.4 invis
+Y6: box "2008" width 2.4 invis
+box "2009" width 0.4 invis
+
+line from Y1.ne-(0,0.15) to Y1.se
+line from Y2.ne-(0,0.15) to Y2.se
+line from Y3.ne-(0,0.15) to Y3.se
+
+line from Y4.ne to Y4.se+(0,0.15)
+line from Y5.ne to Y5.se+(0,0.15)
+line from Y6.ne to Y6.se+(0,0.15)
+.PE
