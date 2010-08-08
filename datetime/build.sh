@@ -1,4 +1,9 @@
 #!/bin/sh
-gpic shift_month.pic | groff | ps2eps | eps2png
+gpic shift_month.pic | groff | ps2eps --loose --gsbbox > shift_month.eps
+eps2png --pnggray -resolution 144 shift_month.eps
+
 mpost linear_regression.mp
-#eps2png
+ps2eps --loose --gsbbox < linear_regression-1.mps > linear_regression-1.eps
+eps2png --png16m -resolution 300 linear_regression-1.eps
+ps2eps --loose --gsbbox < linear_regression-2.mps > linear_regression-2.eps
+eps2png --png16m -resolution 300 linear_regression-2.eps
