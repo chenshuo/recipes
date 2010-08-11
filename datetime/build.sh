@@ -1,4 +1,8 @@
 #!/bin/sh
+
+g++ -g Date.cc Date_unittest.cc -o date_unittest
+./date_unittest
+
 gpic shift_month.pic | groff | ps2eps --loose --gsbbox > shift_month.eps
 eps2png --pnggray -resolution 144 shift_month.eps
 
