@@ -9,6 +9,7 @@
 #define MUDUO_BASE_DATE_H
 
 #include <string>
+struct tm;
 
 namespace muduo
 {
@@ -53,6 +54,12 @@ class Date // : public boost::less_than_comparable<Date>,
   explicit Date(int julianDayNum)
     : julianDayNumber_(julianDayNum)
   {}
+
+  ///
+  /// Constucts a Date from struct tm
+  ///
+  /// 1 <= month <= 12
+  explicit Date(const struct tm&);
 
   // default copy/assignment/dtor are Okay
 

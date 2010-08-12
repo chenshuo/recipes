@@ -47,6 +47,11 @@ Date::Date(int y, int m, int d)
 {
 }
 
+Date::Date(const struct tm& t)
+  : julianDayNumber_(getJulianDayNumber(t.tm_year+1900, t.tm_mon+1, t.tm_mday))
+{
+}
+
 std::string Date::toIsoString() const
 {
   char buf[32];

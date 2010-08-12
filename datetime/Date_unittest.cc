@@ -40,10 +40,15 @@ void passByValue(Date x)
 
 int main()
 {
-  Date someDay(2010, 8, 10);
+  time_t now = time(NULL);
+  struct tm t1 = *gmtime(&now);
+  struct tm t2 = *localtime(&now);
+  Date someDay(t1);
   printf("%s\n", someDay.toIsoString().c_str());
   passByValue(someDay);
   passByConstReference(someDay);
+  Date someDay2(t2);
+  printf("%s\n", someDay2.toIsoString().c_str());
 
   int julianDayNumber = 2415021;
   int weekDay = 1; // Monday
