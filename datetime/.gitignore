@@ -1,4 +1,8 @@
+*.aux
+*.dvi
 *.eps
-*.mps
-*.png
 *.log
+*.mps
+*.mpx
+*.png
+*.ps
