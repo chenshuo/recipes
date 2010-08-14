@@ -43,11 +43,13 @@ int main()
   time_t now = time(NULL);
   struct tm t1 = *gmtime(&now);
   struct tm t2 = *localtime(&now);
-  Date someDay(t1);
+  Date someDay(2008, 9, 10);
   printf("%s\n", someDay.toIsoString().c_str());
   passByValue(someDay);
   passByConstReference(someDay);
-  Date someDay2(t2);
+  Date todayUtc(t1);
+  printf("%s\n", someDay2.toIsoString().c_str());
+  Date todayLocal(t2);
   printf("%s\n", someDay2.toIsoString().c_str());
 
   int julianDayNumber = 2415021;
