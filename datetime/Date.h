@@ -71,7 +71,7 @@ class Date // : public boost::less_than_comparable<Date>,
   ///
   std::string toIsoString() const;
 
-  YearMonthDay yearMonthDay() const;
+  struct YearMonthDay yearMonthDay() const;
 
   int year() const
   {

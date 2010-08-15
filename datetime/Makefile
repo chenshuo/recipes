@@ -22,10 +22,10 @@ doc: $(TEX_PNGS) $(PIC_PNGS)
 $(PIC_PNGS): PNG_DPI=144
 
 date_test: Date.cc Date_test.cc
-	g++ -g $^ -o $@
+	g++ -g -Wall $^ -o $@
 
 date_unittest: Date.cc Date_unittest.cc
-	g++ -g $^ -o $@
+	g++ -g -Wall $^ -o $@
 
 test: date_unittest
 	./date_unittest
