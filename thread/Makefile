@@ -1,5 +1,5 @@
 CXXFLAGS=-g -Wall -rdynamic -march=native
-CXXFLAGS=-O2
+CXXFLAGS+=-O2
 
 TESTS= atomic_unittest \
        exception_test \
