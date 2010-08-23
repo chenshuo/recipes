@@ -25,9 +25,21 @@ class AtomicIntegerT : boost::noncopyable
   {
   }
 
+  // uncomment if you need copying and assignment
+  //
+  // AtomicIntegerT(const AtomicIntegerT& that)
+  //   : value_(that.get())
+  // {}
+  //
+  // AtomicIntegerT& operator=(const AtomicIntegerT& that)
+  // {
+  //   getAndSet(that.get());
+  //   return *this;
+  // }
+
   T get() const
   {
-    return value_;
+    return __sync_val_compare_and_swap(const_cast<volatile T*>(&value_), 0, 0);
   }
 
   T getAndAdd(T x)
