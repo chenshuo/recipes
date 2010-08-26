@@ -32,7 +32,7 @@ date_test: Date.h Date.cc Date_test.cc
 
 date_unittest: Date.h Date.cc Date_unittest.cc
 
-timestamp_unittest: Timestamp.cc Timestamp.cc Timestamp_unittest.cc
+timestamp_unittest: Timestamp.h Timestamp.cc Timestamp_unittest.cc
 
 test: date_unittest
 	./date_unittest

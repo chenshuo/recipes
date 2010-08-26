@@ -67,6 +67,11 @@ class Date : public muduo::copyable
 
   // default copy/assignment/dtor are Okay
 
+  void swap(Date& that)
+  {
+    std::swap(julianDayNumber_, that.julianDayNumber_);
+  }
+
   bool valid() const { return julianDayNumber_ > 0; }
 
   ///

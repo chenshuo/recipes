@@ -31,7 +31,7 @@ std::string Timestamp::toString() const
   return buf;
 }
 
-std::string Timestamp::toFormattedString() const
+std::string Timestamp::toIsoString() const
 {
   char buf[32] = {0};
   time_t seconds = static_cast<time_t>(microSecondsSinceEpoch_ / kMicroSecondsPerSecond);
