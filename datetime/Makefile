@@ -1,3 +1,5 @@
+CXXFLAGS=-g -Wall -O2
+
 PNG_DPI=300
 TEXES=$(wildcard *.tex)
 PICS=$(wildcard *.pic)
@@ -15,17 +17,22 @@ PIC_PNGS=$(subst pic,png,$(PICS))
 %.png : %.eps
 	eps2png --png16m -resolution $(PNG_DPI) $<
 
-all: date_test date_unittest
+BINARIES=date_test date_unittest timestamp_unittest
+
+all: $(BINARIES)
 
 doc: $(TEX_PNGS) $(PIC_PNGS)
 
 $(PIC_PNGS): PNG_DPI=144
 
-date_test: Date.cc Date_test.cc
-	g++ -g -Wall $^ -o $@
+$(BINARIES):
+	g++ $(CXXFLAGS) $(filter %.cc,$^) -o $@
 
-date_unittest: Date.cc Date_unittest.cc
-	g++ -g -Wall $^ -o $@
+date_test: Date.h Date.cc Date_test.cc
+
+date_unittest: Date.h Date.cc Date_unittest.cc
+
+timestamp_unittest: Timestamp.cc Timestamp.cc Timestamp_unittest.cc
 
 test: date_unittest
 	./date_unittest
@@ -38,8 +45,8 @@ clean:
 	rm -f *.mps
 	rm -f *.mpx
 	rm -f *.ps
-	rm -f date_unittest
+	rm -f *_unittest
 
 clean-all: clean
 	rm -f *.png
-	rm -f date_test
+	rm -f $(BINARIES)
