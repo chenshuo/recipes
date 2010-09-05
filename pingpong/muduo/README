@@ -1,0 +1,3 @@
+Start scripts of ping pong test.
+
+Copy *.sh to muduo/../build/release, and run.
