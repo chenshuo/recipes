@@ -1,0 +1,10 @@
+
+The following files are retrieved from 
+http://asio.cvs.sourceforge.net/viewvc/asio/asio/src/tests/performance/
+
+  client.cpp
+  server.cpp
+  handler_allocator.hpp
+
+The author of them is Christopher M. Kohlhoff (chris at kohlhoff dot com).
+
