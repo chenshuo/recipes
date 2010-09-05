@@ -3,11 +3,19 @@
 #include <event2/buffer.h>
 
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 
 #include <signal.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+static void set_tcp_no_delay(evutil_socket_t fd)
+{
+  int one = 1;
+  setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
+      &one, sizeof one);
+}
 
 static void signal_cb(evutil_socket_t fd, short what, void *arg)
 {
@@ -45,6 +53,7 @@ static void accept_conn_cb(struct evconnlistener *listener,
   struct event_base *base = evconnlistener_get_base(listener);
   struct bufferevent *bev = bufferevent_socket_new(
       base, fd, BEV_OPT_CLOSE_ON_FREE);
+  set_tcp_no_delay(fd);
 
   bufferevent_setcb(bev, echo_read_cb, NULL, echo_event_cb, NULL);
 
