@@ -42,10 +42,10 @@ run() {
       ns2=$s2
       nl1=$l1
       nl2=$l2
-      run2 ./pingpong_bench_fair -n "$@"
+      run2 ./pingpong_bench_ctladd -n "$@"
    fi
 
-   echo "$ls2 $ll2 $s2 $l2 $ns2 $nl2"
+   echo "$ls2 $ll2 $ns2 $nl2 $s2 $l2"
 }
 
 plot() {
@@ -65,36 +65,36 @@ set title "\\ntotal time per iteration\\n100 active clients"
 set key left top
 set xrange [100:*]
 plot \\
-   "$1" using 1:2 axis x1y1 with lines lw 5 title "libevent",	\\
-   "$1" using 1:4 axis x1y1 with lines lw 5 title "libev (emul)", \\
-   "$1" using 1:6 axis x1y1 with lines lw 5 title "libev (native)"
+   "$1" using 1:2 axis x1y1 with lines lw 5 title "libevent2",	\\
+   "$1" using 1:4 axis x1y1 with lines lw 5 title "muduo", \\
+   "$1" using 1:6 axis x1y1 with lines lw 5 title "muduo (ctl_add)"
 
 set origin 0,0
 set title "1000 active clients"
 set key left top
 set xrange [1000:*]
 plot \\
-   "$1" using 1:8 axis x1y1 with lines lw 5 title "libevent",	\\
-   "$1" using 1:10 axis x1y1 with lines lw 5 title "libev (emul)", \\
-   "$1" using 1:12 axis x1y1 with lines lw 5 title "libev (native)"
+   "$1" using 1:8 axis x1y1 with lines lw 5 title "libevent2",	\\
+   "$1" using 1:10 axis x1y1 with lines lw 5 title "muduo", \\
+   "$1" using 1:12 axis x1y1 with lines lw 5 title "muduo (ctl_add)"
 
-set origin 0.5,0.5
+set origin 0.49,0.5
 set title "\\ntime spent in event processing\\n100 active clients"
 set key right bottom
 set xrange [100:*]
 plot \\
-   "$1" using 1:3 axis x1y1 with lines lw 5 title "libevent",	\\
-   "$1" using 1:5 axis x1y1 with lines lw 5 title "libev (emul)", \\
-   "$1" using 1:7 axis x1y1 with lines lw 5 title "libev (native)"
+   "$1" using 1:3 axis x1y1 with lines lw 5 title "libevent2",	\\
+   "$1" using 1:5 axis x1y1 with lines lw 5 title "muduo", \\
+   "$1" using 1:7 axis x1y1 with lines lw 5 title "muduo (ctl_add)"
 
-set origin 0.5,0
+set origin 0.49,0
 set title "1000 active clients"
 set key left top
 set xrange [1000:*]
 plot \\
-   "$1" using 1:9 axis x1y1 with lines lw 5 title "libevent",	\\
-   "$1" using 1:11 axis x1y1 with lines lw 5 title "libev (emul)", \\
-   "$1" using 1:13 axis x1y1 with lines lw 5 title "libev (native)"
+   "$1" using 1:9 axis x1y1 with lines lw 5 title "libevent2",	\\
+   "$1" using 1:11 axis x1y1 with lines lw 5 title "muduo", \\
+   "$1" using 1:13 axis x1y1 with lines lw 5 title "muduo (ctl_add)"
 EOF
 
    mogrify -geometry 50% "$1.png"
@@ -132,7 +132,7 @@ dodist() {
    rsync -avP bench.html bench.c dat*png ruth:/var/www/libev.schmorp.de/.
 }
 
-dobench
+#dobench
 doplot
 #dodist
 
