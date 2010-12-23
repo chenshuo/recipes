@@ -29,12 +29,20 @@ pid_t gettid()
   return static_cast<pid_t>(::syscall(SYS_gettid));
 }
 
+void afterFork()
+{
+  t_cachedTid = gettid();
+  muduo::CurrentThread::t_threadName = "main";
+  // no need to call pthread_atfork(NULL, NULL, &afterFork);
+}
+
 class ThreadNameInitializer
 {
  public:
   ThreadNameInitializer()
   {
     muduo::CurrentThread::t_threadName = "main";
+    pthread_atfork(NULL, NULL, &afterFork);
   }
 };
 

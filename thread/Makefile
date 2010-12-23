@@ -3,8 +3,9 @@ CXXFLAGS+=-O2
 
 HEADERS=$(wildcard *.h)
 TESTS= atomic_unittest \
-       exception_test \
        blockingqueue_test \
+       exception_test \
+       fork_test \
        singleton_test \
        singleton_threadlocal_test \
        threadlocal_test \
@@ -24,6 +25,8 @@ atomic_unittest: test/Atomic_unittest.cc
 blockingqueue_test: test/BlockingQueue_test.cc CountDownLatch.cc Thread.cc
 
 exception_test: test/Exception_test.cc Exception.cc
+
+fork_test: test/Fork_test.cc Thread.cc
 
 singleton_test: test/Singleton_test.cc Thread.cc
 
