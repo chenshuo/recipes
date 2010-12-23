@@ -19,7 +19,7 @@ namespace muduo
 class Condition : boost::noncopyable
 {
  public:
-  Condition(MutexLock& mutex) : mutex_(mutex)
+  explicit Condition(MutexLock& mutex) : mutex_(mutex)
   {
     pthread_cond_init(&pcond_, NULL);
   }

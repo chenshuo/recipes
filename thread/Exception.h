@@ -17,7 +17,7 @@ namespace muduo
 class Exception : public std::exception
 {
  public:
-  Exception(const char* what);
+  explicit Exception(const char* what);
   virtual ~Exception() throw();
   virtual const char* what() const throw();
   const char* stackTrace() const throw();
