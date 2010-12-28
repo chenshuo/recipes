@@ -27,8 +27,7 @@ int main()
     x = 2;
     print();
 
-    pid_t p = fork();
-    if (p == 0)
+    if (fork() == 0)
     {
       printf("grandchlid %d\n", getpid());
       print();
