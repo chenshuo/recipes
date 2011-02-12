@@ -24,6 +24,9 @@ atomic_unittest: test/Atomic_unittest.cc
 
 blockingqueue_test: test/BlockingQueue_test.cc CountDownLatch.cc Thread.cc
 
+exit_deadlock: test/ExitDeadLock.cc
+	g++ $(CXXFLAGS) -o $@ $(filter %.cc,$^) -lpthread
+
 exception_test: test/Exception_test.cc Exception.cc
 
 fork_test: test/Fork_test.cc Thread.cc
