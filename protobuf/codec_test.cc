@@ -50,6 +50,7 @@ void testEmpty()
   muduo::Empty empty;
 
   std::string transport = encode(empty);
+  print(transport);
 
   std::string buf = transport.substr(sizeof(int32_t));
 
@@ -99,7 +100,9 @@ int main()
   testQuery();
   puts("");
   testAnswer();
+  puts("");
   testEmpty();
+  puts("");
 
   puts("All pass!!!");
 
