@@ -17,15 +17,14 @@
 #include <arpa/inet.h>  // htonl, ntohl
 #include <stdint.h>
 
-//struct ProtobufTransportFormat __attribute__ ((__packed__))
-//{
-//  int32_t  len;
-//  int32_t  nameLen;
-//  char     typeName[nameLen];
-//  char     protobufData[len-nameLen-8];
-//  int32_t checkSum; // adler32 of nameLen, typeName and protobufData
-//}
-//
+// struct ProtobufTransportFormat __attribute__ ((__packed__))
+// {
+//   int32_t  len;
+//   int32_t  nameLen;
+//   char     typeName[nameLen];
+//   char     protobufData[len-nameLen-8];
+//   int32_t  checkSum; // adler32 of nameLen, typeName and protobufData
+// }
 
 ///
 /// Encode protobuf Message to transport format defined above
