@@ -34,6 +34,7 @@ void testDescriptor()
   T* new_obj = dynamic_cast<T*>(prototype->New());
   assert(new_obj != NULL);
   assert(new_obj != prototype);
+  assert(typeid(*new_obj) == typeid(T::default_instance()));
   cout << "prototype->New() = " << new_obj << endl;
   cout << endl;
   delete new_obj;
