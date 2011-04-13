@@ -1,5 +1,7 @@
 package muduo;
 
+option java_outer_classname = "Proto";
+
 message Query {
   required int64 id = 1;
   required string questioner = 2;
