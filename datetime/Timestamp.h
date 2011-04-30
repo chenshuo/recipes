@@ -47,7 +47,7 @@ class Timestamp : public muduo::copyable
   // default copy/assignment/dtor are Okay
 
   std::string toString() const;
-  std::string toIsoString() const;
+  std::string toFormattedString() const;
 
   bool valid() const { return microSecondsSinceEpoch_ > 0; }
 
