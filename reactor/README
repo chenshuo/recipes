@@ -1,0 +1,7 @@
+Engineering a Reactor
+ -- how to write a non-blocking network library from scratch.
+
+Step 0: a do-nothing event loop
+  test1:
+  test2: abort() as it accesses event loop created in a different thread
+

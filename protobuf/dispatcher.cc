@@ -77,6 +77,10 @@ class ProtobufDispatcher
   boost::function<void (google::protobuf::Message* message)> defaultCallback_;
 };
 
+//
+// test
+//
+
 void onQuery(muduo::Query* query)
 {
   cout << "onQuery: " << query->GetTypeName() << endl;

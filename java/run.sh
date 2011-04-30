@@ -10,4 +10,4 @@ lib/antlr-2.7.7.jar:\
 export CLASSPATH
 mkdir bin
 javac -d bin billing/*.java billing/test/*.java
-java org.junit.runner.JUnitCore billing.test.VipCustomerTest billing.test.NormalCustomerTest
+java -ea org.junit.runner.JUnitCore billing.test.VipCustomerTest billing.test.NormalCustomerTest
