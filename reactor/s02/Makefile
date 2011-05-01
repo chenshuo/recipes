@@ -1,4 +1,4 @@
-LIB_SRC = EventLoop.cc Channel.cc Poller.cc Timer.cc TimerQueue.cc
+LIB_SRC = Channel.cc EventLoop.cc Poller.cc Timer.cc TimerQueue.cc
 BINARIES = test1 test2 test3 test4
 
 all: $(BINARIES)

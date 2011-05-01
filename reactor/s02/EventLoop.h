@@ -79,9 +79,9 @@ class EventLoop : boost::noncopyable
 
  private:
 
-  typedef std::vector<Channel*> ChannelList;
-
   void abortNotInLoopThread();
+
+  typedef std::vector<Channel*> ChannelList;
 
   bool looping_; /* atomic */
   bool quit_; /* atomic */
