@@ -21,6 +21,7 @@ const int kPollTimeMs = 10000;
 
 EventLoop::EventLoop()
   : looping_(false),
+    quit_(false),
     threadId_(CurrentThread::tid()),
     poller_(new Poller(this))
 {
@@ -73,13 +74,6 @@ void EventLoop::updateChannel(Channel* channel)
   assert(channel->ownerLoop() == this);
   assertInLoopThread();
   poller_->updateChannel(channel);
-}
-
-void EventLoop::removeChannel(Channel* channel)
-{
-  assert(channel->ownerLoop() == this);
-  assertInLoopThread();
-  poller_->removeChannel(channel);
 }
 
 void EventLoop::abortNotInLoopThread()
