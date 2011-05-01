@@ -3,20 +3,24 @@ Engineering a Reactor
 
 Step 0: a do-nothing event loop
   EventLoop, assertInLoopThread()
-  test1: poll for 10 seconds
+  test1: poll for 10 seconds, creates two threads, each one has an EventLoop
   test2: abort() as it accesses event loop created in a different thread
 
 Step 1: prototype of reactor
   Channel, Poller, updateChannel().
-  test1: poll for ever
+  test1: poll for ever, creates two threads, each one has an EventLoop
   test2: same as before
   test3: poll a timerfd, which expires in 5 seconds
 
 Step 2: TimerQueue
   TimerQueue, Timer, TimerId, EventLoop::runAfter, EventLoop::runEvery
+  not thread safe
   test3: use EventLoop::runAfter
+  test4: timer queue unittest
 
 Step 3: wakeup(), runInLoop()
+  test5: runInLoop()
+  test6: runAfter() in a different thread
 
 Step 4: Acceptor
 
