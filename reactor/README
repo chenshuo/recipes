@@ -2,6 +2,37 @@ Engineering a Reactor
  -- how to write a non-blocking network library from scratch.
 
 Step 0: a do-nothing event loop
-  test1:
+  EventLoop, assertInLoopThread()
+  test1: poll for 10 seconds
   test2: abort() as it accesses event loop created in a different thread
+
+Step 1: prototype of reactor
+  Channel, Poller, updateChannel().
+  test1: poll for ever
+  test2: same as before
+  test3: poll a timerfd, which expires in 5 seconds
+
+Step 2: TimerQueue
+  TimerQueue, Timer, TimerId, EventLoop::runAfter, EventLoop::runEvery
+  test3: use EventLoop::runAfter
+
+Step 3: wakeup(), runInLoop()
+
+Step 4: Acceptor
+
+Step 5: TcpServer
+
+Step 6: TcpConnection up and down
+
+Step 7: TcpConnection read
+
+Step 8: TcpConnection write
+
+Step 9: multithreaded TcpServer
+
+Step 10: Connector
+
+Step 11: TcpClient
+
+Step 12: epoll
 

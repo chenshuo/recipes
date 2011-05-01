@@ -24,6 +24,8 @@ class EventLoop : boost::noncopyable
  public:
 
   EventLoop();
+
+  // force out-line dtor, for scoped_ptr members.
   ~EventLoop();
 
   void loop();
