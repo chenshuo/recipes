@@ -6,5 +6,5 @@ $(BINARIES):
 	g++ $(CXXFLAGS) -o $@ $(LIB_SRC) $(BASE_SRC) $(filter %.cc,$^) $(LDFLAGS)
 
 clean:
-	rm $(BINARIES) core
+	rm -f $(BINARIES) core
 
