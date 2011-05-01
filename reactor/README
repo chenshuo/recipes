@@ -19,7 +19,8 @@ Step 2: TimerQueue
   test4: timer queue unittest
 
 Step 3: wakeup(), runInLoop()
-  test5: runInLoop(), runAfter() in a different thread
+  test5: runInLoop(), runAfter() in loop thread
+  test6: runInLoop(), runAfter() in a different thread
 
 Step 4: Acceptor
 
