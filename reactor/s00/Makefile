@@ -7,6 +7,3 @@ include ../reactor.mk
 
 test1: test1.cc
 test2: test2.cc
-
-clean:
-	rm $(BINARIES) core

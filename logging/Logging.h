@@ -68,6 +68,11 @@ T* CheckNotNull(const char *file, int line, const char *names, T* ptr) {
   return ptr;
 }
 
+template<typename To, typename From>
+inline To implicit_cast(From const &f) {
+    return f;
+}
+
 }
 
 #endif  // MUDUO_LOG_LOGGING_H

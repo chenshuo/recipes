@@ -5,4 +5,6 @@ BASE_SRC = ../../logging/Logging.cc ../../thread/Thread.cc ../../datetime/Timest
 $(BINARIES):
 	g++ $(CXXFLAGS) -o $@ $(LIB_SRC) $(BASE_SRC) $(filter %.cc,$^) $(LDFLAGS)
 
+clean:
+	rm $(BINARIES) core
 
