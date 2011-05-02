@@ -1,4 +1,4 @@
-CXXFLAGS=-g -Wall -O2
+CXXFLAGS=-g -Wall -O0
 
 PNG_DPI=300
 TEXES=$(wildcard *.tex)
@@ -17,7 +17,7 @@ PIC_PNGS=$(subst pic,png,$(PICS))
 %.png : %.eps
 	eps2png --png16m -resolution $(PNG_DPI) $<
 
-BINARIES=date_test date_unittest timestamp_unittest
+BINARIES=date_test date_unittest timestamp_unittest timezone_dump timezone_unittest
 
 all: $(BINARIES)
 
@@ -33,6 +33,10 @@ date_test: Date.h Date.cc Date_test.cc
 date_unittest: Date.h Date.cc Date_unittest.cc
 
 timestamp_unittest: Timestamp.h Timestamp.cc Timestamp_unittest.cc
+
+timezone_dump: TimeZone.h TimeZone.cc TimeZone_dump.cc
+
+timezone_unittest: TimeZone.h TimeZone.cc TimeZone_unittest.cc
 
 test: date_unittest
 	./date_unittest
