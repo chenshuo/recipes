@@ -19,15 +19,31 @@ namespace detail
 
 struct Transition
 {
-  time_t time;
-  int localtime;
-  Transition(time_t t, int local)
-    : time(t), localtime(local)
+  time_t gmttime;
+  time_t localtime;
+  int localtimeIdx;
+
+  Transition(time_t t, time_t l, int localIdx)
+    : gmttime(t), localtime(l), localtimeIdx(localIdx)
   { }
 
-  bool operator<(const Transition& rhs) const
+};
+
+struct Comp
+{
+  bool compareGmt;
+
+  Comp(bool gmt)
+    : compareGmt(gmt)
   {
-    return time < rhs.time;
+  }
+
+  bool operator()(const Transition& lhs, const Transition& rhs) const
+  {
+    if (compareGmt)
+      return lhs.gmttime < rhs.gmttime;
+    else
+      return lhs.localtime < rhs.localtime;
   }
 };
 
@@ -51,8 +67,6 @@ using namespace std;
 struct TimeZone::Data
 {
   vector<detail::Transition> transitions;
-  //vector<time_t> transitions;
-  //vector<uint8_t> localtimeIdxs;
   vector<detail::Localtime> localtimes;
   vector<string> names;
   string abbreviation;
@@ -133,6 +147,7 @@ bool readTimeZoneFile(const char* zonefile, struct TimeZone::Data* data)
       int32_t charcnt = f.readInt32();
 
       vector<int32_t> trans;
+      vector<int> localtimes;
       trans.reserve(timecnt);
       for (int i = 0; i < timecnt; ++i)
       {
@@ -142,7 +157,7 @@ bool readTimeZoneFile(const char* zonefile, struct TimeZone::Data* data)
       for (int i = 0; i < timecnt; ++i)
       {
         uint8_t local = f.readUInt8();
-        data->transitions.push_back(Transition(trans[i], local));
+        localtimes.push_back(local);
       }
 
       for (int i = 0; i < typecnt; ++i)
@@ -152,6 +167,13 @@ bool readTimeZoneFile(const char* zonefile, struct TimeZone::Data* data)
         uint8_t abbrind = f.readUInt8();
 
         data->localtimes.push_back(Localtime(gmtoff, isdst, abbrind));
+      }
+
+      for (int i = 0; i < timecnt; ++i)
+      {
+        int localIdx = localtimes[i];
+        time_t localtime = trans[i] + data->localtimes[localIdx].gmtOffset;
+        data->transitions.push_back(Transition(trans[i], localtime, localIdx));
       }
 
       data->abbreviation = f.readBytes(charcnt);
@@ -172,6 +194,41 @@ bool readTimeZoneFile(const char* zonefile, struct TimeZone::Data* data)
   }
   return true;
 }
+
+const Localtime* findLocaltime(const TimeZone::Data& data, Transition sentry, Comp comp)
+{
+  const Localtime* local = NULL;
+
+  if (data.transitions.empty() || comp(sentry, data.transitions.front()))
+  {
+    // FIXME: should be first non dst time zone
+    local = &data.localtimes.front();
+  }
+  else
+  {
+    vector<Transition>::const_iterator transI = lower_bound(data.transitions.begin(),
+                                                            data.transitions.end(),
+                                                            sentry,
+                                                            comp);
+    if (transI != data.transitions.end())
+    {
+      if (comp(sentry, *transI) || comp(*transI, sentry))
+      {
+        assert(transI != data.transitions.begin());
+        --transI;
+      }
+      local = &data.localtimes[transI->localtimeIdx];
+    }
+    else
+    {
+      // FIXME: use TZ-env
+      local = &data.localtimes[data.transitions.back().localtimeIdx];
+    }
+  }
+
+  return local;
+}
+
 }
 }
 
@@ -190,46 +247,33 @@ struct tm TimeZone::toLocalTime(time_t seconds) const
   struct tm localTime = { 0, };
   assert(data_ != NULL);
   const Data& data(*data_);
-  const detail::Localtime* local = NULL;
-  if (data.transitions.empty() || seconds < data.transitions.front().time)
+
+  detail::Transition sentry(seconds, 0, 0);
+  const detail::Localtime* local = findLocaltime(data, sentry, detail::Comp(true));
+
+  if (local)
   {
-    local = &data.localtimes.front();
-  }
-  else
-  {
-    vector<detail::Transition>::const_iterator transI
-      = lower_bound(data.transitions.begin(), data.transitions.end(), detail::Transition(seconds, 0));
-    if (transI != data.transitions.end())
-    {
-      if (transI->time != seconds)
-      {
-        assert(transI != data.transitions.begin());
-        --transI;
-      }
-      local = &data.localtimes[transI->localtime];
-    }
-    else
-    {
-      // FIXME: use TZ-env
-      local = &data.localtimes.back();
-    }
-    if (local)
-    {
-      time_t localSeconds = seconds + local->gmtOffset;
-      ::gmtime_r(&localSeconds, &localTime);
-      localTime.tm_isdst = local->isDst;
-      localTime.tm_gmtoff = local->gmtOffset;
-      localTime.tm_zone = &data.abbreviation[local->arrbIdx];
-    }
+    time_t localSeconds = seconds + local->gmtOffset;
+    ::gmtime_r(&localSeconds, &localTime);
+    localTime.tm_isdst = local->isDst;
+    localTime.tm_gmtoff = local->gmtOffset;
+    localTime.tm_zone = &data.abbreviation[local->arrbIdx];
   }
 
   return localTime;
 }
 
-time_t TimeZone::fromLocalTime(const struct tm&) const
+time_t TimeZone::fromLocalTime(const struct tm& localTm) const
 {
   assert(data_ != NULL);
-  return 0;
+  const Data& data(*data_);
+
+  struct tm tmp = localTm;
+  time_t seconds = ::timegm(&tmp);
+  detail::Transition sentry(0, seconds, 0);
+  const detail::Localtime* local = findLocaltime(data, sentry, detail::Comp(false));
+  // FIXME: localTm.tm_isdst
+  return seconds - local->gmtOffset;
 }
 
 

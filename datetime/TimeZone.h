@@ -29,6 +29,7 @@ class TimeZone : public muduo::copyable
   struct Data;
 
  private:
+
   boost::shared_ptr<Data> data_;
 };
 
