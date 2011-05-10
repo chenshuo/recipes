@@ -29,7 +29,6 @@ class Channel : boost::noncopyable
   static const int kNoneEvent;
 
   Channel(EventLoop* loop, int fd);
-  ~Channel();
 
   void handleEvent();
   void setReadCallback(const EventCallback& cb)

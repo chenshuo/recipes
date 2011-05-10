@@ -1,4 +1,5 @@
 #include "EventLoop.h"
+#include "thread/Thread.h"
 
 muduo::EventLoop* g_loop;
 

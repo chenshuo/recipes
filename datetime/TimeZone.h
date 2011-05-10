@@ -15,6 +15,7 @@
 namespace muduo
 {
 
+// TimeZone for 1970~2030
 class TimeZone : public muduo::copyable
 {
  public:

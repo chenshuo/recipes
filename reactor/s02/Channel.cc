@@ -28,10 +28,6 @@ Channel::Channel(EventLoop* loop, int fd__)
 {
 }
 
-Channel::~Channel()
-{
-}
-
 void Channel::update()
 {
   loop_->updateChannel(this);

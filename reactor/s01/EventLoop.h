@@ -28,7 +28,13 @@ class EventLoop : boost::noncopyable
   // force out-line dtor, for scoped_ptr members.
   ~EventLoop();
 
+  ///
+  /// Loops forever.
+  ///
+  /// Must be called in the same thread as creation of the object.
+  ///
   void loop();
+
   void quit();
 
   // internal use only

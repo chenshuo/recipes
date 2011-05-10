@@ -6,7 +6,6 @@
 #include <boost/bind.hpp>
 
 #include <stdio.h>
-#include <sys/timerfd.h>
 
 int cnt = 0;
 muduo::EventLoop* g_loop;

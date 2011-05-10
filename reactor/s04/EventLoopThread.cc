@@ -13,7 +13,6 @@
 
 using namespace muduo;
 
-
 EventLoopThread::EventLoopThread()
   : loop_(NULL),
     exiting_(false),
