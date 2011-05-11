@@ -4,12 +4,14 @@
 
 void runInThread()
 {
-  printf("runInThread(): pid = %d, tid = %d\n", getpid(), muduo::CurrentThread::tid());
+  printf("runInThread(): pid = %d, tid = %d\n",
+         getpid(), muduo::CurrentThread::tid());
 }
 
 int main()
 {
-  printf("main(): pid = %d, tid = %d\n", getpid(), muduo::CurrentThread::tid());
+  printf("main(): pid = %d, tid = %d\n",
+         getpid(), muduo::CurrentThread::tid());
 
   muduo::EventLoopThread loopThread;
   muduo::EventLoop* loop = loopThread.startLoop();

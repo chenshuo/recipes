@@ -15,7 +15,6 @@ Step 1: prototype of reactor
 Step 2: TimerQueue
   TimerQueue, Timer, TimerId, EventLoop::runAfter, EventLoop::runEvery
   not thread safe
-  test3: use EventLoop::runAfter
   test4: timer queue unittest
 
 Step 3: wakeup(), runInLoop()
@@ -23,6 +22,7 @@ Step 3: wakeup(), runInLoop()
   test6: runInLoop(), runAfter() in a different thread
 
 Step 4: Acceptor
+  test7: listen on port 9981, accept, send, and close.
 
 Step 5: TcpServer
 

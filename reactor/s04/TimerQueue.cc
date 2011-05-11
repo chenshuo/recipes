@@ -194,7 +194,8 @@ bool TimerQueue::insert(Timer* timer)
   {
     earliestChanged = true;
   }
-  std::pair<TimerList::iterator, bool> result = timers_.insert(std::make_pair(when, timer));
+  std::pair<TimerList::iterator, bool> result =
+          timers_.insert(std::make_pair(when, timer));
   assert(result.second);
   return earliestChanged;
 }
