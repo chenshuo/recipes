@@ -22,15 +22,16 @@ Step 3: wakeup(), runInLoop()
   test6: runInLoop(), runAfter() in a different thread
 
 Step 4: Acceptor
-  test7: listen on port 9981, accept, send, and close.
+  test7: listen on port 9981, accept, send, and close
 
 Step 5: TcpServer
-
-Step 6: TcpConnection up and down
+  test8: use of TcpServer
 
 Step 7: TcpConnection read
 
-Step 8: TcpConnection write
+Step 6: TcpConnection up and down
+
+Step 8: TcpConnection write, write complete callback
 
 Step 9: multithreaded TcpServer
 
