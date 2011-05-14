@@ -67,7 +67,7 @@ void Poller::fillActiveChannels(int numEvents,
 
 void Poller::updateChannel(Channel* channel)
 {
-  Poller::assertInLoopThread();
+  assertInLoopThread();
   LOG_TRACE << "fd = " << channel->fd() << " events = " << channel->events();
   if (channel->index() < 0)
   {
