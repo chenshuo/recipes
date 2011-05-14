@@ -24,8 +24,8 @@ Step 3: wakeup(), runInLoop()
 Step 4: Acceptor
   test7: listen on port 9981, accept, send, and close
 
-Step 5: TcpServer
-  test8: use of TcpServer, create TcpConnection
+Step 5: TcpServer, create TcpConnection
+  test8: use of TcpServer, discard server
 
 Step 6: TcpConnection passive close
 
@@ -33,10 +33,14 @@ Step 7: TcpConnection read with Buffer, add receiveTime to read callback
   test3: show receiveTime
   test8: show receiveTime
 
-Step 8: TcpConnection write, write complete callback, SIGPIPE
+Step 8: TcpConnection write
+  test9: echo server
+  test10: data source server
 
-Step 9: multithreaded TcpServer
+Step 9: write complete callback, tcp no delay, SIGPIPE
+  test11: chargen server
 
+Step 10: multithreaded TcpServer
 Step 10: Connector
 
 Step 11: TcpClient
