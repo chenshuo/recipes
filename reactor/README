@@ -27,11 +27,13 @@ Step 4: Acceptor
 Step 5: TcpServer
   test8: use of TcpServer, create TcpConnection
 
-Step 7: TcpConnection passive close
+Step 6: TcpConnection passive close
 
-Step 6: TcpConnection read with Buffer
+Step 7: TcpConnection read with Buffer, add receiveTime to read callback
+  test3: show receiveTime
+  test8: show receiveTime
 
-Step 8: TcpConnection write, write complete callback
+Step 8: TcpConnection write, write complete callback, SIGPIPE
 
 Step 9: multithreaded TcpServer
 

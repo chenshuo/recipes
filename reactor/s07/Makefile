@@ -1,5 +1,6 @@
 LIB_SRC = 			\
 	Acceptor.cc		\
+	Buffer.cc		\
 	Channel.cc		\
 	EventLoop.cc		\
 	EventLoopThread.cc	\

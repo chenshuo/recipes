@@ -14,3 +14,4 @@ diff_a_file s02 s03
 diff_a_file s03 s04
 diff_a_file s04 s05
 diff_a_file s05 s06
+diff_a_file s06 s07
