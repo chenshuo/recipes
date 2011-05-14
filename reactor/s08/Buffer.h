@@ -92,8 +92,7 @@ class Buffer : public muduo::copyable
   std::string retrieveAsString()
   {
     std::string str(peek(), readableBytes());
-    readerIndex_ = kCheapPrepend;
-    writerIndex_ = kCheapPrepend;
+    retrieveAll();
     return str;
   }
 
