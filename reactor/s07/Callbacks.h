@@ -29,7 +29,6 @@ typedef boost::function<void (const TcpConnectionPtr&,
                               Timestamp)> MessageCallback;
 typedef boost::function<void (const TcpConnectionPtr&)> CloseCallback;
 
-
 }
 
 #endif  // MUDUO_NET_CALLBACKS_H
