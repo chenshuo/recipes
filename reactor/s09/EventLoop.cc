@@ -16,6 +16,7 @@
 #include <boost/bind.hpp>
 
 #include <assert.h>
+#include <signal.h>
 #include <sys/eventfd.h>
 
 using namespace muduo;
@@ -33,6 +34,17 @@ static int createEventfd()
   }
   return evtfd;
 }
+
+class IgnoreSigPipe
+{
+ public:
+  IgnoreSigPipe()
+  {
+    ::signal(SIGPIPE, SIG_IGN);
+  }
+};
+
+IgnoreSigPipe initObj;
 
 EventLoop::EventLoop()
   : looping_(false),
