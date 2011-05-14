@@ -57,11 +57,3 @@ void Socket::shutdownWrite()
   sockets::shutdownWrite(sockfd_);
 }
 
-void Socket::setTcpNoDelay(bool on)
-{
-  int optval = on ? 1 : 0;
-  ::setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY,
-               &optval, sizeof optval);
-  // FIXME CHECK
-}
-

@@ -53,12 +53,16 @@ class TcpConnection : boost::noncopyable,
   void send(const std::string& message);
   // Thread safe.
   void shutdown();
+  void setTcpNoDelay(bool on);
 
   void setConnectionCallback(const ConnectionCallback& cb)
   { connectionCallback_ = cb; }
 
   void setMessageCallback(const MessageCallback& cb)
   { messageCallback_ = cb; }
+
+  void setWriteCompleteCallback(const WriteCompleteCallback& cb)
+  { writeCompleteCallback_ = cb; }
 
   /// Internal use only.
   void setCloseCallback(const CloseCallback& cb)
@@ -90,6 +94,7 @@ class TcpConnection : boost::noncopyable,
   InetAddress peerAddr_;
   ConnectionCallback connectionCallback_;
   MessageCallback messageCallback_;
+  WriteCompleteCallback writeCompleteCallback_;
   CloseCallback closeCallback_;
   Buffer inputBuffer_;
   Buffer outputBuffer_;
