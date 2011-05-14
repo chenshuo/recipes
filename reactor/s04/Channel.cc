@@ -35,26 +35,17 @@ void Channel::update()
 
 void Channel::handleEvent()
 {
-  if ((revents_ & POLLHUP) && !(revents_ & POLLIN))
-  {
-    // FIXME handleClose()
-  }
-
-  if (revents_ & POLLNVAL)
-  {
+  if (revents_ & POLLNVAL) {
     LOG_WARN << "Channel::handle_event() POLLNVAL";
   }
 
-  if (revents_ & (POLLERR | POLLNVAL))
-  {
+  if (revents_ & (POLLERR | POLLNVAL)) {
     if (errorCallback_) errorCallback_();
   }
-  if (revents_ & (POLLIN | POLLPRI | POLLRDHUP))
-  {
+  if (revents_ & (POLLIN | POLLPRI | POLLRDHUP)) {
     if (readCallback_) readCallback_();
   }
-  if (revents_ & POLLOUT)
-  {
+  if (revents_ & POLLOUT) {
     if (writeCallback_) writeCallback_();
   }
 }

@@ -91,8 +91,7 @@ void Poller::updateChannel(Channel* channel)
     assert(0 <= idx && idx < static_cast<int>(pollfds_.size()));
     struct pollfd& pfd = pollfds_[idx];
     assert(pfd.fd == channel->fd() || pfd.fd == -1);
-    pfd.events = static_cast<short>(channel->events());
-    if (pfd.events == Channel::kNoneEvent)
+    if (channel->isNoneEvent())
     {
       // ignore this pollfd
       pfd.fd = -1;

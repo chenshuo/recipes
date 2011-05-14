@@ -62,7 +62,6 @@ class EventLoop : boost::noncopyable
   const pid_t threadId_;
   boost::scoped_ptr<Poller> poller_;
   ChannelList activeChannels_;
-
 };
 
 }

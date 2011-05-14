@@ -90,7 +90,6 @@ class EventLoop : boost::noncopyable
   boost::scoped_ptr<Poller> poller_;
   boost::scoped_ptr<TimerQueue> timerQueue_;
   ChannelList activeChannels_;
-
 };
 
 }

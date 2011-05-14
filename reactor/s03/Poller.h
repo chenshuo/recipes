@@ -41,10 +41,7 @@ class Poller : boost::noncopyable
   /// Must be called in the loop thread.
   void updateChannel(Channel* channel);
 
-  void assertInLoopThread()
-  {
-    ownerLoop_->assertInLoopThread();
-  }
+  void assertInLoopThread() { ownerLoop_->assertInLoopThread(); }
 
  private:
   void fillActiveChannels(int numEvents,

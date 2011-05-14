@@ -4,7 +4,8 @@
 
 void threadFunc()
 {
-  printf("threadFunc(): pid = %d, tid = %d\n", getpid(), muduo::CurrentThread::tid());
+  printf("threadFunc(): pid = %d, tid = %d\n",
+         getpid(), muduo::CurrentThread::tid());
 
   muduo::EventLoop loop;
   loop.loop();
@@ -12,7 +13,8 @@ void threadFunc()
 
 int main()
 {
-  printf("main(): pid = %d, tid = %d\n", getpid(), muduo::CurrentThread::tid());
+  printf("main(): pid = %d, tid = %d\n",
+         getpid(), muduo::CurrentThread::tid());
 
   muduo::EventLoop loop;
 

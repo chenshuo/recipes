@@ -38,7 +38,6 @@ class EventLoop : boost::noncopyable
 
   bool looping_; /* atomic */
   const pid_t threadId_;
-
 };
 
 }

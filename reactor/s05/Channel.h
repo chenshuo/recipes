@@ -26,7 +26,6 @@ class Channel : boost::noncopyable
 {
  public:
   typedef boost::function<void()> EventCallback;
-  static const int kNoneEvent;
 
   Channel(EventLoop* loop, int fd);
 
@@ -41,12 +40,12 @@ class Channel : boost::noncopyable
   int fd() const { return fd_; }
   int events() const { return events_; }
   void set_revents(int revt) { revents_ = revt; }
+  bool isNoneEvent() const { return events_ == kNoneEvent; }
 
   void enableReading() { events_ |= kReadEvent; update(); }
   // void enableWriting() { events_ |= kWriteEvent; update(); }
   // void disableWriting() { events_ &= ~kWriteEvent; update(); }
   // void disableAll() { events_ = kNoneEvent; update(); }
-  // bool isWriting() const { return events_ & kWriteEvent; }
 
   // for Poller
   int index() { return index_; }
@@ -57,6 +56,7 @@ class Channel : boost::noncopyable
  private:
   void update();
 
+  static const int kNoneEvent;
   static const int kReadEvent;
   static const int kWriteEvent;
 
