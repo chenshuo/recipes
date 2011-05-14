@@ -49,7 +49,9 @@ class TcpConnection : boost::noncopyable,
   bool connected() const { return state_ == kConnected; }
 
   //void send(const void* message, size_t len);
+  // Thread safe.
   void send(const std::string& message);
+  // Thread safe.
   void shutdown();
 
   void setConnectionCallback(const ConnectionCallback& cb)

@@ -91,7 +91,6 @@ void TcpConnection::sendInLoop(const std::string& message)
   }
 }
 
-
 void TcpConnection::shutdown()
 {
   // FIXME: use compare and swap
