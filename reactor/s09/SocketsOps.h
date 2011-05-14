@@ -19,9 +19,6 @@ namespace muduo
 namespace sockets
 {
 
-// the inline assembler code makes type blur,
-// so we disable warnings for a while.
-#pragma GCC diagnostic ignored "-Wconversion"
 inline uint64_t hostToNetwork64(uint64_t host64)
 {
   return htobe64(host64);
@@ -51,7 +48,6 @@ inline uint16_t networkToHost16(uint16_t net16)
 {
   return ntohs(net16);
 }
-#pragma GCC diagnostic error "-Wconversion"
 
 ///
 /// Creates a non-blocking socket file descriptor,

@@ -29,7 +29,6 @@
 //     };
 
 using namespace muduo;
-using std::string;
 
 static const in_addr_t kInaddrAny = INADDR_ANY;
 
@@ -43,13 +42,13 @@ InetAddress::InetAddress(uint16_t port)
   addr_.sin_port = sockets::hostToNetwork16(port);
 }
 
-InetAddress::InetAddress(const string& ip, uint16_t port)
+InetAddress::InetAddress(const std::string& ip, uint16_t port)
 {
   bzero(&addr_, sizeof addr_);
   sockets::fromHostPort(ip.c_str(), port, &addr_);
 }
 
-string InetAddress::toHostPort() const
+std::string InetAddress::toHostPort() const
 {
   char buf[32];
   sockets::toHostPort(buf, sizeof buf, addr_);

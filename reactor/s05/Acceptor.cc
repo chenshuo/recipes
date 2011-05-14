@@ -42,16 +42,10 @@ void Acceptor::handleRead()
   InetAddress peerAddr(0);
   //FIXME loop until no more
   int connfd = acceptSocket_.accept(&peerAddr);
-  if (connfd >= 0)
-  {
-    // string hostport = peerAddr.toHostPort();
-    // LOG_TRACE << "Accepts of " << hostport;
-    if (newConnectionCallback_)
-    {
+  if (connfd >= 0) {
+    if (newConnectionCallback_) {
       newConnectionCallback_(connfd, peerAddr);
-    }
-    else
-    {
+    } else {
       sockets::close(connfd);
     }
   }

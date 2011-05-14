@@ -29,17 +29,12 @@ Timestamp Poller::poll(int timeoutMs, ChannelList* activeChannels)
   // XXX pollfds_ shouldn't change
   int numEvents = ::poll(&*pollfds_.begin(), pollfds_.size(), timeoutMs);
   Timestamp now(Timestamp::now());
-  if (numEvents > 0)
-  {
+  if (numEvents > 0) {
     LOG_TRACE << numEvents << " events happended";
     fillActiveChannels(numEvents, activeChannels);
-  }
-  else if (numEvents == 0)
-  {
+  } else if (numEvents == 0) {
     LOG_TRACE << " nothing happended";
-  }
-  else
-  {
+  } else {
     LOG_SYSERR << "Poller::poll()";
   }
   return now;
@@ -69,8 +64,7 @@ void Poller::updateChannel(Channel* channel)
 {
   assertInLoopThread();
   LOG_TRACE << "fd = " << channel->fd() << " events = " << channel->events();
-  if (channel->index() < 0)
-  {
+  if (channel->index() < 0) {
     // a new one, add to pollfds_
     assert(channels_.find(channel->fd()) == channels_.end());
     struct pollfd pfd;
@@ -81,9 +75,7 @@ void Poller::updateChannel(Channel* channel)
     int idx = static_cast<int>(pollfds_.size())-1;
     channel->set_index(idx);
     channels_[pfd.fd] = channel;
-  }
-  else
-  {
+  } else {
     // update existing one
     assert(channels_.find(channel->fd()) != channels_.end());
     assert(channels_[channel->fd()] == channel);
@@ -93,8 +85,7 @@ void Poller::updateChannel(Channel* channel)
     assert(pfd.fd == channel->fd() || pfd.fd == -1);
     pfd.events = static_cast<short>(channel->events());
     pfd.revents = 0;
-    if (channel->isNoneEvent())
-    {
+    if (channel->isNoneEvent()) {
       // ignore this pollfd
       pfd.fd = -1;
     }

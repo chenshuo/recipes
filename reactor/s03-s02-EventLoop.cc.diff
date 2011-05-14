@@ -97,8 +97,8 @@
 +  {
 +    wakeup();
 +  }
-+}
-+
+ }
+ 
 +void EventLoop::runInLoop(const Functor& cb)
 +{
 +  if (isInLoopThread())
@@ -123,7 +123,7 @@
 +  {
 +    wakeup();
 +  }
- }
++}
  
  TimerId EventLoop::runAt(const Timestamp& time, const TimerCallback& cb)
  {

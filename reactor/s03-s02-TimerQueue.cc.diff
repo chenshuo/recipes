@@ -68,7 +68,7 @@
    bzero(&newValue, sizeof newValue);
    bzero(&oldValue, sizeof oldValue);
    newValue.it_value = howMuchTimeFromNow(expiration);
-   int ret = timerfd_settime(timerfd, 0, &newValue, &oldValue);
+   int ret = ::timerfd_settime(timerfd, 0, &newValue, &oldValue);
    if (ret)
    {
      LOG_SYSERR << "timerfd_settime()";
@@ -112,8 +112,8 @@
 +  loop_->runInLoop(
 +      boost::bind(&TimerQueue::scheduleInLoop, this, timer));
 +  return TimerId(timer);
-+}
-+
+ }
+ 
 +void TimerQueue::scheduleInLoop(Timer* timer)
 +{
    loop_->assertInLoopThread();
@@ -124,7 +124,7 @@
      resetTimerfd(timerfd_, timer->expiration());
    }
 -  return TimerId(timer);
- }
++}
  
  void TimerQueue::handleRead()
  {
