@@ -47,7 +47,6 @@ class TcpServer : boost::noncopyable
  private:
   /// Not thread safe, but in loop
   void newConnection(int sockfd, const InetAddress& peerAddr);
-  void removeConnection(const TcpConnectionPtr& conn);
 
   typedef std::map<std::string, TcpConnectionPtr> ConnectionMap;
 

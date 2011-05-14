@@ -59,12 +59,17 @@ class TcpConnection : boost::noncopyable,
 
   // called when TcpServer accepts a new connection
   void connectEstablished();   // should be called only once
+  // called when TcpServer has removed me from its map
+  void connectDestroyed();  // should be called only once
 
  private:
-  enum StateE { kDisconnected, kConnecting, kConnected, kDisconnecting };
+  enum StateE { kConnecting, kConnected, kDisconnected, };
 
   void setState(StateE s) { state_ = s; }
   void handleRead();
+  void handleWrite();
+  void handleClose();
+  void handleError();
 
   EventLoop* loop_;
   std::string name_;

@@ -25,11 +25,11 @@ Step 4: Acceptor
   test7: listen on port 9981, accept, send, and close
 
 Step 5: TcpServer
-  test8: use of TcpServer
+  test8: use of TcpServer, create TcpConnection
 
-Step 7: TcpConnection read
+Step 7: TcpConnection passive close
 
-Step 6: TcpConnection up and down
+Step 6: TcpConnection read with Buffer
 
 Step 8: TcpConnection write, write complete callback
 

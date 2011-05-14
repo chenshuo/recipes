@@ -72,6 +72,12 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
 
 void TcpServer::removeConnection(const TcpConnectionPtr& conn)
 {
-  // TODO
+  loop_->assertInLoopThread();
+  LOG_INFO << "TcpServer::removeConnection [" << name_
+           << "] - connection " << conn->name();
+  size_t n = connections_.erase(conn->name());
+  assert(n == 1); (void)n;
+  loop_->queueInLoop(
+      boost::bind(&TcpConnection::connectDestroyed, conn));
 }
 

@@ -54,14 +54,12 @@ class TcpConnection : boost::noncopyable,
   { messageCallback_ = cb; }
 
   /// Internal use only.
-  void setCloseCallback(const CloseCallback& cb)
-  { closeCallback_ = cb; }
 
   // called when TcpServer accepts a new connection
   void connectEstablished();   // should be called only once
 
  private:
-  enum StateE { kDisconnected, kConnecting, kConnected, kDisconnecting };
+  enum StateE { kConnecting, kConnected, };
 
   void setState(StateE s) { state_ = s; }
   void handleRead();
@@ -76,7 +74,6 @@ class TcpConnection : boost::noncopyable,
   InetAddress peerAddr_;
   ConnectionCallback connectionCallback_;
   MessageCallback messageCallback_;
-  CloseCallback closeCallback_;
 };
 
 typedef boost::shared_ptr<TcpConnection> TcpConnectionPtr;

@@ -1,5 +1,4 @@
-
-SUBDIRS = s00 s01 s02 s03 s04 s05
+SUBDIRS = s00 s01 s02 s03 s04 s05 s06
 
 all: $(SUBDIRS)
 
