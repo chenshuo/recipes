@@ -41,9 +41,10 @@ Step 9: write complete callback, tcp no delay, SIGPIPE
   test11: chargen server
 
 Step 10: multithreaded TcpServer
-Step 10: Connector
 
-Step 11: TcpClient
+Step 11: Connector
 
-Step 12: epoll
+Step 12: TcpClient
+
+Step 13: epoll
 
