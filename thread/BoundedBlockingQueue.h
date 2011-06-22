@@ -35,7 +35,7 @@ class BoundedBlockingQueue : boost::noncopyable
     notEmpty_.notify(); // TODO: move outside of lock
   }
 
-  T get()
+  T take()
   {
     MutexLockGuard lock(mutex_);
     while (queue_.empty())
