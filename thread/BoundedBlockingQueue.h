@@ -1,3 +1,10 @@
+// excerpts from http://code.google.com/p/muduo/
+//
+// Use of this source code is governed by a BSD-style license
+// that can be found in the License file.
+//
+// Author: Shuo Chen (giantchen at gmail dot com)
+
 #ifndef MUDUO_BASE_BOUNDEDBLOCKINGQUEUE_H
 #define MUDUO_BASE_BOUNDEDBLOCKINGQUEUE_H
 
@@ -23,7 +30,7 @@ class BoundedBlockingQueue : boost::noncopyable
   {
   }
 
-  void put(T x)
+  void put(const T& x)
   {
     MutexLockGuard lock(mutex_);
     while (queue_.full())
