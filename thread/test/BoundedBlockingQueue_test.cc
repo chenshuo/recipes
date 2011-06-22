@@ -1,4 +1,4 @@
-#include "../BlockingQueue.h"
+#include "../BoundedBlockingQueue.h"
 #include "../CountDownLatch.h"
 #include "../Thread.h"
 
@@ -11,7 +11,8 @@ class Test
 {
  public:
   Test(int numThreads)
-    : latch_(numThreads),
+    : queue_(20),
+      latch_(numThreads),
       threads_(numThreads)
   {
     for (int i = 0; i < numThreads; ++i)
@@ -60,7 +61,7 @@ class Test
     bool running = true;
     while (running)
     {
-      std::string d(queue_.take());
+      std::string d(queue_.get());
       printf("tid=%d, get data = %s, size = %zd\n", muduo::CurrentThread::tid(), d.c_str(), queue_.size());
       running = (d != "stop");
     }
@@ -70,7 +71,7 @@ class Test
            muduo::CurrentThread::name());
   }
 
-  muduo::BlockingQueue<std::string> queue_;
+  muduo::BoundedBlockingQueue<std::string> queue_;
   muduo::CountDownLatch latch_;
   boost::ptr_vector<muduo::Thread> threads_;
 };

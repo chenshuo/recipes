@@ -4,6 +4,7 @@ CXXFLAGS+=-O2
 HEADERS=$(wildcard *.h)
 TESTS= atomic_unittest \
        blockingqueue_test \
+       boundedblockingqueue_test \
        exception_test \
        fork_test \
        singleton_test \
@@ -23,6 +24,8 @@ $(TESTS):
 atomic_unittest: test/Atomic_unittest.cc
 
 blockingqueue_test: test/BlockingQueue_test.cc CountDownLatch.cc Thread.cc
+
+boundedblockingqueue_test: test/BoundedBlockingQueue_test.cc CountDownLatch.cc Thread.cc
 
 exit_deadlock: test/ExitDeadLock.cc
 	g++ $(CXXFLAGS) -o $@ $(filter %.cc,$^) -lpthread
