@@ -24,7 +24,7 @@ class BlockingQueue : boost::noncopyable
  public:
   BlockingQueue()
     : mutex_(),
-      cond_(mutex_),
+      notEmpty_(mutex_),
       queue_()
   {
   }
@@ -33,7 +33,7 @@ class BlockingQueue : boost::noncopyable
   {
     MutexLockGuard lock(mutex_);
     queue_.push_back(x);
-    cond_.notify();
+    notEmpty_.notify();
   }
 
   T take()
@@ -41,7 +41,7 @@ class BlockingQueue : boost::noncopyable
     MutexLockGuard lock(mutex_);
     while (queue_.empty())
     {
-      cond_.wait();
+      notEmpty_.wait();
     }
     assert(!queue_.empty());
     T front(queue_.front());
@@ -57,7 +57,7 @@ class BlockingQueue : boost::noncopyable
 
  private:
   mutable MutexLock mutex_;
-  Condition         cond_;
+  Condition         notEmpty_;
   std::deque<T>     queue_;
 };
 
