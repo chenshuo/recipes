@@ -5,7 +5,15 @@
 #include <string.h>
 #include <unistd.h>
 #include <netinet/ip.h>
+#include <netinet/tcp.h>
 #include <linux/if_ether.h>
+
+void tcp_input(int fd, const void* input, const void* payload, int tot_len)
+{
+  const struct iphdr* iphdr = static_cast<const struct iphdr*>(input);
+  const struct tcphdr* tcphdr = static_cast<const struct tcphdr*>(payload);
+
+}
 
 int main()
 {
@@ -39,19 +47,22 @@ int main()
       exit(1);
     }
     printf("read %d bytes from tunnel interface %s.\n", nread, ifname);
-    const int iphdr_len = iphdr.ihl*4;
 
     if (nread >= iphdr_size
         && iphdr.version == 4
-        && iphdr_len >= iphdr_size
-        && iphdr_len <= nread
+        && iphdr.ihl*4 >= iphdr_size
+        && iphdr.ihl*4 <= nread
         && iphdr.tot_len == htons(nread)
-        && in_checksum(buf, iphdr_len) == 0)
+        && in_checksum(buf, iphdr.ihl*4) == 0)
     {
-      const void* payload = buf + iphdr_len;
+      const void* payload = buf + iphdr.ihl*4;
       if (iphdr.protocol == IPPROTO_ICMP)
       {
         icmp_input(fd, buf, payload, nread);
+      }
+      else if (iphdr.protocol == IPPROTO_TCP)
+      {
+        tcp_input(fd, buf, payload, nread);
       }
     }
     else
