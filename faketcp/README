@@ -1,0 +1,17 @@
+icmpecho
+reply every ping command.
+
+to try it:
+1. make
+2. sudo ./icmpecho
+3. in another window, set ip of tun0 device.
+   sudo ifconfig tun0 192.168.0.1/24
+   or
+   sudo ifconfig tun0 10.0.0.1/24
+4. ping 192.168.0.2
+   or
+   ping 192.168.0.3
+   or
+   ping 192.168.0.4
+   or
+   ping 192.168.0.254
