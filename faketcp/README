@@ -1,4 +1,4 @@
-icmpecho
+** icmpecho
 reply every ping command.
 
 to try it:
@@ -15,3 +15,63 @@ to try it:
    ping 192.168.0.4
    or
    ping 192.168.0.254
+
+** rejectall
+reject all tcp connections.
+
+to try it:
+1. make
+2. sudo ./rejectall
+3. in another window, set ip of tun0 device.
+   sudo ifconfig tun0 192.168.0.1/24
+   or
+   sudo ifconfig tun0 10.0.0.1/24
+4. nc 192.168.0.2 1000
+   or
+   nc 192.168.0.3 1000
+   or
+   nc 192.168.0.3 4000
+
+** acceptall
+accept all tcp connections.
+
+to try it:
+1. make
+2. sudo ./acceptall
+3. in another window, set ip of tun0 device.
+   sudo ifconfig tun0 192.168.0.1/24
+   or
+   sudo ifconfig tun0 10.0.0.1/24
+4. nc 192.168.0.2 1000
+   or
+   nc 192.168.0.3 1000
+   or
+   nc 192.168.0.3 4000
+
+** discardall
+accept all tcp connections, and discard all incoming data.
+
+to try it:
+1. make
+2. sudo ./discardall
+3. in another window, set ip of tun0 device.
+   sudo ifconfig tun0 192.168.0.1/24
+   or
+   sudo ifconfig tun0 10.0.0.1/24
+4. nc 192.168.0.2 1000
+   or
+   nc 192.168.0.3 1000
+   or
+   nc 192.168.0.3 4000
+
+** connectmany
+connect to ip:port for many times concurrently.
+
+to try it:
+1. make
+2. sudo ./connectmany 192.168.0.1 2007 1000
+3. in another window, set ip of tun0 device.
+   sudo ifconfig tun0 192.168.0.1/24
+4. start a concurrent tcp server which listens port 2007
+   eg. muduo/examples/simple/echo
+5. hit ENTER in 1st window, start connecting
