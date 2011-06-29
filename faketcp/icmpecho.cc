@@ -9,14 +9,6 @@
 
 int main()
 {
-  union
-  {
-    unsigned char buf[ETH_FRAME_LEN];
-    struct iphdr iphdr;
-  };
-
-  const int iphdr_size = sizeof iphdr;
-
   char ifname[IFNAMSIZ] = "tun%d";
   int fd = tun_alloc(ifname);
 
@@ -31,6 +23,14 @@ int main()
 
   for (;;)
   {
+    union
+    {
+      unsigned char buf[ETH_FRAME_LEN];
+      struct iphdr iphdr;
+    };
+
+    const int iphdr_size = sizeof iphdr;
+
     int nread = read(fd, buf, sizeof(buf));
     if (nread < 0)
     {
@@ -39,8 +39,8 @@ int main()
       exit(1);
     }
     printf("read %d bytes from tunnel interface %s.\n", nread, ifname);
-    const int iphdr_len = iphdr.ihl*4;
 
+    const int iphdr_len = iphdr.ihl*4;
     if (nread >= iphdr_size
         && iphdr.version == 4
         && iphdr_len >= iphdr_size
