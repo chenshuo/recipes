@@ -1,0 +1,13 @@
+.PS
+
+R: box "\fCrouter\fR"
+move
+A: box "\fCatom\fR"
+circle rad 0.02 at R.s filled 1
+circle rad 0.02 at A.s filled 1
+line from R.s down 0.4 "" ".1 " rjust
+line from A.s down 0.4 "" ".2 " rjust
+linethick = 2
+E: line from R.sw - (0.2, 0.4) to A.se - (-0.2, 0.4) "" "" "Ethernet"
+"10.0.0.0/24  " rjust at E.w
+.PE

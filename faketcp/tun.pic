@@ -1,0 +1,23 @@
+.PS
+
+R: box "\fCrouter\fR"
+move
+A: box "\fCatom\fR"
+F: box "\fIfaketcp\fR" at last box + (0, 1)
+
+circle rad 0.02 at R.s filled 1
+circle rad 0.02 at A.s filled 1
+line from R.s down 0.4 "" ".1 " rjust
+line from A.s down 0.4 "" ".2 " rjust
+
+circle rad 0.02 at F.e filled 1
+circle rad 0.02 at A.e filled 1
+line from F.e right 0.4 "" ".\fIX\fR " rjust
+line from A.e right 0.4 "" ".1 " rjust
+
+linethick = 2
+E: line from R.sw - (0.2, 0.4) to A.se - (-0.2, 0.4) "" "" "Ethernet"
+"10.0.0.0/24  " rjust at E.w
+T: line from F.ne + (0.4, 0.2) to A.se + (0.4, -0.2) " TUN" ljust
+"192.168.0.0/24" "" at T.n
+.PE
