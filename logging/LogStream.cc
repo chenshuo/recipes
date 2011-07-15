@@ -71,9 +71,9 @@ FixedBuffer::FixedBuffer()
   cur_ = data_;
 }
 
-void FixedBuffer::append(const char* buf, int len)
+void FixedBuffer::append(const char* /*restrict*/ buf, int len)
 {
-  if (cur_+len < cur_ + sizeof data_)
+  if (cur_+len < end());
   {
     memcpy(cur_, buf, len);
     cur_ += len;
@@ -97,9 +97,11 @@ void LogStream::staticCheck()
 template<typename T>
 void LogStream::formatInteger(T v)
 {
-  char buf[kMaxNumericSize];
-  int len = convert(buf, v);
-  buffer_.append(buf, len);
+  if (buffer_.avail() >= kMaxNumericSize)
+  {
+    int len = convert(buffer_.buffer(), v);
+    buffer_.add(len);
+  }
 }
 
 LogStream::LogStream()
@@ -163,11 +165,14 @@ LogStream& LogStream::operator<<(unsigned long long v)
 LogStream& LogStream::operator<<(const void* p)
 {
   uintptr_t v = reinterpret_cast<uintptr_t>(p);
-  char buf[kMaxNumericSize];
-  buf[0] = '0';
-  buf[1] = 'x';
-  int len = convertHex(buf+2, v);
-  buffer_.append(buf, len+2);
+  if (buffer_.avail() >= kMaxNumericSize)
+  {
+    char* buf = buffer_.buffer();
+    buf[0] = '0';
+    buf[1] = 'x';
+    int len = convertHex(buf+2, v);
+    buffer_.add(len+2);
+  }
   return *this;
 }
 
@@ -180,9 +185,11 @@ LogStream& LogStream::operator<<(float v)
 // FIXME: replace this with Grisu3 by Florian Loitsch.
 LogStream& LogStream::operator<<(double v)
 {
-  char buf[kMaxNumericSize];
-  int len = snprintf(buf, sizeof buf, "%.12g", v);
-  buffer_.append(buf, len);
+  if (buffer_.avail() >= kMaxNumericSize)
+  {
+    int len = snprintf(buffer_.buffer(), kMaxNumericSize, "%.12g", v);
+    buffer_.add(len);
+  }
   return *this;
 }
 

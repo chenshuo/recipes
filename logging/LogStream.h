@@ -22,13 +22,20 @@ class FixedBuffer : boost::noncopyable
   const char* data() const { return data_; }
   int length() const { return cur_ - data_; }
 
+  // write to data_ directly
+  char* buffer() { return cur_; }
+  int avail() const { return end() - cur_; }
+  void add(int len) { cur_ += len; }
+
   // for used by GDB
   const char* debugString();
   // for used by unit test
-  string testString() const { return string(data_, length()); }
+  string asString() const { return string(data_, length()); }
   void reset() { cur_ = data_; }
 
  private:
+  const char* end() const { return cur_ + sizeof data_; }
+
   char data_[4000];
   char* cur_;
 };
