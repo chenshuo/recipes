@@ -1,13 +1,13 @@
-#ifndef MUDUO_LOG_LOGGING_H
-#define MUDUO_LOG_LOGGING_H
+#ifndef MUDUO_BASE_LOGGING_H
+#define MUDUO_BASE_LOGGING_H
 
-#include <ostream>
+#include "LogStream.h"
+#include <datetime/Timestamp.h>
 #include <boost/scoped_ptr.hpp>
 
 namespace muduo
 {
 
-class LoggerImpl;
 class Logger
 {
  public:
@@ -28,13 +28,31 @@ class Logger
   Logger(const char* file, int line, bool toAbort);
   ~Logger();
 
-  std::ostream& stream();
+  LogStream& stream() { return impl_.stream_; }
 
   static LogLevel logLevel();
   static void setLogLevel(LogLevel level);
 
  private:
-  boost::scoped_ptr<LoggerImpl> impl_;
+
+class Impl
+{
+ public:
+  typedef Logger::LogLevel LogLevel;
+  Impl(LogLevel level, int old_errno, const char* file, int line);
+  void finish();
+
+  Timestamp time_;
+  LogStream stream_;
+  LogLevel level_;
+  const char* fullname_;
+  int line_;
+  const char* basename_;
+  const char* function_;
+};
+
+  Impl impl_;
+
 };
 
 #define LOG_TRACE if (muduo::Logger::logLevel() <= muduo::Logger::TRACE) \
@@ -75,4 +93,4 @@ inline To implicit_cast(From const &f) {
 
 }
 
-#endif  // MUDUO_LOG_LOGGING_H
+#endif  // MUDUO_BASE_LOGGING_H

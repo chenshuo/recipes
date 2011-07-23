@@ -11,6 +11,8 @@
 
 namespace muduo
 {
+
+/*
 class LoggerImpl
 {
  public:
@@ -19,15 +21,14 @@ class LoggerImpl
   void finish();
 
   Timestamp time_;
-  std::ostringstream stream_;
+  LogStream stream_;
   LogLevel level_;
   const char* fullname_;
   int line_;
   const char* basename_;
   const char* function_;
-
-  static const char* LogLevelName[];
 };
+*/
 
 __thread char t_errnobuf[512];
 
@@ -46,11 +47,7 @@ Logger::LogLevel initLogLevel()
 
 Logger::LogLevel g_logLevel = initLogLevel();
 
-}
-
-using namespace muduo;
-
-const char* LoggerImpl::LogLevelName[Logger::NUM_LOG_LEVELS] =
+const char* LogLevelName[Logger::NUM_LOG_LEVELS] =
 {
   "TRACE",
   "DEBUG",
@@ -60,7 +57,11 @@ const char* LoggerImpl::LogLevelName[Logger::NUM_LOG_LEVELS] =
   "FATAL",
 };
 
-LoggerImpl::LoggerImpl(LogLevel level, int savedErrno, const char* file, int line)
+}
+
+using namespace muduo;
+
+Logger::Impl::Impl(LogLevel level, int savedErrno, const char* file, int line)
   : time_(Timestamp::now()),
     stream_(),
     level_(level),
@@ -71,56 +72,51 @@ LoggerImpl::LoggerImpl(LogLevel level, int savedErrno, const char* file, int lin
 {
   const char* path_sep_pos = strrchr(fullname_, '/');
   basename_ = (path_sep_pos != NULL) ? path_sep_pos + 1 : fullname_;
-  char message_head[512];
-  snprintf(message_head, sizeof(message_head), "%s %5d %s ",
-      time_.toFormattedString().c_str(), CurrentThread::tid(),
-      LogLevelName[level]);
-  stream_ << message_head;
+
+  stream_ << time_.toFormattedString() << ' '
+          << Fmt("%5d ", CurrentThread::tid())
+          << LogLevelName[level] << ' ';
   if (savedErrno != 0)
   {
     stream_ << strerror_tl(savedErrno) << " (errno=" << savedErrno << ") ";
   }
 }
 
-void LoggerImpl::finish()
+void Logger::Impl::finish()
 {
   stream_ << " - " << basename_ << ":" << line_ << '\n';
 }
 
-std::ostream& Logger::stream()
-{
-  return impl_->stream_;
-}
-
 Logger::Logger(const char* file, int line)
-  : impl_(new LoggerImpl(INFO, 0, file, line))
+  : impl_(INFO, 0, file, line)
 {
 }
 
 Logger::Logger(const char* file, int line, LogLevel level, const char* func)
-  : impl_(new LoggerImpl(level, 0, file, line))
+  : impl_(level, 0, file, line)
 {
-  impl_->stream_ << func << ' ';
+  impl_.stream_ << func << ' ';
 }
 
 Logger::Logger(const char* file, int line, LogLevel level)
-  : impl_(new LoggerImpl(level, 0, file, line))
+  : impl_(level, 0, file, line)
 {
 }
 
 Logger::Logger(const char* file, int line, bool toAbort)
-  : impl_(new LoggerImpl(toAbort?FATAL:ERROR, errno, file, line))
+  : impl_(toAbort?FATAL:ERROR, errno, file, line)
 {
 }
 
 Logger::~Logger()
 {
-  impl_->finish();
-  std::string buf(impl_->stream_.str());
-  ssize_t n = ::write(1, buf.data(), buf.size());
+  impl_.finish();
+  const LogStream::Buffer& buf(stream().buffer());
+  // ssize_t n = ::write(1, buf.data(), buf.length());
+  size_t n = fwrite(buf.data(), 1, buf.length(), stdout);
   //FIXME check n
   (void)n;
-  if (impl_->level_ == FATAL)
+  if (impl_.level_ == FATAL)
   {
     abort();
   }

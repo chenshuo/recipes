@@ -194,3 +194,17 @@ BOOST_AUTO_TEST_CASE(testLogStreamStrings)
   os << chenshuo;
   BOOST_CHECK_EQUAL(buf.asString(), string("Hello Shuo Chen"));
 }
+
+BOOST_AUTO_TEST_CASE(testLogStreamFmts)
+{
+  muduo::LogStream os;
+  const muduo::LogStream::Buffer& buf = os.buffer();
+
+  os << muduo::Fmt("%4d", 1);
+  BOOST_CHECK_EQUAL(buf.asString(), string("   1"));
+  os.resetBuffer();
+
+  os << muduo::Fmt("%4.2f", 1.2);
+  BOOST_CHECK_EQUAL(buf.asString(), string("1.20"));
+  os.resetBuffer();
+}

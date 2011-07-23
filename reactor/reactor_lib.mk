@@ -1,6 +1,6 @@
 CXXFLAGS = -O0 -g  -Wall -I ../.. -pthread
 LDFLAGS = -lpthread -lmuduo -L.
-BASE_SRC = ../../logging/Logging.cc ../../thread/Thread.cc ../../datetime/Timestamp.cc
+BASE_SRC = ../../logging/Logging.cc ../../logging/LogStream.cc ../../thread/Thread.cc ../../datetime/Timestamp.cc
 MUDUO_SRC = $(notdir $(LIB_SRC) $(BASE_SRC))
 OBJS = $(patsubst %.cc,%.o,$(MUDUO_SRC))
 

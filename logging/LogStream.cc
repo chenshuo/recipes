@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <boost/static_assert.hpp>
+#include <boost/type_traits/is_arithmetic.hpp>
 #include <string.h>
 #include <stdint.h>
 
@@ -99,7 +100,7 @@ void LogStream::formatInteger(T v)
 {
   if (buffer_.avail() >= kMaxNumericSize)
   {
-    int len = convert(buffer_.buffer(), v);
+    int len = convert(buffer_.current(), v);
     buffer_.add(len);
   }
 }
@@ -167,7 +168,7 @@ LogStream& LogStream::operator<<(const void* p)
   uintptr_t v = reinterpret_cast<uintptr_t>(p);
   if (buffer_.avail() >= kMaxNumericSize)
   {
-    char* buf = buffer_.buffer();
+    char* buf = buffer_.current();
     buf[0] = '0';
     buf[1] = 'x';
     int len = convertHex(buf+2, v);
@@ -187,7 +188,7 @@ LogStream& LogStream::operator<<(double v)
 {
   if (buffer_.avail() >= kMaxNumericSize)
   {
-    int len = snprintf(buffer_.buffer(), kMaxNumericSize, "%.12g", v);
+    int len = snprintf(buffer_.current(), kMaxNumericSize, "%.12g", v);
     buffer_.add(len);
   }
   return *this;
@@ -211,3 +212,26 @@ LogStream& LogStream::operator<<(const string& v)
   return *this;
 }
 
+template<typename T>
+Fmt::Fmt(const char* fmt, T val)
+{
+  BOOST_STATIC_ASSERT(boost::is_arithmetic<T>::value == true);
+
+  length_ = snprintf(buf_, sizeof buf_, fmt, val);
+}
+
+// Explicit instantiations
+
+template Fmt::Fmt(const char* fmt, char);
+
+template Fmt::Fmt(const char* fmt, short);
+template Fmt::Fmt(const char* fmt, unsigned short);
+template Fmt::Fmt(const char* fmt, int);
+template Fmt::Fmt(const char* fmt, unsigned int);
+template Fmt::Fmt(const char* fmt, long);
+template Fmt::Fmt(const char* fmt, unsigned long);
+template Fmt::Fmt(const char* fmt, long long);
+template Fmt::Fmt(const char* fmt, unsigned long long);
+
+template Fmt::Fmt(const char* fmt, float);
+template Fmt::Fmt(const char* fmt, double);

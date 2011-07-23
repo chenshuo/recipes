@@ -23,7 +23,7 @@ class FixedBuffer : boost::noncopyable
   int length() const { return cur_ - data_; }
 
   // write to data_ directly
-  char* buffer() { return cur_; }
+  char* current() { return cur_; }
   int avail() const { return end() - cur_; }
   void add(int len) { cur_ += len; }
 
@@ -73,6 +73,7 @@ class LogStream : boost::noncopyable
   self& operator<<(const char*);
   self& operator<<(const string&);
 
+  void append(const char* data, int len) { buffer_.append(data, len); }
   const Buffer& buffer() const { return buffer_; }
   void resetBuffer() { buffer_.reset(); }
 
@@ -86,6 +87,26 @@ class LogStream : boost::noncopyable
 
   static const int kMaxNumericSize = 32;
 };
+
+class Fmt : boost::noncopyable
+{
+ public:
+  template<typename T>
+  Fmt(const char* fmt, T val);
+
+  const char* data() const { return buf_; }
+  int length() const { return length_; }
+
+ private:
+  char buf_[32];
+  int length_;
+};
+
+inline LogStream& operator<<(LogStream& s, const Fmt& fmt)
+{
+  s.append(fmt.data(), fmt.length());
+  return s;
+}
 
 }
 #endif  // MUDUO_BASE_FASTOOUTPUTSTREAM_H
