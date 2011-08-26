@@ -1,6 +1,7 @@
 package muduo;
 
-option java_outer_classname = "Proto";
+option java_package = "muduo.codec.tests";
+option java_outer_classname = "QueryProtos";
 
 message Query {
   required int64 id = 1;

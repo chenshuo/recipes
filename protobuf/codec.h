@@ -49,7 +49,7 @@ inline std::string encode(const google::protobuf::Message& message)
   if (succeed)
   {
     const char* begin = result.c_str() + kHeaderLen;
-    int32_t checkSum = adler32(0, reinterpret_cast<const Bytef*>(begin), result.size()-kHeaderLen);
+    int32_t checkSum = adler32(1, reinterpret_cast<const Bytef*>(begin), result.size()-kHeaderLen);
     int32_t be32 = ::htonl(checkSum);
     result.append(reinterpret_cast<char*>(&be32), sizeof be32);
     
@@ -105,7 +105,7 @@ inline google::protobuf::Message* decode(const std::string& buf)
   {
     int32_t expectedCheckSum = asInt32(buf.c_str() + buf.size() - kHeaderLen);
     const char* begin = buf.c_str();
-    int32_t checkSum = adler32(0, reinterpret_cast<const Bytef*>(begin), len-kHeaderLen);
+    int32_t checkSum = adler32(1, reinterpret_cast<const Bytef*>(begin), len-kHeaderLen);
     if (checkSum == expectedCheckSum)
     {
       int32_t nameLen = asInt32(buf.c_str());
