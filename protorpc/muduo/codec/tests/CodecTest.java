@@ -48,7 +48,7 @@ public class CodecTest {
         Message message = (Message) decoder.decode(null, null, buf);
         assertEquals(query, message);
     }
-    
+
     @Test
     public void testQuery2() throws Exception {
         ProtobufEncoder encoder = new ProtobufEncoder();
@@ -61,7 +61,7 @@ public class CodecTest {
         ChannelBuffer buf2 = new BigEndianHeapChannelBuffer(buf.readableBytes() + 8);
         buf2.writeInt(123);
         buf2.writeBytes(buf);
-        
+
         buf2.readInt();
         ProtobufDecoder decoder = new ProtobufDecoder();
         decoder.addMessageType(Query.getDefaultInstance());

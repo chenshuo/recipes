@@ -20,7 +20,7 @@ public abstract class RpcPeer {
     public void setNewChannelCallback(NewChannelCallback newChannelCallback) {
         this.newChannelCallback = newChannelCallback;
     }
-    
+
     protected void setupNewChannel(RpcChannel rpcChannel) {
         Channel channel = rpcChannel.getChannel();
         RpcMessageHandler handler = (RpcMessageHandler) channel.getPipeline().get("handler");
@@ -30,6 +30,6 @@ public abstract class RpcPeer {
             newChannelCallback.run(rpcChannel);
         }
     }
-    
+
     public abstract void channelConnected(Channel channel);
 }
