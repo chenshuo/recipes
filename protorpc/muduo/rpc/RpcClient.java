@@ -1,7 +1,9 @@
 package muduo.rpc;
 
 import java.net.SocketAddress;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
@@ -13,7 +15,7 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 public class RpcClient extends RpcPeer {
 
     ClientBootstrap bootstrap;
-    private RpcChannel rpcChannel;
+    private volatile RpcChannel rpcChannel;
 
     public RpcClient() {
         ChannelFactory channelFactory = new NioClientSocketChannelFactory(
@@ -25,10 +27,20 @@ public class RpcClient extends RpcPeer {
     }
 
     public RpcChannel blockingConnect(SocketAddress addr) {
-        Channel channel = bootstrap.connect(addr).awaitUninterruptibly().getChannel();
-        rpcChannel = new RpcChannel(channel);
-        RpcMessageHandler handler = (RpcMessageHandler) channel.getPipeline().get("handler");
-        handler.setChannel(rpcChannel);
+        final CountDownLatch latch = new CountDownLatch(1);
+        startConnect(addr, new NewChannelCallback() {
+            @Override
+            public void run(RpcChannel channel) {
+                assert channel == RpcClient.this.rpcChannel;
+                latch.countDown();
+            }
+        });
+        try {
+            latch.await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         return rpcChannel;
     }
 
@@ -44,10 +56,16 @@ public class RpcClient extends RpcPeer {
         this.newChannelCallback = newChannelCallback;
     }
 
+    public void stop() {
+        bootstrap.releaseExternalResources();
+    }
+
     @Override
     public void channelConnected(Channel channel) {
-        rpcChannel = new RpcChannel(channel);
-        setupNewChannel(rpcChannel);
+        if (rpcChannel == null) {
+            rpcChannel = new RpcChannel(channel);
+            setupNewChannel(rpcChannel);
+        }
     }
 
     public RpcChannel getChannel() {

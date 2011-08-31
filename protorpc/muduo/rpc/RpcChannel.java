@@ -13,24 +13,38 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
 
+import com.google.protobuf.BlockingRpcChannel;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
+import com.google.protobuf.ServiceException;
 
-public class RpcChannel implements com.google.protobuf.RpcChannel {
+public class RpcChannel implements com.google.protobuf.RpcChannel, BlockingRpcChannel {
 
-    private class Outstanding {
+    private final static class BlockingRpcCallback implements RpcCallback<Message> {
+        public Message response;
+
+        @Override
+        public void run(Message response) {
+            synchronized (this) {
+                this.response = response;
+                notify();
+            }
+        }
+    }
+
+    private final static class Outstanding {
+
+        public Message responsePrototype;
+        public RpcCallback<Message> done;
 
         public Outstanding(Message responsePrototype, RpcCallback<Message> done) {
             this.responsePrototype = responsePrototype;
             this.done = done;
         }
-
-        public Message responsePrototype;
-        public RpcCallback<Message> done;
     }
 
     private Channel channel;
@@ -50,17 +64,24 @@ public class RpcChannel implements com.google.protobuf.RpcChannel {
         return channel;
     }
 
+    public void disconnect() {
+        channel.disconnect();
+    }
+
     public void messageReceived(ChannelHandlerContext ctx, final MessageEvent e) {
         RpcMessage message = (RpcMessage) e.getMessage();
         assert e.getChannel() == channel;
-        System.out.println(message);
+        // System.out.println(message);
         if (message.getType() == MessageType.REQUEST) {
             doRequest(message);
         } else if (message.getType() == MessageType.RESPONSE) {
             Outstanding o = outstandings.get(message.getId());
+            // System.err.println("messageReceived " + this);
             if (o != null) {
                 Message resp = fromByteString(o.responsePrototype, message.getResponse());
                 o.done.run(resp);
+            } else {
+                System.err.println("Unknown id " + message.getId());
             }
         }
     }
@@ -147,4 +168,22 @@ public class RpcChannel implements com.google.protobuf.RpcChannel {
         channel.write(message);
     }
 
+    @Override
+    public Message callBlockingMethod(MethodDescriptor method, RpcController controller,
+            Message request, Message responsePrototype) throws ServiceException {
+        BlockingRpcCallback done = new BlockingRpcCallback();
+        callMethod(method, controller, request, responsePrototype, done);
+        // if (channel instanceof NioClientSocketChannel)
+        // channel.get
+        // assert
+        synchronized (done) {
+            while (done.response == null) {
+                try {
+                    done.wait();
+                } catch (InterruptedException e) {
+                }
+            }
+        }
+        return done.response;
+    }
 }

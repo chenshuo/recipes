@@ -1,3 +1,4 @@
+package muduo;
 option java_package = "muduo.rpc.proto";
 option java_outer_classname = "RpcProto";
 

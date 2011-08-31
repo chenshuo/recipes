@@ -38,7 +38,11 @@ public class RpcTest {
     @Test
     public void testDecoder() throws Exception {
         RpcEncoder encoder = new RpcEncoder();
-        RpcMessage message = RpcMessage.newBuilder().setType(MessageType.REQUEST).setId(1).build();
+        SudokuRequest request = SudokuRequest.newBuilder().setCheckerboard("001010").build();
+        RpcMessage message = RpcMessage.newBuilder().setType(MessageType.REQUEST).setId(1)
+                .setService(SudokuService.getDescriptor().getFullName())
+                .setMethod(SudokuService.getDescriptor().getMethods().get(0).getName())
+                .setRequest(request.toByteString()).build();
         ChannelBuffer buffer = (ChannelBuffer) encoder.encode(null, null, message);
 
         RpcDecoder decoder = new RpcDecoder();
