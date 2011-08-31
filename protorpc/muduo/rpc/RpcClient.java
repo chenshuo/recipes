@@ -26,6 +26,11 @@ public class RpcClient extends RpcPeer {
         bootstrap.setPipelineFactory(new RpcChannelPiplineFactory(this));
     }
 
+    public RpcClient(ChannelFactory channelFactory) {
+        bootstrap = new ClientBootstrap(channelFactory);
+        bootstrap.setPipelineFactory(new RpcChannelPiplineFactory(this));
+    }
+
     public RpcChannel blockingConnect(SocketAddress addr) {
         final CountDownLatch latch = new CountDownLatch(1);
         startConnect(addr, new NewChannelCallback() {
