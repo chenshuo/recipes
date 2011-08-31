@@ -13,7 +13,7 @@ public class EchoClient {
 
     public static void main(String[] args) throws Exception {
         RpcClient client = new RpcClient();
-        RpcChannel channel = client.blockingConnect(new InetSocketAddress("localhost", 8888));
+        RpcChannel channel = client.blockingConnect(new InetSocketAddress(args[0], 8888));
         BlockingInterface remoteService = EchoService.newBlockingStub(channel);
         String payload = new String(new byte[100]);
         payload = "Hello";
