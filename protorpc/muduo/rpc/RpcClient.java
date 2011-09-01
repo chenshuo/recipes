@@ -54,8 +54,7 @@ public class RpcClient extends RpcPeer {
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                System.err.println("operationComplete");
-                // channelConnected(future.getChannel());
+                //System.err.println("operationComplete");
             }
         });
         this.newChannelCallback = newChannelCallback;
