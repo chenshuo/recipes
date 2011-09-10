@@ -80,6 +80,7 @@ public class RpcChannel implements com.google.protobuf.RpcChannel, BlockingRpcCh
             if (o != null) {
                 Message resp = fromByteString(o.responsePrototype, message.getResponse());
                 o.done.run(resp);
+                outstandings.remove(message.getId());
             } else {
                 System.err.println("Unknown id " + message.getId());
             }

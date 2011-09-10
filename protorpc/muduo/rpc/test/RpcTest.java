@@ -26,12 +26,27 @@ import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
 
+import echo.EchoProto.EchoService;
+import echo.EchoServer;
+import echo.EchoProto.EchoRequest;
+
 public class RpcTest {
 
     @Test
     public void testEncoder() throws Exception {
         RpcEncoder encoder = new RpcEncoder();
         RpcMessage message = RpcMessage.newBuilder().setType(MessageType.REQUEST).setId(1).build();
+        encoder.encode(null, null, message);
+    }
+
+    @Test
+    public void testEncoder2() throws Exception {
+        RpcEncoder encoder = new RpcEncoder();
+        EchoRequest request = EchoRequest.newBuilder().setPayload("Hello").build();
+        RpcMessage message = RpcMessage.newBuilder().setType(MessageType.REQUEST).setId(1)
+                .setService(EchoService.getDescriptor().getFullName())
+                .setMethod(EchoService.getDescriptor().getMethods().get(0).getName())
+                .setRequest(request.toByteString()).build();
         encoder.encode(null, null, message);
     }
 
