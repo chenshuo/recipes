@@ -1,4 +1,5 @@
-// version 00: half of speed of sort(1), only be able to sort 1GB file
+// version 01: only be able to sort 1GB file
+// 30% faster than sort(1) for 1GB file.
 
 #include <boost/noncopyable.hpp>
 
@@ -11,6 +12,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <sys/resource.h>
 
@@ -97,10 +99,68 @@ class OutputFile : boost::noncopyable
 };
 
 const int kRecordSize = 100;
+const bool kUseReadLine = false;
+
+void readInput(const char* filename, std::vector<string>* data)
+{
+  InputFile in(filename);
+  string line;
+  int64_t totalSize = 0;
+  data->reserve(10000000);
+
+  if (kUseReadLine)
+  {
+    while (in.readLine(&line))
+    {
+      totalSize += line.size();
+      data->push_back(line);
+    }
+  }
+  else
+  {
+    char buf[kRecordSize];
+    while (int n = in.read(buf, sizeof buf))
+    {
+      totalSize += n;
+      line.assign(buf, n);
+      data->push_back(line);
+    }
+  }
+}
+
+struct Key
+{
+  char key[10];
+  int index;
+
+  Key(const string& record, int idx)
+    : index(idx)
+  {
+    memcpy(key, record.data(), 10);
+  }
+
+  bool operator<(const Key& rhs) const
+  {
+    return memcmp(key, rhs.key, sizeof key) < 0;
+  }
+};
+
+void sort(const std::vector<string>& data, std::vector<Key>* keys)
+{
+  Timestamp start = Timestamp::now();
+  keys->reserve(data.size());
+
+  for (size_t i = 0; i < data.size(); ++i)
+  {
+    keys->push_back(Key(data[i], i));
+  }
+  printf("make keys %f\n", timeDifference(Timestamp::now(), start));
+
+  std::sort(keys->begin(), keys->end());
+}
 
 int main(int argc, char* argv[])
 {
-  bool kUseReadLine = false;
   bool kSortDummyData = false;
 
   {
@@ -128,56 +188,29 @@ int main(int argc, char* argv[])
   std::vector<string> data;
 
   // read
-  {
-    InputFile in(argv[1]);
-    string line;
-    int64_t totalSize = 0;
-    data.reserve(10000000);
-
-    if (kUseReadLine)
-    {
-      while (in.readLine(&line))
-      {
-        totalSize += line.size();
-        data.push_back(line);
-      }
-    }
-    else
-    {
-      char buf[kRecordSize];
-      while (int n = in.read(buf, sizeof buf))
-      {
-        totalSize += n;
-        line.assign(buf, n);
-        data.push_back(line);
-      }
-    }
-  }
+  readInput(argv[1], &data);
 
   Timestamp readDone = Timestamp::now();
   printf("%zd\nread  %f\n", data.size(), timeDifference(readDone, start));
 
   // sort
-  if (kSortDummyData)
-  {
-    std::sort(dummyData.begin(), dummyData.end());
-  }
-  else
-  {
-    std::sort(data.begin(), data.end());
-  }
+  std::vector<Key> keys;
+  sort(data, &keys);
 
   Timestamp sortDone = Timestamp::now();
   printf("sort  %f\n", timeDifference(sortDone, readDone));
 
   // output
+  // char dummyBuf[256];
   {
     OutputFile out("output");
-    for (std::vector<string>::iterator it = data.begin();
-        it != data.end();
+    for (std::vector<Key>::iterator it = keys.begin();
+        it != keys.end();
         ++it)
     {
-      out.writeLine(*it);
+      // memcpy(dummyBuf, data[it->index].data(), 100);
+
+      out.writeLine(data[it->index]);
     }
   }
   Timestamp writeDone = Timestamp::now();
