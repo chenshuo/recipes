@@ -1,4 +1,5 @@
 // version 01: only be able to sort 1GB file
+// sort with keys
 // 30% faster than sort(1) for 1GB file.
 
 #include <boost/noncopyable.hpp>
