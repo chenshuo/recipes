@@ -1,3 +1,7 @@
+// version 11: sort 100M integers
+// sort by chunks, then merge
+// overlap output and merge with threads.
+
 #include <boost/noncopyable.hpp>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>

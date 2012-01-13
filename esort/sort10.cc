@@ -1,3 +1,6 @@
+// version 10: sort 100M integers
+// sort by chunks, then merge
+
 #include <boost/noncopyable.hpp>
 
 #include <datetime/Timestamp.h>

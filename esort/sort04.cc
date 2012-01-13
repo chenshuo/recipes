@@ -1,6 +1,6 @@
 // version 03: pipeline impl to sort large files.
-// reduce memory usage
-// larger buffer
+// reduce memory usage by replacing std::string with fixed-length char array
+// larger IO buffer
 
 #include <boost/noncopyable.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>

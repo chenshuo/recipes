@@ -1,4 +1,5 @@
 // version 03: pipeline impl to sort large files.
+// overlap IO with computing using threads.
 
 #include <boost/noncopyable.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
