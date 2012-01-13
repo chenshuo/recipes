@@ -1,0 +1,8 @@
+
+External sorting experiments
+
+sort00 ~ sort04, the standard sort benchmark, 10-byte key with 90-byte value, 100-byte per record.
+
+sort10 ~ sort12, sort 64-bit integers or doubles.
+
+
