@@ -66,6 +66,8 @@ class InputFile : boost::noncopyable
 };
 
 const int kRecordSize = 100;
+const int kKeySize = 10;
+
 class OutputFile : boost::noncopyable
 {
  public:
@@ -136,13 +138,13 @@ void readInput(InputFile& in, std::vector<string>* data)
 
 struct Key
 {
-  char key[10];
+  char key[kKeySize];
   int index;
 
   Key(const string& record, int idx)
     : index(idx)
   {
-    memcpy(key, record.data(), 10);
+    memcpy(key, record.data(), sizeof key);
   }
 
   bool operator<(const Key& rhs) const
@@ -321,7 +323,8 @@ struct Record
 
   bool operator<(const Record& rhs) const
   {
-    return memcmp(data, rhs.data, sizeof data) > 0;
+    // make_heap to build min-heap, for merging
+    return memcmp(data, rhs.data, kKeySize) > 0;
   }
 };
 

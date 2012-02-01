@@ -100,6 +100,7 @@ class OutputFile : boost::noncopyable
 };
 
 const int kRecordSize = 100;
+const int kKeySize = 10;
 const bool kUseReadLine = false;
 
 void readInput(const char* filename, std::vector<string>* data)
@@ -131,13 +132,13 @@ void readInput(const char* filename, std::vector<string>* data)
 
 struct Key
 {
-  char key[10];
+  char key[kKeySize];
   int index;
 
   Key(const string& record, int idx)
     : index(idx)
   {
-    memcpy(key, record.data(), 10);
+    memcpy(key, record.data(), sizeof key);
   }
 
   bool operator<(const Key& rhs) const
