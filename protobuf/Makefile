@@ -22,7 +22,7 @@ dispatcher_lite: query.pb.h query.pb.cc dispatcher_lite.cc
 dispatcher: query.pb.h query.pb.cc dispatcher.cc
 
 $(BINARIES):
-	g++ $(CXXFLAGS) $(LDFLAGS) $(filter %.cc,$^) -o $@
+	g++ $(CXXFLAGS) $(filter %.cc,$^) -o $@ $(LDFLAGS)
 
 query.pb.h query.pb.cc: query.proto
 	protoc --cpp_out . $<
