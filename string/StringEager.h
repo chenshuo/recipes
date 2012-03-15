@@ -8,13 +8,28 @@
 #ifndef MUDUO_BASE_STRINGEAGER_H
 #define MUDUO_BASE_STRINGEAGER_H
 
-//#include <stddef.h>
-#include <stdint.h>
+#include <stddef.h>  // size_t
+#include <stdint.h>  // uint32_t
 
 namespace muduo
 {
 
-class StringEager
+/**
+ * Eager copy string.
+ *
+ * similiar data structure of vector<char>
+ * sizeof() == 12 on 32-bit
+ * sizeof() == 16 on 64-bit
+ * max_size() == 1GB, on both 32-bit & 64-bit
+ *
+ */
+class StringEager // : copyable
+                  // public boost::less_than_comparable<StringEager>,
+                  // public boost::less_than_comparable<StringEager, const char*>,
+                  // public boost::equality_comparable<StringEager>,
+                  // public boost::equality_comparable<StringEager, const char*>,
+                  // public boost::addable<StringEager>,
+                  // public boost::addable<StringEager, const char*>
 {
  public:
   typedef char          value_type;
@@ -57,6 +72,9 @@ class StringEager
 
  public:
 
+  //
+  // copy control
+  //
   StringEager()
     : start_(kEmpty_),
       size_(0),
@@ -64,7 +82,49 @@ class StringEager
   {
   }
 
+  StringEager(const StringEager&);
+  StringEager& operator=(const StringEager&);
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+  StringEager(StringEager&&);
+  StringEager& operator=(StringEager&&);
+#endif
+
+  ~StringEager();
+
+  //
+  // other constructors
+  //
+  StringEager(const char* str);
+  StringEager(const char* str, size_t);
+
+  //
+  // operators
+  //
+
+  bool operator<(const StringEager&);
+  bool operator<(const char*);
+  bool operator==(const StringEager&);
+  bool operator==(const char*);
+  StringEager& operator+=(const StringEager&);
+  StringEager& operator+=(const char*);
+
+  //
+  // member functions, not conform to the standard
+  //
+
+  void push_back(char c);
+
+  void append(const char* str);
+  void append(const char* str, size_t);
+
+  void assign(const char* str, size_t);
+
+  // FIXME: more
 };
+
+template<typename Stream>
+Stream& operator<<(Stream&, const StringEager&);
 
 }
 #endif  // MUDUO_BASE_STRINGEAGER_H
