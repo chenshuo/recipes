@@ -62,16 +62,6 @@ class StringEager // : copyable
   size_type max_size() const { return 1 << 30; }
   bool empty() const { return size_ == 0; }
 
- private:
-
-  char* start_;
-  uint32_t size_;
-  uint32_t capacity_;
-
-  static char kEmpty_[1];
-
- public:
-
   //
   // copy control
   //
@@ -90,7 +80,13 @@ class StringEager // : copyable
   StringEager& operator=(StringEager&&);
 #endif
 
-  ~StringEager();
+  ~StringEager()
+  {
+    if (start_ != kEmpty_)
+    {
+      delete[] start_;
+    }
+  }
 
   //
   // other constructors
@@ -121,6 +117,14 @@ class StringEager // : copyable
   void assign(const char* str, size_t);
 
   // FIXME: more
+
+ private:
+
+  char* start_;
+  uint32_t size_;
+  uint32_t capacity_;
+
+  static char kEmpty_[1];
 };
 
 template<typename Stream>
