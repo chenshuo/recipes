@@ -207,4 +207,8 @@ BOOST_AUTO_TEST_CASE(testLogStreamFmts)
   os << muduo::Fmt("%4.2f", 1.2);
   BOOST_CHECK_EQUAL(buf.asString(), string("1.20"));
   os.resetBuffer();
+
+  os << muduo::Fmt("%4.2f", 1.2) << muduo::Fmt("%4d", 43);
+  BOOST_CHECK_EQUAL(buf.asString(), string("1.20  43"));
+  os.resetBuffer();
 }

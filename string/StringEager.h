@@ -11,6 +11,8 @@
 #include <stddef.h>  // size_t
 #include <stdint.h>  // uint32_t
 
+// #include <boost/operators.hpp>
+
 namespace muduo
 {
 
@@ -42,7 +44,7 @@ class StringEager // : copyable
   typedef pointer       iterator;
   typedef const_pointer const_iterator;
 
-  static const size_type npos = -1;
+  static const size_type npos = static_cast<size_type>(-1);
 
   const_pointer c_str() const { return start_; }
   const_pointer data() const  { return start_; }
@@ -89,19 +91,20 @@ class StringEager // : copyable
   }
 
   //
-  // other constructors
+  // C-style string constructors & assignments
   //
   StringEager(const char* str);
   StringEager(const char* str, size_t);
+  StringEager& operator=(const char*);
 
   //
   // operators
   //
 
-  bool operator<(const StringEager&);
-  bool operator<(const char*);
-  bool operator==(const StringEager&);
-  bool operator==(const char*);
+  bool operator<(const StringEager&) const;
+  bool operator<(const char*) const;
+  bool operator==(const StringEager&) const;
+  bool operator==(const char*) const;
   StringEager& operator+=(const StringEager&);
   StringEager& operator+=(const char*);
 
@@ -118,13 +121,27 @@ class StringEager // : copyable
 
   // FIXME: more
 
+  void reserve(size_type);
+  void clear() throw();
+  void swap(StringEager& rhs) throw();
+
  private:
 
+  struct NoAlloc { };
+
+  void init(const char* str);
+  StringEager(char* str, uint32_t, uint32_t, NoAlloc);
+  void expandAndAppend(const char* str, size_t len);
+  uint32_t nextCapacity(uint32_t) const;
+  bool equals(const char* str, size_t len) const;
+  bool lessThan(const char* str, size_t len) const;
+
   char* start_;
-  uint32_t size_;
-  uint32_t capacity_;
+  size_type size_;
+  size_type capacity_;
 
   static char kEmpty_[1];
+  static const size_type kMinCapacity_ = 15;
 };
 
 template<typename Stream>
