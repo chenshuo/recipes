@@ -1,4 +1,5 @@
 #include "TimeZone.h"
+#include "Date.h"
 
 #include <boost/noncopyable.hpp>
 #include <algorithm>
@@ -58,7 +59,16 @@ struct Localtime
   { }
 };
 
+inline void fillHMS(unsigned seconds, struct tm* utc)
+{
+  utc->tm_sec = seconds % 60;
+  unsigned minutes = seconds / 60;
+  utc->tm_min = minutes % 60;
+  utc->tm_hour = minutes / 60;
 }
+
+}
+const int kSecondsPerDay = 24*60*60;
 }
 
 using namespace muduo;
@@ -254,7 +264,7 @@ struct tm TimeZone::toLocalTime(time_t seconds) const
   if (local)
   {
     time_t localSeconds = seconds + local->gmtOffset;
-    ::gmtime_r(&localSeconds, &localTime);
+    ::gmtime_r(&localSeconds, &localTime); // FIXME: fromUtcTime
     localTime.tm_isdst = local->isDst;
     localTime.tm_gmtoff = local->gmtOffset;
     localTime.tm_zone = &data.abbreviation[local->arrbIdx];
@@ -269,7 +279,7 @@ time_t TimeZone::fromLocalTime(const struct tm& localTm) const
   const Data& data(*data_);
 
   struct tm tmp = localTm;
-  time_t seconds = ::timegm(&tmp);
+  time_t seconds = ::timegm(&tmp); // FIXME: toUtcTime
   detail::Transition sentry(0, seconds, 0);
   const detail::Localtime* local = findLocaltime(data, sentry, detail::Comp(false));
   // FIXME: localTm.tm_isdst
@@ -277,3 +287,44 @@ time_t TimeZone::fromLocalTime(const struct tm& localTm) const
 }
 
 
+struct tm TimeZone::toUtcTime(time_t secondsSinceEpoch, bool yday)
+{
+  struct tm utc = { 0, };
+  utc.tm_zone = "GMT";
+  int seconds = secondsSinceEpoch % kSecondsPerDay;
+  int days = secondsSinceEpoch / kSecondsPerDay;
+  if (seconds < 0)
+  {
+    seconds += kSecondsPerDay;
+    --days;
+  }
+  detail::fillHMS(seconds, &utc);
+  Date date(days + Date::kJulianDayOf1970_01_01);
+  Date::YearMonthDay ymd = date.yearMonthDay();
+  utc.tm_year = ymd.year - 1900;
+  utc.tm_mon = ymd.month - 1;
+  utc.tm_mday = ymd.day;
+  utc.tm_wday = date.weekDay();
+
+  if (yday)
+  {
+    Date startOfYear(ymd.year, 1, 1);
+    utc.tm_yday = date.julianDayNumber() - startOfYear.julianDayNumber();
+  }
+  return utc;
+}
+
+time_t TimeZone::fromUtcTime(const struct tm& utc)
+{
+  return fromUtcTime(utc.tm_year + 1900, utc.tm_mon + 1, utc.tm_mday,
+                     utc.tm_hour, utc.tm_min, utc.tm_sec);
+}
+
+time_t TimeZone::fromUtcTime(int year, int month, int day,
+                             int hour, int minute, int seconds)
+{
+  Date date(year, month, day);
+  int secondsInDay = hour * 3600 + minute * 60 + seconds;
+  time_t days = date.julianDayNumber() - Date::kJulianDayOf1970_01_01;
+  return days * kSecondsPerDay + secondsInDay;
+}

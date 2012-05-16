@@ -34,9 +34,9 @@ date_unittest: Date.h Date.cc Date_unittest.cc
 
 timestamp_unittest: Timestamp.h Timestamp.cc Timestamp_unittest.cc
 
-timezone_dump: TimeZone.h TimeZone.cc TimeZone_dump.cc
+timezone_dump: TimeZone.h TimeZone.cc Date.cc TimeZone_dump.cc
 
-timezone_unittest: TimeZone.h TimeZone.cc TimeZone_unittest.cc
+timezone_unittest: TimeZone.h TimeZone.cc Date.cc TimeZone_unittest.cc
 
 test: date_unittest
 	./date_unittest

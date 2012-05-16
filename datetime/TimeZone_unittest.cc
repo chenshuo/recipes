@@ -218,10 +218,35 @@ void testSydney()
   }
 }
 
+void testUtc()
+{
+  const int kRange = 100*1000*1000;
+  for (time_t t = -kRange; t <= kRange; t += 11)
+  {
+    struct tm* t1 = gmtime(&t);
+    struct tm t2 = TimeZone::toUtcTime(t, true);
+    char buf1[80], buf2[80];
+    strftime(buf1, sizeof buf1, "%F %T %u %j", t1);
+    strftime(buf2, sizeof buf2, "%F %T %u %j", &t2);
+    if (strcmp(buf1, buf2) != 0)
+    {
+      printf("'%s' != '%s'\n", buf1, buf2);
+      assert(0);
+    }
+    time_t t3 = TimeZone::fromUtcTime(t2);
+    if (t != t3)
+    {
+      printf("%ld != %ld\n", static_cast<long>(t), static_cast<long>(t3));
+      assert(0);
+    }
+  }
+}
+
 int main()
 {
   testNewYork();
   testLondon();
   testSydney();
   testHongKong();
+  testUtc();
 }
