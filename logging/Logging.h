@@ -33,6 +33,11 @@ class Logger
   static LogLevel logLevel();
   static void setLogLevel(LogLevel level);
 
+  typedef void (*OutputFunc)(const char* msg, int len);
+  typedef void (*FlushFunc)();
+  static void setOutput(OutputFunc);
+  static void setFlush(FlushFunc);
+
  private:
 
 class Impl
@@ -40,15 +45,15 @@ class Impl
  public:
   typedef Logger::LogLevel LogLevel;
   Impl(LogLevel level, int old_errno, const char* file, int line);
+  void formatTime();
   void finish();
 
   Timestamp time_;
   LogStream stream_;
   LogLevel level_;
-  const char* fullname_;
   int line_;
+  const char* fullname_;
   const char* basename_;
-  const char* function_;
 };
 
   Impl impl_;

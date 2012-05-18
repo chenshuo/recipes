@@ -2,6 +2,7 @@
 #include "LogStream.h"
 
 #include <sstream>
+#include <stdio.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 

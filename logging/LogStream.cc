@@ -4,8 +4,10 @@
 #include <limits>
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_arithmetic.hpp>
+#include <assert.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
 using namespace muduo;
 using namespace muduo::detail;
@@ -67,20 +69,6 @@ int convertHex(char buf[], uintptr_t value)
 }
 }
 
-FixedBuffer::FixedBuffer()
-{
-  cur_ = data_;
-}
-
-void FixedBuffer::append(const char* /*restrict*/ buf, int len)
-{
-  if (cur_+len < end());
-  {
-    memcpy(cur_, buf, len);
-    cur_ += len;
-  }
-}
-
 const char* FixedBuffer::debugString()
 {
   *cur_ = '\0';
@@ -103,16 +91,6 @@ void LogStream::formatInteger(T v)
     int len = convert(buffer_.current(), v);
     buffer_.add(len);
   }
-}
-
-LogStream::LogStream()
-{
-}
-
-LogStream& LogStream::operator<<(bool v)
-{
-  buffer_.append(v ? "1" : "0", 1);
-  return *this;
 }
 
 LogStream& LogStream::operator<<(short v)
@@ -194,18 +172,6 @@ LogStream& LogStream::operator<<(double v)
   return *this;
 }
 
-LogStream& LogStream::operator<<(char v)
-{
-  buffer_.append(&v, 1);
-  return *this;
-}
-
-LogStream& LogStream::operator<<(const char* v)
-{
-  buffer_.append(v, strlen(v));
-  return *this;
-}
-
 LogStream& LogStream::operator<<(const string& v)
 {
   buffer_.append(v.c_str(), v.size());
@@ -218,6 +184,7 @@ Fmt::Fmt(const char* fmt, T val)
   BOOST_STATIC_ASSERT(boost::is_arithmetic<T>::value == true);
 
   length_ = snprintf(buf_, sizeof buf_, fmt, val);
+  assert(static_cast<size_t>(length_) < sizeof buf_);
 }
 
 // Explicit instantiations

@@ -1,7 +1,9 @@
 #ifndef MUDUO_BASE_LOGSTREAM_H
 #define MUDUO_BASE_LOGSTREAM_H
 
+#include <assert.h>
 #include <stdio.h>
+#include <string.h>
 #include <string>
 #include <boost/noncopyable.hpp>
 
@@ -16,9 +18,20 @@ namespace detail
 class FixedBuffer : boost::noncopyable
 {
  public:
-  FixedBuffer();
+  FixedBuffer()
+    : cur_(data_)
+  {
+  }
 
-  void append(const char*, int len);
+  void append(const char* /*restrict*/ buf, int len)
+  {
+    if (cur_+len < end());
+    {
+      memcpy(cur_, buf, len);
+      cur_ += len;
+    }
+  }
+
   const char* data() const { return data_; }
   int length() const { return cur_ - data_; }
 
@@ -34,7 +47,7 @@ class FixedBuffer : boost::noncopyable
   void reset() { cur_ = data_; }
 
  private:
-  const char* end() const { return cur_ + sizeof data_; }
+  const char* end() const { return data_ + sizeof data_; }
 
   char data_[4000];
   char* cur_;
@@ -42,14 +55,32 @@ class FixedBuffer : boost::noncopyable
 
 }
 
+// helper class for known string length at compile time
+class T
+{
+ public:
+  T(const char* str, int len)
+    :str_(str),
+     len_(len)
+  {
+    assert(strlen(str) == len_);
+  }
+
+  const char* str_;
+  const size_t len_;
+};
+
 class LogStream : boost::noncopyable
 {
   typedef LogStream self;
  public:
   typedef detail::FixedBuffer Buffer;
-  LogStream();
 
-  self& operator<<(bool);
+  self& operator<<(bool v)
+  {
+    buffer_.append(v ? "1" : "0", 1);
+    return *this;
+  }
 
   self& operator<<(short);
   self& operator<<(unsigned short);
@@ -66,12 +97,28 @@ class LogStream : boost::noncopyable
   self& operator<<(double);
   // self& operator<<(long double);
 
-  self& operator<<(char);
+  self& operator<<(char v)
+  {
+    buffer_.append(&v, 1);
+    return *this;
+  }
+
   // self& operator<<(signed char);
   // self& operator<<(unsigned char);
 
-  self& operator<<(const char*);
-  self& operator<<(const string&);
+  self& operator<<(const char* v)
+  {
+    buffer_.append(v, strlen(v));
+    return *this;
+  }
+
+  self& operator<<(const T& v)
+  {
+    buffer_.append(v.str_, v.len_);
+    return *this;
+  }
+
+  self& operator<<(const string&); // FIXME: StringPiece
 
   void append(const char* data, int len) { buffer_.append(data, len); }
   const Buffer& buffer() const { return buffer_; }
@@ -88,11 +135,22 @@ class LogStream : boost::noncopyable
   static const int kMaxNumericSize = 32;
 };
 
-class Fmt : boost::noncopyable
+class Fmt // : boost::noncopyable
 {
  public:
   template<typename T>
   Fmt(const char* fmt, T val);
+
+  /*
+  Fmt(const char* fmt, int val, int len)
+    : length_(len)
+  {
+    int actual = snprintf(buf_, sizeof buf_, fmt, val);
+    (void)actual;
+    assert(actual == length_);
+    assert(static_cast<size_t>(length_) < sizeof buf_);
+  }
+  */
 
   const char* data() const { return buf_; }
   int length() const { return length_; }
