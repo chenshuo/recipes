@@ -30,6 +30,8 @@ class LoggerImpl
 */
 
 __thread char t_errnobuf[512];
+__thread char t_time[32];
+__thread time_t t_lastSecond;
 
 const char* strerror_tl(int savedErrno)
 {
@@ -102,17 +104,20 @@ void Logger::Impl::formatTime()
   int64_t microSecondsSinceEpoch = time_.microSecondsSinceEpoch();
   time_t seconds = static_cast<time_t>(microSecondsSinceEpoch / 1000000);
   int microseconds = static_cast<int>(microSecondsSinceEpoch % 1000000);
-  struct tm tm_time;
-  ::gmtime_r(&seconds, &tm_time); // FIXME TimeZone::fromUtcTime
+  if (seconds != t_lastSecond)
+  {
+    t_lastSecond = seconds;
+    struct tm tm_time;
+    ::gmtime_r(&seconds, &tm_time); // FIXME TimeZone::fromUtcTime
 
-  char time[32] = ""; // FIXME: cache 'seconds'
-  int len = snprintf(time, sizeof(time), "%4d-%02d-%02d %02d:%02d:%02d",
-      tm_time.tm_year + 1900, tm_time.tm_mon + 1, tm_time.tm_mday,
-      tm_time.tm_hour, tm_time.tm_min, tm_time.tm_sec);
-  assert(len == 19); (void)len;
+    int len = snprintf(t_time, sizeof(t_time), "%4d-%02d-%02d %02d:%02d:%02d",
+        tm_time.tm_year + 1900, tm_time.tm_mon + 1, tm_time.tm_mday,
+        tm_time.tm_hour, tm_time.tm_min, tm_time.tm_sec);
+    assert(len == 19); (void)len;
+  }
   Fmt us(".%06dZ ", microseconds);
   assert(us.length() == 9);
-  stream_ << T(time, 19) << T(us.data(), 9);
+  stream_ << T(t_time, 19) << T(us.data(), 9);
 }
 
 void Logger::Impl::finish()
