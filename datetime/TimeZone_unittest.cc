@@ -69,7 +69,11 @@ void test(const TimeZone& tz, TestCase tc)
   time_t result = tz.fromLocalTime(local);
   if (result != gmt)
   {
-    printf("WRONG fromLocalTime: %ld %ld\n", (long)gmt, (long)result);
+    struct tm local = tz.toLocalTime(result);
+    char buf[256];
+    strftime(buf, sizeof buf, "%F %T%z(%Z)", &local);
+
+    printf("WRONG fromLocalTime: %ld %ld %s\n", (long)gmt, (long)result, buf);
   }
   }
 }

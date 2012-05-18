@@ -46,6 +46,14 @@ struct Comp
     else
       return lhs.localtime < rhs.localtime;
   }
+
+  bool equal(const Transition& lhs, const Transition& rhs) const
+  {
+    if (compareGmt)
+      return lhs.gmttime == rhs.gmttime;
+    else
+      return lhs.localtime == rhs.localtime;
+  }
 };
 
 struct Localtime
@@ -222,7 +230,7 @@ const Localtime* findLocaltime(const TimeZone::Data& data, Transition sentry, Co
                                                             comp);
     if (transI != data.transitions.end())
     {
-      if (comp(sentry, *transI) || comp(*transI, sentry))
+      if (!comp.equal(sentry, *transI))
       {
         assert(transI != data.transitions.begin());
         --transI;
@@ -282,10 +290,19 @@ time_t TimeZone::fromLocalTime(const struct tm& localTm) const
   time_t seconds = ::timegm(&tmp); // FIXME: toUtcTime
   detail::Transition sentry(0, seconds, 0);
   const detail::Localtime* local = findLocaltime(data, sentry, detail::Comp(false));
-  // FIXME: localTm.tm_isdst
+  if (localTm.tm_isdst)
+  {
+    struct tm tryTm = toLocalTime(seconds - local->gmtOffset);
+    if (!tryTm.tm_isdst
+        && tryTm.tm_hour == localTm.tm_hour
+        && tryTm.tm_min == localTm.tm_min)
+    {
+      // FIXME: HACK
+      seconds -= 3600;
+    }
+  }
   return seconds - local->gmtOffset;
 }
-
 
 struct tm TimeZone::toUtcTime(time_t secondsSinceEpoch, bool yday)
 {
