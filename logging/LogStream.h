@@ -2,7 +2,6 @@
 #define MUDUO_BASE_LOGSTREAM_H
 
 #include <assert.h>
-#include <stdio.h>
 #include <string.h>
 #include <string>
 #include <boost/noncopyable.hpp>
@@ -140,17 +139,6 @@ class Fmt // : boost::noncopyable
  public:
   template<typename T>
   Fmt(const char* fmt, T val);
-
-  /*
-  Fmt(const char* fmt, int val, int len)
-    : length_(len)
-  {
-    int actual = snprintf(buf_, sizeof buf_, fmt, val);
-    (void)actual;
-    assert(actual == length_);
-    assert(static_cast<size_t>(length_) < sizeof buf_);
-  }
-  */
 
   const char* data() const { return buf_; }
   int length() const { return length_; }

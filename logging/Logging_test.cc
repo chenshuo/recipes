@@ -1,10 +1,17 @@
 #include "Logging.h"
 
+#include <stdio.h>
+
 long g_total;
+FILE* g_file;
 
 void dummyOutput(const char* msg, int len)
 {
   g_total += len;
+  if (g_file)
+  {
+    fwrite(msg, 1, len, g_file);
+  }
 }
 
 void bench()
@@ -16,12 +23,12 @@ void bench()
   int n = 1000*1000;
   for (int i = 0; i < n; ++i)
   {
-    LOG_INFO << "Hello 0123456789" << "abcdefghijklmnopqrstuvwxyz" << i;
+    LOG_INFO << "Hello 0123456789" << " abcdefghijklmnopqrstuvwxyz" << i;
   }
   muduo::Timestamp end(muduo::Timestamp::now());
   double seconds = timeDifference(end, start);
-  printf("%f seconds, %ld bytes, %f msg/s\n",
-         seconds, g_total, n / seconds);
+  printf("%f seconds, %ld bytes, %.2f msg/s, %.2f MiB/s\n",
+         seconds, g_total, n / seconds, g_total / seconds);
 }
 
 int main()
@@ -38,4 +45,17 @@ int main()
   LOG_INFO << sizeof(muduo::LogStream::Buffer);
 
   bench();
+
+  char buffer[64*1024];
+
+  g_file = fopen("/dev/null", "w");
+  setbuffer(g_file, buffer, sizeof buffer);
+  bench();
+  fclose(g_file);
+
+  g_file = fopen("/tmp/log", "w");
+  setbuffer(g_file, buffer, sizeof buffer);
+  bench();
+  fclose(g_file);
+
 }
