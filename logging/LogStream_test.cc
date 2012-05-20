@@ -221,11 +221,14 @@ BOOST_AUTO_TEST_CASE(testLogStreamLong)
   {
     os << "123456789 ";
     BOOST_CHECK_EQUAL(buf.length(), 10*(i+1));
+    BOOST_CHECK_EQUAL(buf.avail(), 4000 - 10*(i+1));
   }
 
   os << "abcdefghi ";
   BOOST_CHECK_EQUAL(buf.length(), 3990);
+  BOOST_CHECK_EQUAL(buf.avail(), 10);
 
   os << "abcdefghi";
   BOOST_CHECK_EQUAL(buf.length(), 3999);
+  BOOST_CHECK_EQUAL(buf.avail(), 1);
 }
