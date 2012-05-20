@@ -24,7 +24,7 @@ class FixedBuffer : boost::noncopyable
 
   void append(const char* /*restrict*/ buf, int len)
   {
-    if (cur_+len < end());
+    if (avail() > len)
     {
       memcpy(cur_, buf, len);
       cur_ += len;
@@ -36,8 +36,8 @@ class FixedBuffer : boost::noncopyable
 
   // write to data_ directly
   char* current() { return cur_; }
-  int avail() const { return end() - cur_; }
-  void add(int len) { cur_ += len; }
+  int avail() const { return static_cast<int>(end() - cur_); }
+  void add(size_t len) { cur_ += len; }
 
   // for used by GDB
   const char* debugString();
@@ -92,7 +92,11 @@ class LogStream : boost::noncopyable
 
   self& operator<<(const void*);
 
-  self& operator<<(float);
+  self& operator<<(float v)
+  {
+    *this << static_cast<double>(v);
+    return *this;
+  }
   self& operator<<(double);
   // self& operator<<(long double);
 
@@ -117,7 +121,11 @@ class LogStream : boost::noncopyable
     return *this;
   }
 
-  self& operator<<(const string&); // FIXME: StringPiece
+  self& operator<<(const string& v) // FIXME: StringPiece
+  {
+    buffer_.append(v.c_str(), v.size());
+    return *this;
+  }
 
   void append(const char* data, int len) { buffer_.append(data, len); }
   const Buffer& buffer() const { return buffer_; }

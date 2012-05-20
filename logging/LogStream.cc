@@ -26,7 +26,7 @@ BOOST_STATIC_ASSERT(sizeof digitsHex == 17);
 
 // Efficient Integer to String Conversions, by Matthew Wilson.
 template<typename T>
-int convert(char buf[], T value)
+size_t convert(char buf[], T value)
 {
   T i = value;
   char* p = buf;
@@ -48,7 +48,7 @@ int convert(char buf[], T value)
   return p - buf;
 }
 
-int convertHex(char buf[], uintptr_t value)
+size_t convertHex(char buf[], uintptr_t value)
 {
   uintptr_t i = value;
   char* p = buf;
@@ -88,7 +88,7 @@ void LogStream::formatInteger(T v)
 {
   if (buffer_.avail() >= kMaxNumericSize)
   {
-    int len = convert(buffer_.current(), v);
+    size_t len = convert(buffer_.current(), v);
     buffer_.add(len);
   }
 }
@@ -149,15 +149,9 @@ LogStream& LogStream::operator<<(const void* p)
     char* buf = buffer_.current();
     buf[0] = '0';
     buf[1] = 'x';
-    int len = convertHex(buf+2, v);
+    size_t len = convertHex(buf+2, v);
     buffer_.add(len+2);
   }
-  return *this;
-}
-
-LogStream& LogStream::operator<<(float v)
-{
-  *this << static_cast<double>(v);
   return *this;
 }
 
@@ -169,12 +163,6 @@ LogStream& LogStream::operator<<(double v)
     int len = snprintf(buffer_.current(), kMaxNumericSize, "%.12g", v);
     buffer_.add(len);
   }
-  return *this;
-}
-
-LogStream& LogStream::operator<<(const string& v)
-{
-  buffer_.append(v.c_str(), v.size());
   return *this;
 }
 

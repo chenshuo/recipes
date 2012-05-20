@@ -212,3 +212,20 @@ BOOST_AUTO_TEST_CASE(testLogStreamFmts)
   BOOST_CHECK_EQUAL(buf.asString(), string("1.20  43"));
   os.resetBuffer();
 }
+
+BOOST_AUTO_TEST_CASE(testLogStreamLong)
+{
+  muduo::LogStream os;
+  const muduo::LogStream::Buffer& buf = os.buffer();
+  for (int i = 0; i < 399; ++i)
+  {
+    os << "123456789 ";
+    BOOST_CHECK_EQUAL(buf.length(), 10*(i+1));
+  }
+
+  os << "abcdefghi ";
+  BOOST_CHECK_EQUAL(buf.length(), 3990);
+
+  os << "abcdefghi";
+  BOOST_CHECK_EQUAL(buf.length(), 3999);
+}
