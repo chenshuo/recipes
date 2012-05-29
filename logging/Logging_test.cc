@@ -1,9 +1,11 @@
 #include "Logging.h"
+#include "LogFile.h"
 
 #include <stdio.h>
 
 long g_total;
 FILE* g_file;
+boost::scoped_ptr<muduo::LogFile> g_logFile;
 
 void dummyOutput(const char* msg, int len)
 {
@@ -11,6 +13,10 @@ void dummyOutput(const char* msg, int len)
   if (g_file)
   {
     fwrite(msg, 1, len, g_file);
+  }
+  else if (g_logFile)
+  {
+    g_logFile->append(msg, len);
   }
 }
 
@@ -58,4 +64,11 @@ int main()
   bench();
   fclose(g_file);
 
+  g_file = NULL;
+  g_logFile.reset(new muduo::LogFile("test_log", 512*1024*1024));
+  bench();
+
+  g_logFile.reset(new muduo::LogFile("test_log_mt", 512*1024*1024, true));
+  bench();
+  g_logFile.reset();
 }
