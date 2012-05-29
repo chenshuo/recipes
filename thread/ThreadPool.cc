@@ -24,7 +24,10 @@ ThreadPool::ThreadPool(const std::string& name)
 
 ThreadPool::~ThreadPool()
 {
-  stop();
+  if (running_)
+  {
+    stop();
+  }
 }
 
 void ThreadPool::start(int numThreads)
