@@ -163,5 +163,5 @@ inline LogStream& operator<<(LogStream& s, const Fmt& fmt)
 }
 
 }
-#endif  // MUDUO_BASE_FASTOOUTPUTSTREAM_H
+#endif  // MUDUO_BASE_LOGSTREAM_H
 
