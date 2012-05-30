@@ -166,6 +166,14 @@ LogStream& LogStream::operator<<(double v)
   return *this;
 }
 
+void LogStream::cookieStart()
+{
+}
+
+void LogStream::cookieEnd()
+{
+}
+
 template<typename T>
 Fmt::Fmt(const char* fmt, T val)
 {

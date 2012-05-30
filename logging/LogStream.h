@@ -75,6 +75,16 @@ class LogStream : boost::noncopyable
  public:
   typedef detail::FixedBuffer Buffer;
 
+  LogStream()
+    : cookie_(&LogStream::cookieStart)
+  {
+  }
+
+  ~LogStream()
+  {
+    cookie_ = &LogStream::cookieEnd;
+  }
+
   self& operator<<(bool v)
   {
     buffer_.append(v ? "1" : "0", 1);
@@ -137,9 +147,12 @@ class LogStream : boost::noncopyable
   template<typename T>
   void formatInteger(T);
 
+  void (*cookie_)();
   Buffer buffer_;
 
   static const int kMaxNumericSize = 32;
+  static void cookieStart();
+  static void cookieEnd();
 };
 
 class Fmt // : boost::noncopyable
