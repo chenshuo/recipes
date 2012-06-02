@@ -99,7 +99,8 @@ class AsyncLoggingDoubleBuffering : boost::noncopyable
     buffersToWrite.reserve(16);
     while (running_)
     {
-      assert(newBuffer1 && newBuffer2);
+      assert(newBuffer1 && newBuffer1->length() == 0);
+      assert(newBuffer2 && newBuffer2->length() == 0);
       assert(buffersToWrite.empty());
 
       {
@@ -115,9 +116,9 @@ class AsyncLoggingDoubleBuffering : boost::noncopyable
       }
 
       assert(!buffersToWrite.empty());
-
       for (size_t i = 0; i < buffersToWrite.size(); ++i)
       {
+        // FIXME: use unbuffered stdio FILE ?
         output.append(buffersToWrite[i].data(), buffersToWrite[i].length());
       }
 
@@ -125,12 +126,14 @@ class AsyncLoggingDoubleBuffering : boost::noncopyable
       {
         assert(!buffersToWrite.empty());
         newBuffer1 = buffersToWrite.pop_back();
+        newBuffer1->reset();
       }
 
       if (!newBuffer2)
       {
         assert(!buffersToWrite.empty());
         newBuffer2 = buffersToWrite.pop_back();
+        newBuffer2->reset();
       }
 
       buffersToWrite.clear();

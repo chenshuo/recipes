@@ -24,6 +24,11 @@ class FixedBuffer : boost::noncopyable
     setCookie(cookieStart);
   }
 
+  ~FixedBuffer()
+  {
+    setCookie(cookieEnd);
+  }
+
   void append(const char* /*restrict*/ buf, int len)
   {
     if (avail() > len)
@@ -50,7 +55,9 @@ class FixedBuffer : boost::noncopyable
 
  private:
   const char* end() const { return data_ + sizeof data_; }
+  // Must be outline function for cookies.
   static void cookieStart();
+  static void cookieEnd();
 
   void (*cookie_)();
   char data_[SIZE];
@@ -79,16 +86,6 @@ class LogStream : boost::noncopyable
   typedef LogStream self;
  public:
   typedef detail::FixedBuffer<4000> Buffer;
-
-  LogStream()
-  {
-    buffer_.setCookie(&LogStream::cookieStart);
-  }
-
-  ~LogStream()
-  {
-    buffer_.setCookie(&LogStream::cookieEnd);
-  }
 
   self& operator<<(bool v)
   {
@@ -155,8 +152,6 @@ class LogStream : boost::noncopyable
   Buffer buffer_;
 
   static const int kMaxNumericSize = 32;
-  static void cookieStart();
-  static void cookieEnd();
 };
 
 class Fmt // : boost::noncopyable

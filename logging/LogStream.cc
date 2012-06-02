@@ -81,6 +81,11 @@ void FixedBuffer<SIZE>::cookieStart()
 {
 }
 
+template<int SIZE>
+void FixedBuffer<SIZE>::cookieEnd()
+{
+}
+
 template class FixedBuffer<4000>;
 template class FixedBuffer<4194240>;
 
@@ -173,14 +178,6 @@ LogStream& LogStream::operator<<(double v)
     buffer_.add(len);
   }
   return *this;
-}
-
-void LogStream::cookieStart()
-{
-}
-
-void LogStream::cookieEnd()
-{
 }
 
 template<typename T>

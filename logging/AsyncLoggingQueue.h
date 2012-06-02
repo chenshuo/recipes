@@ -106,6 +106,7 @@ class AsyncLoggingT : boost::noncopyable
 typedef AsyncLoggingT<string, muduo::BlockingQueue> AsyncLoggingUnboundedQueue;
 typedef AsyncLoggingT<string, muduo::BoundedBlockingQueue> AsyncLoggingBoundedQueue;
 
+// demonstrate premature optimization is BAD
 struct LogMessage
 {
   LogMessage(const char* msg, int len)
@@ -123,6 +124,13 @@ struct LogMessage
   LogMessage(const LogMessage& rhs)
     : length_(rhs.length_)
   {
+    assert(length_ <= sizeof data_);
+    ::memcpy(data_, rhs.data_, length_);
+  }
+
+  LogMessage& operator=(const LogMessage& rhs)
+  {
+    length_ = rhs.length_;
     assert(length_ <= sizeof data_);
     ::memcpy(data_, rhs.data_, length_);
   }
