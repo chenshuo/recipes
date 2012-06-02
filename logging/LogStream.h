@@ -14,12 +14,14 @@ using std::string;
 namespace detail
 {
 
+template<int SIZE>
 class FixedBuffer : boost::noncopyable
 {
  public:
   FixedBuffer()
     : cur_(data_)
   {
+    setCookie(cookieStart);
   }
 
   void append(const char* /*restrict*/ buf, int len)
@@ -41,14 +43,17 @@ class FixedBuffer : boost::noncopyable
 
   // for used by GDB
   const char* debugString();
+  void setCookie(void (*cookie)()) { cookie_ = cookie; }
   // for used by unit test
   string asString() const { return string(data_, length()); }
   void reset() { cur_ = data_; }
 
  private:
   const char* end() const { return data_ + sizeof data_; }
+  static void cookieStart();
 
-  char data_[4000];
+  void (*cookie_)();
+  char data_[SIZE];
   char* cur_;
 };
 
@@ -73,16 +78,16 @@ class LogStream : boost::noncopyable
 {
   typedef LogStream self;
  public:
-  typedef detail::FixedBuffer Buffer;
+  typedef detail::FixedBuffer<4000> Buffer;
 
   LogStream()
-    : cookie_(&LogStream::cookieStart)
   {
+    buffer_.setCookie(&LogStream::cookieStart);
   }
 
   ~LogStream()
   {
-    cookie_ = &LogStream::cookieEnd;
+    buffer_.setCookie(&LogStream::cookieEnd);
   }
 
   self& operator<<(bool v)
@@ -147,7 +152,6 @@ class LogStream : boost::noncopyable
   template<typename T>
   void formatInteger(T);
 
-  void (*cookie_)();
   Buffer buffer_;
 
   static const int kMaxNumericSize = 32;

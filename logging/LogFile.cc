@@ -69,13 +69,16 @@ class LogFile::File : boost::noncopyable
 
 LogFile::LogFile(const string& basename,
                  size_t rollSize,
-                 bool threadSafe)
+                 bool threadSafe,
+                 int flushInterval)
   : basename_(basename),
     rollSize_(rollSize),
+    flushInterval_(flushInterval),
     count_(0),
     mutex_(threadSafe ? new MutexLock : NULL),
     startOfPeriod_(0),
-    lastRoll_(0)
+    lastRoll_(0),
+    lastFlush_(0)
 {
   assert(basename.find('/') == string::npos);
   rollFile();
@@ -124,10 +127,16 @@ void LogFile::append_unlocked(const char* logline, int len)
     if (count_ > kCheckTimeRoll_)
     {
       count_ = 0;
-      time_t thisPeriod_ = ::time(NULL) / rollPerSeconds_ * rollPerSeconds_;
+      time_t now = ::time(NULL);
+      time_t thisPeriod_ = now / kRollPerSeconds_ * kRollPerSeconds_;
       if (thisPeriod_ != startOfPeriod_)
       {
         rollFile();
+      }
+      else if (now - lastFlush_ > flushInterval_)
+      {
+        lastFlush_ = now;
+        file_->flush();
       }
     }
     else
@@ -141,11 +150,12 @@ void LogFile::rollFile()
 {
   time_t now = 0;
   string filename = getLogFileName(basename_, &now);
-  time_t start = now / rollPerSeconds_ * rollPerSeconds_;
+  time_t start = now / kRollPerSeconds_ * kRollPerSeconds_;
 
   if (now - lastRoll_ > 1)
   {
     lastRoll_ = now;
+    lastFlush_ = now;
     startOfPeriod_ = start;
     file_.reset(new File(filename));
   }
