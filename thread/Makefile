@@ -23,9 +23,9 @@ $(TESTS):
 
 atomic_unittest: test/Atomic_unittest.cc
 
-blockingqueue_test: test/BlockingQueue_test.cc CountDownLatch.cc Thread.cc
+blockingqueue_test: test/BlockingQueue_test.cc Thread.cc
 
-boundedblockingqueue_test: test/BoundedBlockingQueue_test.cc CountDownLatch.cc Thread.cc
+boundedblockingqueue_test: test/BoundedBlockingQueue_test.cc Thread.cc
 
 exit_deadlock: test/ExitDeadLock.cc
 	g++ $(CXXFLAGS) -o $@ $(filter %.cc,$^) -lpthread
@@ -44,7 +44,7 @@ threadlocal_test: test/ThreadLocal_test.cc Thread.cc
 
 threadlocalsingleton_test: test/ThreadLocalSingleton_test.cc Thread.cc
 
-threadpool_test: test/ThreadPool_test.cc Thread.cc ThreadPool.cc CountDownLatch.cc Exception.cc
+threadpool_test: test/ThreadPool_test.cc Thread.cc ThreadPool.cc Exception.cc
 
 clean:
 	rm -f $(TESTS)
