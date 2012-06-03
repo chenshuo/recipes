@@ -26,15 +26,22 @@ void bench()
   muduo::Timestamp start(muduo::Timestamp::now());
   g_total = 0;
 
-  int n = 1000*1000;
-  for (int i = 0; i < n; ++i)
+  const int batch = 1000*1000;
+  const bool kLongLog = false;
+  muduo::string empty = " ";
+  muduo::string longStr(3000, 'X');
+  longStr += " ";
+
+  for (int i = 0; i < batch; ++i)
   {
-    LOG_INFO << "Hello 0123456789" << " abcdefghijklmnopqrstuvwxyz" << i;
+    LOG_INFO << "Hello 0123456789" << " abcdefghijklmnopqrstuvwxyz "
+             << (kLongLog ? longStr : empty)
+             << i;
   }
   muduo::Timestamp end(muduo::Timestamp::now());
   double seconds = timeDifference(end, start);
   printf("%f seconds, %ld bytes, %.2f msg/s, %.2f MiB/s\n",
-         seconds, g_total, n / seconds, g_total / seconds);
+         seconds, g_total, batch / seconds, g_total / seconds / 1024 / 1024);
 }
 
 int main()
@@ -65,10 +72,10 @@ int main()
   fclose(g_file);
 
   g_file = NULL;
-  g_logFile.reset(new muduo::LogFile("test_log", 512*1024*1024));
+  g_logFile.reset(new muduo::LogFile("test_log", 500*1000*1000));
   bench();
 
-  g_logFile.reset(new muduo::LogFile("test_log_mt", 512*1024*1024, true));
+  g_logFile.reset(new muduo::LogFile("test_log_mt", 500*1000*1000, true));
   bench();
   g_logFile.reset();
 }

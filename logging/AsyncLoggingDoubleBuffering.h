@@ -37,8 +37,7 @@ class AsyncLoggingDoubleBuffering : boost::noncopyable
       cond_(mutex_),
       currentBuffer_(new Buffer),
       nextBuffer_(new Buffer),
-      buffers_(),
-      overload_(0)
+      buffers_()
   {
     currentBuffer_->bzero();
     nextBuffer_->bzero();
@@ -123,19 +122,13 @@ class AsyncLoggingDoubleBuffering : boost::noncopyable
       }
 
       assert(!buffersToWrite.empty());
-      if (buffersToWrite.size() > 10)
-      {
-        ++overload_;
-      }
-      else
-      {
-        overload_ = 0;
-      }
 
-      if (overload_ > 5)
+      if (buffersToWrite.size() > 25)
       {
-        fprintf(stderr, "Drop log messages\n");
-        buffersToWrite.resize(2);
+        const char* dropMsg = "Dropped log messages\n";
+        fprintf(stderr, "%s", dropMsg);
+        output.append(dropMsg, strlen(dropMsg));
+        buffersToWrite.erase(buffersToWrite.begin(), buffersToWrite.end() - 2);
       }
 
       for (size_t i = 0; i < buffersToWrite.size(); ++i)
@@ -181,7 +174,6 @@ class AsyncLoggingDoubleBuffering : boost::noncopyable
   BufferPtr currentBuffer_;
   BufferPtr nextBuffer_;
   BufferVector buffers_;
-  int overload_;
 };
 
 }

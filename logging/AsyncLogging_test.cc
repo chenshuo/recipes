@@ -6,7 +6,9 @@
 
 #include "Logging.h"
 
-int kRollSize = 20*1000*1000;
+#include <sys/resource.h>
+
+int kRollSize = 500*1000*1000;
 
 void* g_asyncLog = NULL;
 
@@ -31,7 +33,7 @@ void bench(ASYNC* log)
   muduo::string longStr(3000, 'X');
   longStr += " ";
 
-  for (int t = 0; t < 10; ++t)
+  for (int t = 0; t < 30; ++t)
   {
     muduo::Timestamp start = muduo::Timestamp::now();
     for (int i = 0; i < kBatch; ++i)
@@ -43,13 +45,20 @@ void bench(ASYNC* log)
     }
     muduo::Timestamp end = muduo::Timestamp::now();
     printf("%f\n", timeDifference(end, start)*1000000/kBatch);
-    struct timespec ts = { 1, 0 };
+    struct timespec ts = { 0, 500*1000*1000 };
     nanosleep(&ts, NULL);
   }
 }
 
 int main(int argc, char* argv[])
 {
+  {
+    // set max virtual memory to 2GB.
+    size_t kOneGB = 1024*1024*1024;
+    rlimit rl = { 2.0*kOneGB, 2.0*kOneGB };
+    setrlimit(RLIMIT_AS, &rl);
+  }
+
   muduo::AsyncLoggingUnboundedQueue  log1("log1", kRollSize);
   muduo::AsyncLoggingBoundedQueue    log2("log2", kRollSize, 1024);
   muduo::AsyncLoggingUnboundedQueueL log3("log3", kRollSize);
