@@ -152,7 +152,7 @@ void LogFile::rollFile()
   string filename = getLogFileName(basename_, &now);
   time_t start = now / kRollPerSeconds_ * kRollPerSeconds_;
 
-  if (now - lastRoll_ > 1)
+  if (now > lastRoll_)
   {
     lastRoll_ = now;
     lastFlush_ = now;
