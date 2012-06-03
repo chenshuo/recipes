@@ -34,12 +34,12 @@ class Condition : boost::noncopyable
     pthread_cond_wait(&pcond_, mutex_.getPthreadMutex());
   }
 
-  void waitForSeconds(int seconds)
+  bool waitForSeconds(int seconds)
   {
     struct timespec abstime;
     clock_gettime(CLOCK_REALTIME, &abstime);
     abstime.tv_sec += seconds;
-    pthread_cond_timedwait(&pcond_, mutex_.getPthreadMutex(), &abstime);
+    return ETIMEDOUT == pthread_cond_timedwait(&pcond_, mutex_.getPthreadMutex(), &abstime);
   }
 
   void notify()
