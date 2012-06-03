@@ -86,8 +86,8 @@ void FixedBuffer<SIZE>::cookieEnd()
 {
 }
 
-template class FixedBuffer<4000>;
-template class FixedBuffer<4194240>;
+template class FixedBuffer<kSmallBuffer>;
+template class FixedBuffer<kLargeBuffer>;
 
 void LogStream::staticCheck()
 {

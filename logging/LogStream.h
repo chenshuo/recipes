@@ -14,6 +14,9 @@ using std::string;
 namespace detail
 {
 
+const int kSmallBuffer = 4000;
+const int kLargeBuffer = 4000*1000;
+
 template<int SIZE>
 class FixedBuffer : boost::noncopyable
 {
@@ -46,12 +49,14 @@ class FixedBuffer : boost::noncopyable
   int avail() const { return static_cast<int>(end() - cur_); }
   void add(size_t len) { cur_ += len; }
 
+  void reset() { cur_ = data_; }
+  void bzero() { ::bzero(data_, sizeof data_); }
+
   // for used by GDB
   const char* debugString();
   void setCookie(void (*cookie)()) { cookie_ = cookie; }
   // for used by unit test
   string asString() const { return string(data_, length()); }
-  void reset() { cur_ = data_; }
 
  private:
   const char* end() const { return data_ + sizeof data_; }
@@ -85,7 +90,7 @@ class LogStream : boost::noncopyable
 {
   typedef LogStream self;
  public:
-  typedef detail::FixedBuffer<4000> Buffer;
+  typedef detail::FixedBuffer<detail::kSmallBuffer> Buffer;
 
   self& operator<<(bool v)
   {

@@ -20,7 +20,7 @@ namespace muduo
 class AsyncLoggingDoubleBuffering : boost::noncopyable
 {
  public:
-  typedef muduo::detail::FixedBuffer<4*1024*1024-64> Buffer;
+  typedef muduo::detail::FixedBuffer<muduo::detail::kLargeBuffer> Buffer;
   typedef boost::ptr_vector<Buffer> BufferVector;
   typedef BufferVector::auto_type BufferPtr;
 
@@ -36,8 +36,12 @@ class AsyncLoggingDoubleBuffering : boost::noncopyable
       mutex_(),
       cond_(mutex_),
       currentBuffer_(new Buffer),
-      nextBuffer_(new Buffer)
+      nextBuffer_(new Buffer),
+      buffers_(),
+      overload_(0)
   {
+    currentBuffer_->bzero();
+    nextBuffer_->bzero();
     buffers_.reserve(16);
   }
 
@@ -88,6 +92,7 @@ class AsyncLoggingDoubleBuffering : boost::noncopyable
   }
 
  private:
+
   void threadFunc()
   {
     assert(running_ == true);
@@ -95,6 +100,8 @@ class AsyncLoggingDoubleBuffering : boost::noncopyable
     LogFile output(basename_, rollSize_, false);
     BufferPtr newBuffer1(new Buffer);
     BufferPtr newBuffer2(new Buffer);
+    newBuffer1->bzero();
+    newBuffer2->bzero();
     boost::ptr_vector<Buffer> buffersToWrite;
     buffersToWrite.reserve(16);
     while (running_)
@@ -116,10 +123,31 @@ class AsyncLoggingDoubleBuffering : boost::noncopyable
       }
 
       assert(!buffersToWrite.empty());
+      if (buffersToWrite.size() > 10)
+      {
+        ++overload_;
+      }
+      else
+      {
+        overload_ = 0;
+      }
+
+      if (overload_ > 5)
+      {
+        fprintf(stderr, "Drop log messages\n");
+        buffersToWrite.resize(2);
+      }
+
       for (size_t i = 0; i < buffersToWrite.size(); ++i)
       {
-        // FIXME: use unbuffered stdio FILE ?
+        // FIXME: use unbuffered stdio FILE ? or use ::writev ?
         output.append(buffersToWrite[i].data(), buffersToWrite[i].length());
+      }
+
+      if (buffersToWrite.size() > 2)
+      {
+        // drop non-bzero-ed buffers, avoid trashing
+        buffersToWrite.resize(2);
       }
 
       if (!newBuffer1)
@@ -153,6 +181,7 @@ class AsyncLoggingDoubleBuffering : boost::noncopyable
   BufferPtr currentBuffer_;
   BufferPtr nextBuffer_;
   BufferVector buffers_;
+  int overload_;
 };
 
 }
