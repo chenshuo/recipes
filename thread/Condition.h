@@ -12,6 +12,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <pthread.h>
+#include <errno.h>
 
 namespace muduo
 {
@@ -34,6 +35,7 @@ class Condition : boost::noncopyable
     pthread_cond_wait(&pcond_, mutex_.getPthreadMutex());
   }
 
+  // returns true if time out, false otherwise.
   bool waitForSeconds(int seconds)
   {
     struct timespec abstime;

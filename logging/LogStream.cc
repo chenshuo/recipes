@@ -21,7 +21,7 @@ const char digits[] = "9876543210123456789";
 const char* zero = digits + 9;
 BOOST_STATIC_ASSERT(sizeof(digits) == 20);
 
-const char digitsHex[] = "0123456789ABCDEF";
+const char digitsHex[] = "0123456789abcdef";
 BOOST_STATIC_ASSERT(sizeof digitsHex == 17);
 
 // Efficient Integer to String Conversions, by Matthew Wilson.
