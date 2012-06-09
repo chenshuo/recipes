@@ -1,9 +1,10 @@
 #!/bin/sh
 
-g++ test.cc uint.cc -o test-dbg -Wall -Wextra -g -O0 \
+mkdir -p bin
+g++ test.cc uint.cc -o bin/test-dbg -Wall -Wextra -g -O0 \
         -DBOOST_TEST_DYN_LINK -lboost_unit_test_framework
-g++ test.cc uint.cc -o test-opt -Wall -Wextra -g -O2 -DNDEBUG \
+g++ test.cc uint.cc -o bin/test-opt -Wall -Wextra -g -O2 -DNDEBUG \
         -DBOOST_TEST_DYN_LINK -lboost_unit_test_framework
 
-g++ bench.cc uint.cc -o bench-dbg -Wall -Wextra -g -O0
-g++ bench.cc uint.cc -o bench-opt -Wall -Wextra -g -O2 -DNDEBUG
+g++ bench.cc uint.cc -o bin/bench-dbg -Wall -Wextra -g -O0
+g++ bench.cc uint.cc -o bin/bench-opt -Wall -Wextra -g -O2 -DNDEBUG

@@ -19,10 +19,7 @@ class UnsignedInt // copyable
     }
   }
 
-  UnsignedInt(const std::string& x, Radix r = kDec)
-  {
-    // FIXME
-  }
+  UnsignedInt(const std::string& x, Radix r = kDec);
 
   std::string toHex() const;
   std::string toDec() const;
@@ -72,7 +69,7 @@ class UnsignedInt // copyable
     result.swap(value_);
   }
 
-  // returns reminder
+  // returns remainder
   uint32_t devide(const uint32_t x)
   {
     uint64_t carry = 0;
@@ -95,6 +92,11 @@ class UnsignedInt // copyable
   const value_type& getValue() const
   {
     return value_;
+  }
+
+  void setValue(uint32_t x, int n)
+  {
+    value_.assign(n, x);
   }
 
  private:
