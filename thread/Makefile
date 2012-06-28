@@ -12,7 +12,10 @@ TESTS= atomic_unittest \
        threadlocal_test \
        threadlocalsingleton_test \
        thread_test \
-       threadpool_test
+       threadpool_test \
+       exit_deadlock \
+       mutual_deadlock \
+       self_deadlock
 
 all: $(TESTS)
 
@@ -27,8 +30,11 @@ blockingqueue_test: test/BlockingQueue_test.cc Thread.cc
 
 boundedblockingqueue_test: test/BoundedBlockingQueue_test.cc Thread.cc
 
-exit_deadlock: test/ExitDeadLock.cc
-	g++ $(CXXFLAGS) -o $@ $(filter %.cc,$^) -lpthread
+exit_deadlock: test/ExitDeadLock.cc Thread.cc
+
+mutual_deadlock: test/MutualDeadLock.cc Thread.cc
+
+self_deadlock: test/SelfDeadLock.cc Thread.cc
 
 exception_test: test/Exception_test.cc Exception.cc
 

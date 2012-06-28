@@ -5,9 +5,9 @@
 
 using namespace muduo;
 
-void someFunctionCallsExit()
+void someFunctionMayCallExit()
 {
-    exit(1);
+  exit(1);
 }
 
 class GlobalObject
@@ -16,7 +16,7 @@ class GlobalObject
   void doit()
   {
     MutexLockGuard lock(mutex_);
-    someFunctionCallsExit();
+    someFunctionMayCallExit();
   }
 
   ~GlobalObject()
