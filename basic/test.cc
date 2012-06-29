@@ -1,11 +1,12 @@
 #include "uint.h"
+#include <stdio.h>
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 
 using std::string;
 
-BOOST_AUTO_TEST_CASE(test1)
+BOOST_AUTO_TEST_CASE(test_initialize_word)
 {
   UnsignedInt u0;
   BOOST_CHECK_EQUAL(u0.getValue().size(), 0);
@@ -35,14 +36,126 @@ BOOST_AUTO_TEST_CASE(test1)
   BOOST_CHECK_EQUAL(u4.toHex(), string("64"));
 }
 
-BOOST_AUTO_TEST_CASE(test2)
+BOOST_AUTO_TEST_CASE(test_initialize_string)
 {
-  UnsignedInt u0("0");
-  UnsignedInt u1("1");
-  UnsignedInt u2("123456789");
+  UnsignedInt u0("");
+  UnsignedInt u1("0");
+  UnsignedInt u2("1");
+  UnsignedInt u3("123456789");
+  BOOST_CHECK_EQUAL(u3.getValue().size(), 1);
+  BOOST_CHECK_EQUAL(u3.getValue()[0], 123456789);
+
+  for (int i = 1; i < 2000; ++i)
+  {
+    string nines(i, '9');
+    UnsignedInt u9(nines);
+    BOOST_CHECK_EQUAL(u9.toDec(), nines);
+    const UnsignedInt::value_type& v = u9.getValue();
+    // printf("%3zd %3zd %zd\n", v.size(), v.capacity(), v.capacity()-v.size());
+    // printf("%zd ", v.capacity()-v.size());
+  }
+
+  UnsignedInt h("", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(h.getValue().size(), 0);
+
+  UnsignedInt h0("0", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(h0.getValue().size(), 0);
+
+  UnsignedInt h1("1", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(h1.getValue().size(), 1);
+  BOOST_CHECK_EQUAL(h1.getValue()[0], 1);
+
+  UnsignedInt h2("12345678", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(h2.getValue().size(), 1);
+  BOOST_CHECK_EQUAL(h2.getValue()[0], 0x12345678);
+
+  UnsignedInt h3("abcdef98", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(h3.getValue().size(), 1);
+  BOOST_CHECK_EQUAL(h3.getValue()[0], 0xabcdef98);
+
+  UnsignedInt h4("ffffffff", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(h4.getValue().size(), 1);
+  BOOST_CHECK_EQUAL(h4.getValue()[0], 0xffffffff);
+
+  UnsignedInt h5("abcdef980", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(h5.getValue().size(), 2);
+  BOOST_CHECK_EQUAL(h5.getValue()[0], 0xbcdef980);
+  BOOST_CHECK_EQUAL(h5.getValue()[1], 0xa);
+
+  UnsignedInt h6("fffffffff", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(h6.getValue().size(), 2);
+  BOOST_CHECK_EQUAL(h6.getValue()[0], 0xffffffff);
+  BOOST_CHECK_EQUAL(h6.getValue()[1], 0xf);
+
+  for (int i = 1; i < 2000; ++i)
+  {
+    string input(i, 'f');
+    UnsignedInt u9(input, UnsignedInt::kHex);
+    BOOST_CHECK_EQUAL(u9.toHex(), input);
+  }
 }
 
-BOOST_AUTO_TEST_CASE(test3)
+BOOST_AUTO_TEST_CASE(test_add_word)
+{
+  UnsignedInt u0;
+  BOOST_CHECK_EQUAL(u0.getValue().size(), 0);
+  u0.add(1);
+  BOOST_CHECK_EQUAL(u0.getValue().size(), 1);
+  BOOST_CHECK_EQUAL(u0.getValue()[0], 1);
+
+  UnsignedInt u1(1);
+  BOOST_CHECK_EQUAL(u1.getValue().size(), 1);
+  BOOST_CHECK_EQUAL(u1.getValue()[0], 1);
+  u1.add(1);
+  BOOST_CHECK_EQUAL(u1.getValue().size(), 1);
+  BOOST_CHECK_EQUAL(u1.getValue()[0], 2);
+
+  UnsignedInt u2(2);
+  u2.add(4294967295);
+  BOOST_CHECK_EQUAL(u2.getValue().size(), 2);
+  BOOST_CHECK_EQUAL(u2.getValue()[0], 1);
+  BOOST_CHECK_EQUAL(u2.getValue()[1], 1);
+
+  UnsignedInt u3(4294967295);
+  u3.add(1);
+  BOOST_CHECK_EQUAL(u3.getValue().size(), 2);
+  BOOST_CHECK_EQUAL(u3.getValue()[0], 0);
+  BOOST_CHECK_EQUAL(u3.getValue()[1], 1);
+
+  UnsignedInt u4;
+  u4.setValue(2, -1);
+  u4.add(1);
+  BOOST_CHECK_EQUAL(u4.getValue().size(), 3);
+  BOOST_CHECK_EQUAL(u4.getValue()[0], 0);
+  BOOST_CHECK_EQUAL(u4.getValue()[1], 0);
+  BOOST_CHECK_EQUAL(u4.getValue()[2], 1);
+
+  UnsignedInt u5;
+  u4.setValue(3, -1);
+  u4.add(1);
+  BOOST_CHECK_EQUAL(u4.getValue().size(), 4);
+  BOOST_CHECK_EQUAL(u4.getValue()[0], 0);
+  BOOST_CHECK_EQUAL(u4.getValue()[1], 0);
+  BOOST_CHECK_EQUAL(u4.getValue()[2], 0);
+  BOOST_CHECK_EQUAL(u4.getValue()[3], 1);
+
+  UnsignedInt u6("fffffffff", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(u6.getValue().size(), 2);
+  u6.add(1);
+  BOOST_CHECK_EQUAL(u6.getValue().size(), 2);
+  BOOST_CHECK_EQUAL(u6.getValue()[0], 0);
+  BOOST_CHECK_EQUAL(u6.getValue()[1], 16);
+
+  UnsignedInt u7("10fffffffffffffff", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(u7.getValue().size(), 3);
+  u7.add(1);
+  BOOST_CHECK_EQUAL(u7.getValue().size(), 3);
+  BOOST_CHECK_EQUAL(u7.getValue()[0], 0);
+  BOOST_CHECK_EQUAL(u7.getValue()[1], 0x10000000);
+  BOOST_CHECK_EQUAL(u7.getValue()[2], 1);
+}
+
+BOOST_AUTO_TEST_CASE(test_multiply_word)
 {
   UnsignedInt u0;
   u0.multiply(0);
@@ -85,7 +198,7 @@ BOOST_AUTO_TEST_CASE(test3)
   BOOST_CHECK_EQUAL(u2.toDec(), string("79228162458924105385300197375"));
 }
 
-BOOST_AUTO_TEST_CASE(test4)
+BOOST_AUTO_TEST_CASE(test_multiply_other)
 {
   UnsignedInt u2(-1);
 
@@ -102,7 +215,7 @@ BOOST_AUTO_TEST_CASE(test4)
   BOOST_CHECK_EQUAL(u2.getValue()[1], 0xfffffffc);
 }
 
-BOOST_AUTO_TEST_CASE(test5)
+BOOST_AUTO_TEST_CASE(test_devide_word)
 {
   UnsignedInt u0;
   BOOST_CHECK_EQUAL(u0.devide(1), 0);

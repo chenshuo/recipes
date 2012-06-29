@@ -23,9 +23,9 @@ void reserve()
 int main()
 {
   UnsignedInt u0;
-  u0.setValue(-1, 100);
+  u0.setValue(100, -1);
   cout << u0.toDec() << endl;
-  u0.setValue(-1, 1000);
+  u0.setValue(1000, -1);
   cout << u0.toDec() << endl;
   reserve();
 }

@@ -82,5 +82,86 @@ std::string UnsignedInt::toDec() const
 
 UnsignedInt::UnsignedInt(const std::string& x, Radix r)
 {
-  (void)x;(void)r;
+  if (r == kDec)
+  {
+    parseDec(x);
+  }
+  else if (r == kHex)
+  {
+    parseHex(x);
+  }
+  else
+  {
+    assert(0 && "Radix invalid");
+    abort();
+  }
+}
+
+uint32_t fromHex(char c)
+{
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  if (c >= 'a' && c <= 'f')
+    return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F')
+    return c - 'A' + 10;
+  return -1;
+}
+
+void UnsignedInt::parseHex(const std::string& str)
+{
+  value_.reserve((str.size()+7) / 8);
+  for (size_t i = 0; i < str.size(); ++i)
+  {
+    if (i % 8 == 0)
+      value_.push_back(0);
+    uint32_t digit = fromHex(str[str.size() - i - 1]);
+    uint32_t shift = 4 * (i % 8);
+    value_.back() |= (digit << shift);
+  }
+  if (value_.size() == 1 && value_[0] == 0)
+  {
+    value_.clear();
+  }
+}
+
+uint32_t fromDec(char c)
+{
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  return -1;
+}
+
+uint32_t parseSegment(const char* str, int len)
+{
+  uint32_t seg = 0;
+  for (int i = 0; i < len; ++i)
+  {
+    seg *= 10;
+    seg += fromDec(str[i]);
+  }
+  return seg;
+}
+
+void UnsignedInt::parseDec(const std::string& str)
+{
+  const uint32_t kSegment = 1000 * 1000 * 1000;
+  const uint32_t kSegmentDigits = 9;
+  // log2(10)/32 = 0.10381025296523
+  // 8/77 = 0.103896103896104
+  value_.reserve(1 + str.size() * 8 / 77);
+
+  int first = str.size() % kSegmentDigits;
+  if (first)
+  {
+    uint32_t seg = parseSegment(str.c_str(), first);
+    add(seg);
+  }
+  for (size_t i = first; i < str.size(); i += kSegmentDigits)
+  {
+    assert(i + kSegmentDigits <= str.size());
+    uint32_t seg = parseSegment(str.c_str() + i, kSegmentDigits);
+    multiply(kSegment);
+    add(seg);
+  }
 }

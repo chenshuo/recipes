@@ -24,6 +24,31 @@ class UnsignedInt // copyable
   std::string toHex() const;
   std::string toDec() const;
 
+  void add(const uint32_t x)
+  {
+    if (value_.empty())
+    {
+      value_.push_back(x);
+      return;
+    }
+
+    uint64_t sum = value_[0] + static_cast<uint64_t>(x);
+    value_[0] = sum & kMask_;
+    uint64_t carry = sum > kMask_;
+
+    for (size_t i = 1; i < value_.size() && carry; ++i)
+    {
+      sum = value_[i] + carry;
+      value_[i] = sum & kMask_;
+      carry = sum > kMask_;
+    }
+
+    if (carry)
+    {
+      value_.push_back(carry);
+    }
+  }
+
   void multiply(const uint32_t x)
   {
     const uint64_t multiplier = x;
@@ -94,14 +119,16 @@ class UnsignedInt // copyable
     return value_;
   }
 
-  void setValue(uint32_t x, int n)
+  void setValue(int n, uint32_t x)
   {
     value_.assign(n, x);
   }
 
  private:
+  void parseDec(const std::string& str);
+  void parseHex(const std::string& str);
+
   value_type value_;
 
   const static uint32_t kMask_ = 0xFFFFFFFF;
 };
-
