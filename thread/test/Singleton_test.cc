@@ -33,6 +33,32 @@ void threadFunc()
   muduo::Singleton<Test>::instance().setName("only one, changed");
 }
 
+template<unsigned N>
+class Destruct
+{
+ public:
+  Destruct()
+  {
+    printf("construct %d\n", N);
+    more();
+  }
+
+  ~Destruct()
+  {
+    printf("destruct %d\n", N);
+  }
+
+  void more()
+  {
+    muduo::Singleton<Destruct<N-1> >::instance();
+  }
+};
+
+template<>
+void Destruct<0>::more()
+{
+}
+
 int main()
 {
   muduo::Singleton<Test>::instance().setName("only one");
@@ -43,4 +69,6 @@ int main()
          muduo::CurrentThread::tid(),
          &muduo::Singleton<Test>::instance(),
          muduo::Singleton<Test>::instance().name().c_str());
+
+  muduo::Singleton<Destruct<500> >::instance();
 }

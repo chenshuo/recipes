@@ -41,6 +41,7 @@ exception_test: test/Exception_test.cc Exception.cc
 fork_test: test/Fork_test.cc Thread.cc
 
 singleton_test: test/Singleton_test.cc Thread.cc
+singleton_test: CXXFLAGS += -ftemplate-depth-2500
 
 singleton_threadlocal_test: test/SingletonThreadLocal_test.cc Thread.cc
 
