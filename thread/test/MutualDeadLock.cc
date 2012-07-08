@@ -69,6 +69,23 @@ void Inventory::printAll() const
   printf("Inventory::printAll() unlocked\n");
 }
 
+/*
+void Inventory::printAll() const
+{
+  std::set<Request*> requests
+  {
+    muduo::MutexLockGuard lock(mutex_);
+    requests = requests_;
+  }
+  for (std::set<Request*>::const_iterator it = requests.begin();
+      it != requests.end();
+      ++it)
+  {
+    (*it)->print();
+  }
+}
+*/
+
 void threadFunc()
 {
   Request* req = new Request;
@@ -80,7 +97,7 @@ int main()
 {
   muduo::Thread thread(threadFunc);
   thread.start();
-  usleep(500);
+  usleep(500 * 1000);
   g_inventory.printAll();
   thread.join();
 }

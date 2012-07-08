@@ -3,6 +3,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <stdio.h>
+#include <unistd.h>
 
 class Test : boost::noncopyable
 {
@@ -70,5 +71,6 @@ int main()
          &muduo::Singleton<Test>::instance(),
          muduo::Singleton<Test>::instance().name().c_str());
 
-  muduo::Singleton<Destruct<500> >::instance();
+  muduo::Singleton<Destruct<100> >::instance();
+  printf("ATEXIT_MAX = %ld\n", sysconf(_SC_ATEXIT_MAX));
 }

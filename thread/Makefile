@@ -5,6 +5,7 @@ HEADERS=$(wildcard *.h)
 TESTS= atomic_unittest \
        blockingqueue_test \
        boundedblockingqueue_test \
+       copyonwrite_test \
        exception_test \
        fork_test \
        singleton_test \
@@ -15,6 +16,9 @@ TESTS= atomic_unittest \
        threadpool_test \
        exit_deadlock \
        mutual_deadlock \
+       nonrecursivemutex_test \
+       requestinventory_test \
+       requestinventory_test2 \
        self_deadlock
 
 all: $(TESTS)
@@ -30,9 +34,16 @@ blockingqueue_test: test/BlockingQueue_test.cc Thread.cc
 
 boundedblockingqueue_test: test/BoundedBlockingQueue_test.cc Thread.cc
 
+copyonwrite_test: test/CopyOnWrite_test.cc Thread.cc
+
 exit_deadlock: test/ExitDeadLock.cc Thread.cc
 
 mutual_deadlock: test/MutualDeadLock.cc Thread.cc
+
+nonrecursivemutex_test: test/NonRecursiveMutex_test.cc Thread.cc
+
+requestinventory_test: test/RequestInventory_test.cc Thread.cc
+requestinventory_test2: test/RequestInventory_test2.cc Thread.cc
 
 self_deadlock: test/SelfDeadLock.cc Thread.cc
 
@@ -41,7 +52,7 @@ exception_test: test/Exception_test.cc Exception.cc
 fork_test: test/Fork_test.cc Thread.cc
 
 singleton_test: test/Singleton_test.cc Thread.cc
-singleton_test: CXXFLAGS += -ftemplate-depth-2500
+singleton_test: CXXFLAGS += -ftemplate-depth-1000
 
 singleton_threadlocal_test: test/SingletonThreadLocal_test.cc Thread.cc
 
