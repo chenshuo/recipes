@@ -1,1 +1,4 @@
-A toy implementation of logging.
+This is an old & experimental version of logging library,
+please use the version in muduo/base.
+
+http://github.com/chenshuo/muduo
