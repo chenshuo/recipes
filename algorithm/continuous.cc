@@ -1,5 +1,0 @@
-#include <vector>
-
-int main()
-{
-}
