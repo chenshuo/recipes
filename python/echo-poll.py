@@ -3,29 +3,30 @@
 import socket
 import select
 
-serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-serversocket.bind(('', 2007))
-serversocket.listen(5)
-# serversocket.setblocking(0)
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server_socket.bind(('', 2007))
+server_socket.listen(5)
+# server_socket.setblocking(0)
 poll = select.poll() # epoll() should work the same
-poll.register(serversocket.fileno(), select.POLLIN)
+poll.register(server_socket.fileno(), select.POLLIN)
 
 connections = {}
 while True:
     events = poll.poll(10000)  # 10 seconds
     for fileno, event in events:
-        if fileno == serversocket.fileno():
-            (clientsocket, address) = serversocket.accept()
-            # clientsocket.setblocking(0)
-            poll.register(clientsocket.fileno(), select.POLLIN)
-            connections[clientsocket.fileno()] = clientsocket
+        if fileno == server_socket.fileno():
+            (client_socket, client_address) = server_socket.accept()
+            print "got connection from", client_address
+            # client_socket.setblocking(0)
+            poll.register(client_socket.fileno(), select.POLLIN)
+            connections[client_socket.fileno()] = client_socket
         elif event & select.POLLIN:
-            clientsocket = connections[fileno]
-            data = clientsocket.recv(4096)
+            client_socket = connections[fileno]
+            data = client_socket.recv(4096)
             if data:
-                clientsocket.send(data) # sendall() partial?
+                client_socket.send(data) # sendall() partial?
             else:
                 poll.unregister(fileno)
-                clientsocket.close()
+                client_socket.close()
                 del connections[fileno]
