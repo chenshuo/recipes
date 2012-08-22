@@ -108,7 +108,6 @@ void EventLoop::runInLoop(const Functor& cb)
   else
   {
     queueInLoop(cb);
-    wakeup();
   }
 }
 
@@ -119,7 +118,7 @@ void EventLoop::queueInLoop(const Functor& cb)
   pendingFunctors_.push_back(cb);
   }
 
-  if (isInLoopThread() && callingPendingFunctors_)
+  if (!isInLoopThread() || callingPendingFunctors_)
   {
     wakeup();
   }
