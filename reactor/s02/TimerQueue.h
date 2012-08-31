@@ -52,7 +52,7 @@ class TimerQueue : boost::noncopyable
   typedef std::pair<Timestamp, Timer*> Entry;
   typedef std::set<Entry> TimerList;
 
-  // called when timerfd arms
+  // called when timerfd alarms
   void handleRead();
   // move out all expired timers
   std::vector<Entry> getExpired(Timestamp now);

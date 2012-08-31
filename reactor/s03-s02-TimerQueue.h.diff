@@ -53,7 +53,7 @@
    typedef std::set<Entry> TimerList;
  
 +  void scheduleInLoop(Timer* timer);
-   // called when timerfd arms
+   // called when timerfd alarms
    void handleRead();
    // move out all expired timers
    std::vector<Entry> getExpired(Timestamp now);
