@@ -178,7 +178,6 @@ void TcpConnection::handleWrite()
       }
     } else {
       LOG_SYSERR << "TcpConnection::handleWrite";
-      abort();  // FIXME
     }
   } else {
     LOG_TRACE << "Connection is down, no more writing";
