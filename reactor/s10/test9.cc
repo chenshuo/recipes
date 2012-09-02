@@ -30,7 +30,7 @@ void onMessage(const muduo::TcpConnectionPtr& conn,
   conn->send(buf->retrieveAsString());
 }
 
-int main()
+int main(int argc, char* argv[])
 {
   printf("main(): pid = %d\n", getpid());
 
@@ -40,6 +40,9 @@ int main()
   muduo::TcpServer server(&loop, listenAddr);
   server.setConnectionCallback(onConnection);
   server.setMessageCallback(onMessage);
+  if (argc > 1) {
+    server.setThreadNum(atoi(argv[1]));
+  }
   server.start();
 
   loop.loop();

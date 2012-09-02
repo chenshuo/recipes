@@ -4,6 +4,7 @@ LIB_SRC = 			\
 	Channel.cc		\
 	EventLoop.cc		\
 	EventLoopThread.cc	\
+	EventLoopThreadPool.cc	\
 	InetAddress.cc		\
 	Poller.cc		\
 	Socket.cc		\
