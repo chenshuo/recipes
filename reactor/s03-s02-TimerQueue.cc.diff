@@ -112,7 +112,7 @@
 +  loop_->runInLoop(
 +      boost::bind(&TimerQueue::scheduleInLoop, this, timer));
 +  return TimerId(timer);
- }
++}
  
 +void TimerQueue::scheduleInLoop(Timer* timer)
 +{
@@ -124,7 +124,7 @@
      resetTimerfd(timerfd_, timer->expiration());
    }
 -  return TimerId(timer);
-+}
+ }
  
  void TimerQueue::handleRead()
  {
