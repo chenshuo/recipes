@@ -191,7 +191,7 @@ class StockFactory : public boost::enable_shared_from_this<StockFactory>,
   }
 
  private:
-  static void weakDeleteCallback(boost::weak_ptr<StockFactory> wkFactory,
+  static void weakDeleteCallback(const boost::weak_ptr<StockFactory>& wkFactory,
                                  Stock* stock)
   {
     printf("weakDeleteStock[%p]\n", stock);
