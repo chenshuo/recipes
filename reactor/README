@@ -17,7 +17,7 @@ Step 2: TimerQueue
   not thread safe
   test4: timer queue unittest
 
-Step 3: wakeup(), runInLoop()
+Step 3: wakeup(), runInLoop(), EventLoopThread
   test5: runInLoop(), runAfter() in loop thread
   test6: runInLoop(), runAfter() in a different thread
 
@@ -40,11 +40,16 @@ Step 8: TcpConnection write
 Step 9: write complete callback, tcp no delay, SIGPIPE
   test11: chargen server
 
-Step 10: multithreaded TcpServer
+Step 10: multithreaded TcpServer, EventLoopThreadPool
+  test8,9,10,11: support multithreads
 
 Step 11: Connector
+  test12:
 
 Step 12: TcpClient
+  test13:
 
-Step 13: epoll
+Step 13: epoll, EPoller
+
+Step 14: TimerQueue::cancel()
 
