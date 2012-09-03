@@ -28,7 +28,7 @@ void onMessage(const muduo::TcpConnectionPtr& conn,
                muduo::Buffer* buf,
                muduo::Timestamp receiveTime)
 {
-  printf("onMessage(): received %3zd bytes from connection [%s] at %s\n",
+  printf("onMessage(): received %zd bytes from connection [%s] at %s\n",
          buf->readableBytes(),
          conn->name().c_str(),
          receiveTime.toFormattedString().c_str());
