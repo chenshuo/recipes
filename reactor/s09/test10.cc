@@ -5,6 +5,7 @@
 
 std::string message1;
 std::string message2;
+int sleepSeconds = 0;
 
 void onConnection(const muduo::TcpConnectionPtr& conn)
 {
@@ -13,6 +14,10 @@ void onConnection(const muduo::TcpConnectionPtr& conn)
     printf("onConnection(): new connection [%s] from %s\n",
            conn->name().c_str(),
            conn->peerAddress().toHostPort().c_str());
+    if (sleepSeconds > 0)
+    {
+      ::sleep(sleepSeconds);
+    }
     conn->send(message1);
     conn->send(message2);
     conn->shutdown();
@@ -47,6 +52,10 @@ int main(int argc, char* argv[])
   {
     len1 = atoi(argv[1]);
     len2 = atoi(argv[2]);
+  }
+  if (argc > 3)
+  {
+    sleepSeconds = atoi(argv[3]);
   }
 
   message1.resize(len1);
