@@ -43,13 +43,11 @@ Step 9: write complete callback, tcp no delay, SIGPIPE
 Step 10: multithreaded TcpServer, EventLoopThreadPool
   test8,9,10,11: support multithreads
 
-Step 11: Connector
+Step 11: Connector, TimerQueue::cancel()
   test12:
 
 Step 12: TcpClient
   test13:
 
 Step 13: epoll, EPoller
-
-Step 14: TimerQueue::cancel()
 

@@ -76,7 +76,7 @@ class EventLoop : boost::noncopyable
   ///
   TimerId runEvery(double interval, const TimerCallback& cb);
 
-  // void cancel(TimerId timerId);
+  void cancel(TimerId timerId);
 
   // internal use only
   void wakeup();

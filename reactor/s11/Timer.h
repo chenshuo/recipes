@@ -11,6 +11,7 @@
 #include <boost/noncopyable.hpp>
 
 #include "datetime/Timestamp.h"
+#include "thread/Atomic.h"
 #include "Callbacks.h"
 
 namespace muduo
@@ -26,8 +27,10 @@ class Timer : boost::noncopyable
     : callback_(cb),
       expiration_(when),
       interval_(interval),
-      repeat_(interval > 0.0)
-  { }
+      repeat_(interval > 0.0),
+      sequence_(s_numCreated_.incrementAndGet())
+  {
+  }
 
   void run() const
   {
@@ -36,6 +39,7 @@ class Timer : boost::noncopyable
 
   Timestamp expiration() const  { return expiration_; }
   bool repeat() const { return repeat_; }
+  int64_t sequence() const { return sequence_; }
 
   void restart(Timestamp now);
 
@@ -44,6 +48,9 @@ class Timer : boost::noncopyable
   Timestamp expiration_;
   const double interval_;
   const bool repeat_;
+  const int64_t sequence_;
+
+  static AtomicInt64 s_numCreated_;
 };
 
 }

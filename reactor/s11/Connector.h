@@ -9,6 +9,7 @@
 #define MUDUO_NET_CONNECTOR_H
 
 #include "InetAddress.h"
+#include "TimerId.h"
 
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/function.hpp>
@@ -21,8 +22,7 @@ namespace muduo
 class Channel;
 class EventLoop;
 
-class Connector : boost::noncopyable,
-                  public boost::enable_shared_from_this<Connector>
+class Connector : boost::noncopyable
 {
  public:
   typedef boost::function<void (int sockfd)> NewConnectionCallback;
@@ -61,6 +61,7 @@ class Connector : boost::noncopyable,
   boost::scoped_ptr<Channel> channel_;
   NewConnectionCallback newConnectionCallback_;
   int retryDelayMs_;
+  TimerId timerId_;
 };
 typedef boost::shared_ptr<Connector> ConnectorPtr;
 

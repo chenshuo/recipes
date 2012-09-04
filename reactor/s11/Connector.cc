@@ -34,6 +34,7 @@ Connector::Connector(EventLoop* loop, const InetAddress& serverAddr)
 Connector::~Connector()
 {
   LOG_DEBUG << "dtor[" << this << "]";
+  loop_->cancel(timerId_);
   assert(!channel_);
 }
 
@@ -199,10 +200,11 @@ void Connector::retry(int sockfd)
   setState(kDisconnected);
   if (connect_)
   {
-    LOG_INFO << "Connector::retry - Retry connecting to " << serverAddr_.toHostPort()
-             << " in " << retryDelayMs_ << " milliseconds. ";
-    loop_->runAfter(retryDelayMs_/1000.0,
-                    boost::bind(&Connector::startInLoop, shared_from_this()));
+    LOG_INFO << "Connector::retry - Retry connecting to "
+             << serverAddr_.toHostPort() << " in "
+             << retryDelayMs_ << " milliseconds. ";
+    timerId_ = loop_->runAfter(retryDelayMs_/1000.0,  // FIXME: unsafe
+                               boost::bind(&Connector::startInLoop, this));
     retryDelayMs_ = std::min(retryDelayMs_ * 2, kMaxRetryDelayMs);
   }
   else
