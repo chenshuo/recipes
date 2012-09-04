@@ -111,7 +111,7 @@ void Connector::restart()
 void Connector::stop()
 {
   connect_ = false;
-  // FIXME: cancel timer
+  loop_->cancel(timerId_);
 }
 
 void Connector::connecting(int sockfd)

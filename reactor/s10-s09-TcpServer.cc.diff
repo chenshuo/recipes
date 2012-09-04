@@ -86,7 +86,7 @@
 +  // FIXME: unsafe
 +  loop_->runInLoop(boost::bind(&TcpServer::removeConnectionInLoop, this, conn));
 +}
-+
+
 +void TcpServer::removeConnectionInLoop(const TcpConnectionPtr& conn)
 +{
    loop_->assertInLoopThread();

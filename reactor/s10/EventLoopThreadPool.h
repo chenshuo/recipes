@@ -34,7 +34,6 @@ class EventLoopThreadPool : boost::noncopyable
   EventLoop* getNextLoop();
 
  private:
-
   EventLoop* baseLoop_;
   bool started_;
   int numThreads_;
