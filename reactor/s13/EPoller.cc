@@ -80,7 +80,7 @@ Timestamp EPoller::poll(int timeoutMs, ChannelList* activeChannels)
 }
 
 void EPoller::fillActiveChannels(int numEvents,
-                                     ChannelList* activeChannels) const
+                                 ChannelList* activeChannels) const
 {
   assert(implicit_cast<size_t>(numEvents) <= events_.size());
   for (int i = 0; i < numEvents; ++i)
