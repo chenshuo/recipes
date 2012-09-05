@@ -3,6 +3,7 @@ LIB_SRC = 			\
 	Buffer.cc		\
 	Channel.cc		\
 	Connector.cc		\
+	EPoller.cc		\
 	EventLoop.cc		\
 	EventLoopThread.cc	\
 	EventLoopThreadPool.cc	\
