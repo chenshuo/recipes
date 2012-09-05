@@ -86,8 +86,7 @@
    : loop_(loop),
      timerfd_(createTimerfd()),
      timerfdChannel_(loop, timerfd_),
--    timers_()
-+    timers_(),
+     timers_(),
 +    callingExpiredTimers_(false)
  {
    timerfdChannel_.setReadCallback(

@@ -157,7 +157,6 @@ void TcpClient::removeConnection(const TcpConnectionPtr& conn)
   }
 
   loop_->queueInLoop(boost::bind(&TcpConnection::connectDestroyed, conn));
-  // FIXME wake up ?
   if (retry_ && connect_)
   {
     LOG_INFO << "TcpClient::connect[" << this << "] - Reconnecting to "

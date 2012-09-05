@@ -1,6 +1,5 @@
 // copied from muduo/net/tests/TimerQueue_unittest.cc
 
-#include "Channel.h"
 #include "EventLoop.h"
 
 #include <boost/bind.hpp>
