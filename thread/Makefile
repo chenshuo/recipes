@@ -19,7 +19,8 @@ TESTS= atomic_unittest \
        nonrecursivemutex_test \
        requestinventory_test \
        requestinventory_test2 \
-       self_deadlock
+       self_deadlock \
+       weakcallback_test
 
 all: $(TESTS)
 
@@ -63,6 +64,9 @@ threadlocal_test: test/ThreadLocal_test.cc Thread.cc
 threadlocalsingleton_test: test/ThreadLocalSingleton_test.cc Thread.cc
 
 threadpool_test: test/ThreadPool_test.cc Thread.cc ThreadPool.cc Exception.cc
+
+weakcallback_test: test/WeakCallback_test.cc
+weakcallback_test: CXXFLAGS += -Wextra --std=c++0x -DBOOST_TEST_DYN_LINK -lboost_unit_test_framework
 
 clean:
 	rm -f $(TESTS)
