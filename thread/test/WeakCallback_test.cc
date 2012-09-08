@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(testMove)
   Foo f;
   f.oneString(s);
   f.oneString(String("yy"));
-  f.oneStringRR(s);
+  // f.oneStringRR(s);
   f.oneStringRR(String("yy"));
   f.oneString(getString());
   f.oneStringRR(getString());
