@@ -252,6 +252,14 @@ BOOST_AUTO_TEST_CASE(testSignalSlotLife)
 
   printf("========\n");
   signal.call();
+
+  Foo f;
+  boost::function<void()> func = boost::bind(&Foo::zero, &f);
+
+  s1 = signal.connect(func);
+
+  printf("========\n");
+  signal.call();
   }
 
 }

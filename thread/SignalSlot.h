@@ -66,14 +66,14 @@ template<typename Callback>
 struct SlotImpl : boost::noncopyable
 {
   typedef SignalImpl<Callback> Data;
-  SlotImpl(const boost::shared_ptr<Data>& data, const Callback& cb)
+  SlotImpl(const boost::shared_ptr<Data>& data, Callback&& cb)
     : data_(data), cb_(cb), tie_(), tied_(false)
   {
   }
 
-  SlotImpl(const boost::shared_ptr<Data>& data, const Callback& cb,
-      const boost::shared_ptr<void>& dest)
-    : data_(data), cb_(cb), tie_(dest), tied_(true)
+  SlotImpl(const boost::shared_ptr<Data>& data, Callback&& cb,
+           const boost::shared_ptr<void>& tie)
+    : data_(data), cb_(cb), tie_(tie), tied_(true)
   {
   }
 
@@ -120,16 +120,16 @@ class Signal<RET(ARGS...)> : boost::noncopyable
   {
   }
 
-  Slot connect(const Callback& func)
+  Slot connect(Callback&& func)
   {
     boost::shared_ptr<SlotImpl> slotImpl(new SlotImpl(impl_, func));
     add(slotImpl);
     return slotImpl;
   }
 
-  Slot connect(const Callback& func, const boost::shared_ptr<void>& dest)
+  Slot connect(Callback&& func, const boost::shared_ptr<void>& tie)
   {
-    boost::shared_ptr<SlotImpl> slotImpl(new SlotImpl(impl_, func, dest));
+    boost::shared_ptr<SlotImpl> slotImpl(new SlotImpl(impl_, func, tie));
     add(slotImpl);
     return slotImpl;
   }
