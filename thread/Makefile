@@ -69,7 +69,7 @@ threadpool_test: test/ThreadPool_test.cc Thread.cc ThreadPool.cc Exception.cc
 weakcallback_test: test/WeakCallback_test.cc
 weakcallback_test: CXXFLAGS += -Wextra --std=c++0x -DBOOST_TEST_DYN_LINK -lboost_unit_test_framework
 
-signalslot_test: test/SignalSlot_test.cc
+signalslot_test: test/SignalSlot_test.cc Thread.cc
 signalslot_test: CXXFLAGS += -Wextra --std=c++0x -DBOOST_TEST_DYN_LINK -lboost_unit_test_framework
 
 clean:
