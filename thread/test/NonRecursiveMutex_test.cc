@@ -11,8 +11,8 @@ class Foo
   void doit() const;
 };
 
-std::vector<Foo> foos;
 MutexLock mutex;
+std::vector<Foo> foos;
 
 void post(const Foo& f)
 {
