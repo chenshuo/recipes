@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <string>
 #include <stdio.h>
+#include <assert.h>
+#include <stdint.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -21,6 +23,8 @@ string readFile(const char* file)
     }
     close(fd);
   } else {
+    perror(file);
+    abort();
   }
   return result;
 }
@@ -34,6 +38,8 @@ const char* getEncodingName(Encoding enc)
 {
   if (enc == kUTF8) {
     return "UTF-8";
+  } else if (enc == kUnicode) {
+    return "Unicode";
   } else {
     return "Unknown";
   }
@@ -76,10 +82,36 @@ Encoding detectEncoding(const string& content)
   }
 }
 
+int countChineseCharsGbk(const string& content)
+{
+  int cnt = 0;
+  for (size_t i = 0; i < content.size(); ++i) {
+    if (content[i] & 0x80) {
+      ++cnt;
+      ++i;
+    }
+  }
+  return cnt;
+}
+
+int countChineseCharsUcs2(const string& content)
+{
+  assert(content.size() % 2 == 0);
+  int cnt = 0;
+  const uint16_t* p = reinterpret_cast<const uint16_t*>(content.c_str());
+  ++p;
+  for (size_t i = 2; i < content.size()/2; ++i) {
+    if (*p++ > 127)
+      ++cnt;
+  }
+  return cnt;
+}
+
 int countChineseCharsUtf8(const string& content)
 {
   int cnt = 0;
   for (size_t i = 0; i < content.size();) {
+    // FIXME: not complete
     if (content[i] & 0x80) {
       i += 3;
       ++cnt;
@@ -101,7 +133,9 @@ int main(int argc, char* argv[])
     Encoding enc = detectEncoding(content);
     int chinese = 0;
     if (enc == kGBK) {
+      chinese = countChineseCharsGbk(content);
     } else if (enc == kUnicode) {
+      chinese = countChineseCharsUcs2(content);
     } else {
       chinese = countChineseCharsUtf8(content);
     }
