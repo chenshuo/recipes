@@ -47,6 +47,9 @@ const char* getEncodingName(Encoding enc)
 
 Encoding detectEncoding(const string& content)
 {
+  if (content.size() < 2)
+    return kGBK;
+
   if (content[0] == '\xFF' && content[1] == '\xFE') {
     return kUnicode;
   } else {
@@ -111,12 +114,16 @@ int countChineseCharsUtf8(const string& content)
 {
   int cnt = 0;
   for (size_t i = 0; i < content.size();) {
-    // FIXME: not complete
-    if (content[i] & 0x80) {
+    char c = content[i];
+    if ((c & 0x80) == 0) {
+      ++i;
+    } else if ((c & 0xe0) == 0xc0) {
+      i += 2;
+    } else if ((c & 0xf0) == 0xe0) {
       i += 3;
       ++cnt;
     } else {
-      ++i;
+      abort();
     }
   }
   return cnt;
