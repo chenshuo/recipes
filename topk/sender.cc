@@ -6,6 +6,8 @@
 #include <vector>
 
 #include <stdio.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 using namespace muduo;
 using namespace muduo::net;
@@ -37,13 +39,13 @@ void read(const char* file)
 
 WordCountList::iterator fillBuffer(WordCountList::iterator first, Buffer* buf)
 {
-  LogStream stream;
   while (first != g_wordCounts.end())
   {
+    char count[32];
+    snprintf(count, sizeof count, "%" PRId64 "\t", first->first);
+    buf->append(count);
     buf->append(first->second);
-    stream.resetBuffer();
-    stream << '\t' << first->first << "\r\n";
-    buf->append(stream.buffer().data(), stream.buffer().length());
+    buf->append("\n", 1);
     ++first;
     if (buf->readableBytes() > 65536)
     {
@@ -86,7 +88,7 @@ void onWriteComplete(const TcpConnectionPtr& conn)
   }
 }
 
-void serve(int16_t port)
+void serve(uint16_t port)
 {
   LOG_INFO << "Listen on port " << port;
   EventLoop loop;
@@ -104,7 +106,7 @@ int main(int argc, char* argv[])
   {
     read(argv[1]);
     int port = argc > 2 ? atoi(argv[2]) : 2013;
-    serve(static_cast<int16_t>(port));
+    serve(static_cast<uint16_t>(port));
   }
   else
   {

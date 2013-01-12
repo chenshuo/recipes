@@ -13,12 +13,15 @@ CXXFLAGS = -g -O2 -Wall -Wextra -Werror \
 
 LDFLAGS = -L$(MUDUO_LIBRARY) -lmuduo_net -lmuduo_base -lpthread
 
-all: sender
+all: sender merger
 
 clean:
 	rm -f sender core
 
 sender: sender.cc
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+merger: merger.cc
+	g++ $(CXXFLAGS) -o $@ $^ -lboost_system
 
 .PHONY: all clean
