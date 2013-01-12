@@ -22,6 +22,6 @@ sender: sender.cc
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 merger: merger.cc
-	g++ $(CXXFLAGS) -o $@ $^ -lboost_system
+	g++ $(CXXFLAGS) -o $@ $^ -lboost_system -lpthread
 
 .PHONY: all clean
