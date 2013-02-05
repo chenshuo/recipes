@@ -24,6 +24,8 @@ class UnsignedInt // copyable
   std::string toHex() const;
   std::string toDec() const;
 
+  void swap(UnsignedInt& rhs) { value_.swap(rhs.value_); }
+
   void add(const uint32_t x)
   {
     if (value_.empty())
@@ -43,6 +45,36 @@ class UnsignedInt // copyable
       carry = sum > kMask_;
     }
 
+    if (carry)
+    {
+      value_.push_back(carry);
+    }
+  }
+
+  void add(const UnsignedInt& x)
+  {
+    const value_type& rhs = x.value_;
+    if (rhs.size() > value_.size())
+    {
+      value_.resize(rhs.size());
+    }
+    size_t len = std::min(value_.size(), rhs.size());
+    uint64_t carry = 0;
+    for (size_t i = 0; i < len; ++i)
+    {
+      uint64_t sum = value_[i] + static_cast<uint64_t>(rhs[i]) + carry;
+      value_[i] = sum & kMask_;
+      carry = sum > kMask_;
+    }
+    if (carry)
+    {
+      for (size_t i = len; i < value_.size() && carry; ++i)
+      {
+        uint64_t sum = value_[i] + carry;
+        value_[i] = sum & kMask_;
+        carry = sum > kMask_;
+      }
+    }
     if (carry)
     {
       value_.push_back(carry);

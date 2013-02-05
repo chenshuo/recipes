@@ -155,6 +155,32 @@ BOOST_AUTO_TEST_CASE(test_add_word)
   BOOST_CHECK_EQUAL(u7.getValue()[2], 1);
 }
 
+BOOST_AUTO_TEST_CASE(test_add_other)
+{
+  UnsignedInt u1(1);
+  UnsignedInt u0(4294967294);
+
+  u0.add(u1);
+  BOOST_CHECK_EQUAL(u0.getValue().size(), 1);
+  BOOST_CHECK_EQUAL(u0.getValue()[0], 4294967295);
+
+  u0.add(u1);
+  BOOST_CHECK_EQUAL(u0.getValue().size(), 2);
+  BOOST_CHECK_EQUAL(u0.getValue()[0], 0);
+  BOOST_CHECK_EQUAL(u0.getValue()[1], 1);
+
+  u0.add(4294967295);
+  u0.add(u1);
+  BOOST_CHECK_EQUAL(u0.getValue().size(), 2);
+  BOOST_CHECK_EQUAL(u0.getValue()[0], 0);
+  BOOST_CHECK_EQUAL(u0.getValue()[1], 2);
+
+  UnsignedInt u2("ffffffffffffffff", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(u2.getValue().size(), 2);
+  u1.add(u2);
+  BOOST_CHECK_EQUAL(u1.getValue().size(), 3);
+}
+
 BOOST_AUTO_TEST_CASE(test_multiply_word)
 {
   UnsignedInt u0;

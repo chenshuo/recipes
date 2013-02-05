@@ -8,3 +8,6 @@ g++ test.cc uint.cc -o bin/test-opt -Wall -Wextra -g -O2 -DNDEBUG \
 
 g++ bench.cc uint.cc -o bin/bench-dbg -Wall -Wextra -g -O0
 g++ bench.cc uint.cc -o bin/bench-opt -Wall -Wextra -g -O2 -DNDEBUG
+
+g++ factorial.cc uint.cc -o bin/factorial-opt -Wall -Wextra -g -O2 -DNDEBUG
+g++ fibonacci.cc uint.cc -o bin/fibonacci-opt -Wall -Wextra -g -O2 -DNDEBUG
