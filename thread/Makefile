@@ -28,7 +28,7 @@ all: $(TESTS)
 $(TESTS): $(HEADERS)
 
 $(TESTS):
-	g++ $(CXXFLAGS) -o $@ $(filter %.cc,$^) -lpthread
+	g++ $(CXXFLAGS) -o $@ $(filter %.cc,$^) $(LDFLAGS) -lpthread
 
 atomic_unittest: test/Atomic_unittest.cc
 
@@ -67,10 +67,12 @@ threadlocalsingleton_test: test/ThreadLocalSingleton_test.cc Thread.cc
 threadpool_test: test/ThreadPool_test.cc Thread.cc ThreadPool.cc Exception.cc
 
 weakcallback_test: test/WeakCallback_test.cc
-weakcallback_test: CXXFLAGS += -Wextra --std=c++0x -DBOOST_TEST_DYN_LINK -lboost_unit_test_framework
+weakcallback_test: CXXFLAGS += -Wextra --std=c++0x -DBOOST_TEST_DYN_LINK
+weakcallback_test: LDFLAGS += -lboost_unit_test_framework
 
 signalslot_test: test/SignalSlot_test.cc Thread.cc
-signalslot_test: CXXFLAGS += -Wextra --std=c++0x -DBOOST_TEST_DYN_LINK -lboost_unit_test_framework
+signalslot_test: CXXFLAGS += -Wextra --std=c++0x -DBOOST_TEST_DYN_LINK
+signalslot_test: LDFLAGS += -lboost_unit_test_framework
 
 clean:
 	rm -f $(TESTS)

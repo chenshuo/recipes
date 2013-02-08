@@ -7,6 +7,8 @@
 
 #include "Thread.h"
 
+#include <boost/weak_ptr.hpp>
+
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -47,6 +49,45 @@ class ThreadNameInitializer
 };
 
 ThreadNameInitializer init;
+
+struct ThreadData
+{
+  typedef muduo::Thread::ThreadFunc ThreadFunc;
+  ThreadFunc func_;
+  std::string name_;
+  boost::weak_ptr<pid_t> wkTid_;
+
+  ThreadData(const ThreadFunc& func,
+             const std::string& name,
+             const boost::shared_ptr<pid_t>& tid)
+    : func_(func),
+      name_(name),
+      wkTid_(tid)
+  { }
+
+  void runInThread()
+  {
+    boost::shared_ptr<pid_t> tid = wkTid_.lock();
+    if (tid)
+    {
+      *tid = muduo::CurrentThread::tid();
+      tid.reset();
+    }
+
+    muduo::CurrentThread::t_threadName = name_.c_str();
+    func_(); // FIXME: surround with try-catch, see muduo
+    muduo::CurrentThread::t_threadName = "finished";
+  }
+};
+
+void* startThread(void* obj)
+{
+  ThreadData* data = static_cast<ThreadData*>(obj);
+  data->runInThread();
+  delete data;
+  return NULL;
+}
+
 }
 
 using namespace muduo;
@@ -74,8 +115,9 @@ AtomicInt32 Thread::numCreated_;
 
 Thread::Thread(const ThreadFunc& func, const std::string& n)
   : started_(false),
+    joined_(false),
     pthreadId_(0),
-    tid_(0),
+    tid_(new pid_t(0)),
     func_(func),
     name_(n)
 {
@@ -84,33 +126,30 @@ Thread::Thread(const ThreadFunc& func, const std::string& n)
 
 Thread::~Thread()
 {
+  if (started_ && !joined_)
+  {
+    pthread_detach(pthreadId_);
+  }
 }
 
 void Thread::start()
 {
   assert(!started_);
   started_ = true;
-  pthread_create(&pthreadId_, NULL, &startThread, this);
+
+  ThreadData* data = new ThreadData(func_, name_, tid_);
+  if (pthread_create(&pthreadId_, NULL, &startThread, data))
+  {
+    started_ = false;
+    delete data;
+    abort();
+  }
 }
 
 void Thread::join()
 {
   assert(started_);
+  assert(!joined_);
+  joined_ = true;
   pthread_join(pthreadId_, NULL);
 }
-
-void* Thread::startThread(void* obj)
-{
-  Thread* thread = static_cast<Thread*>(obj);
-  thread->runInThread();
-  return NULL;
-}
-
-void Thread::runInThread()
-{
-  tid_ = CurrentThread::tid();
-  muduo::CurrentThread::t_threadName = name_.c_str();
-  func_();
-  muduo::CurrentThread::t_threadName = "finished";
-}
-
