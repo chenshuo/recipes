@@ -93,8 +93,10 @@ std::string fasterFibonacci(int N)
     bit >>= 1;
     assert((bit & N) > 0);
 
+    // http://en.wikipedia.org/wiki/Exponentiation_by_squaring#Runtime_example:_compute_310_2
     for (bit >>= 1; bit > 0; bit >>= 1)
     {
+      // A = A * A
       t = n2;
       t.add(n0);
       t.multiply(n1);
@@ -109,6 +111,7 @@ std::string fasterFibonacci(int N)
 
       if (bit & N)
       {
+        // A = [ 1 1; 1 0] * A
         n0.swap(n1);
         n1 = n2;
         n2.add(n0);
