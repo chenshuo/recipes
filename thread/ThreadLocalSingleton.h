@@ -27,7 +27,7 @@ class ThreadLocalSingleton : boost::noncopyable
     return *t_value_;
   }
 
-  // no way to auto delete it
+  // See muduo/base/ThreadLocalSingleton.h for how to delete it automatically.
   static void destroy()
   {
     delete t_value_;
@@ -35,6 +35,8 @@ class ThreadLocalSingleton : boost::noncopyable
   }
 
  private:
+  ThreadLocalSingleton();
+  ~ThreadLocalSingleton();
 
   static __thread T* t_value_;
 };

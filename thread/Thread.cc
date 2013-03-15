@@ -67,11 +67,13 @@ struct ThreadData
 
   void runInThread()
   {
-    boost::shared_ptr<pid_t> tid = wkTid_.lock();
-    if (tid)
+    pid_t tid = muduo::CurrentThread::tid();
+    boost::shared_ptr<pid_t> ptid = wkTid_.lock();
+
+    if (ptid)
     {
-      *tid = muduo::CurrentThread::tid();
-      tid.reset();
+      *ptid = tid;
+      ptid.reset();
     }
 
     muduo::CurrentThread::t_threadName = name_.c_str();
