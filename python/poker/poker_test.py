@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import unittest
-import poker
+import poker, poker2
 
 class TestPoker(unittest.TestCase):
 
@@ -42,16 +42,16 @@ class TestPoker(unittest.TestCase):
 		self.assertEqual(5, poker.kind(2, list(reversed(poker.get_ranks(self.tp)))))
 
 	def test_score2(self):
-		print poker.score2(self.sf6)
-		print poker.score2(self.fk9)
-		print poker.score2(self.fhT)
-		print poker.score2(self.fh7)
-		print poker.score2(self.fl)
-		print poker.score2(self.st)
-		print poker.score2(self.tk)
-		print poker.score2(self.tp)
-		print poker.score2(self.op)
-		print poker.score2(self.hc)
+		print poker2.score2(self.sf6)
+		print poker2.score2(self.fk9)
+		print poker2.score2(self.fhT)
+		print poker2.score2(self.fh7)
+		print poker2.score2(self.fl)
+		print poker2.score2(self.st)
+		print poker2.score2(self.tk)
+		print poker2.score2(self.tp)
+		print poker2.score2(self.op)
+		print poker2.score2(self.hc)
 
 if __name__ == '__main__':
 	unittest.main()

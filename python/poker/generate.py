@@ -14,7 +14,7 @@ def gen(num):
 if __name__ == '__main__':
 	scores = []
 	for hand in gen(5):
-		scores.append((poker.score2(hand), " ".join(hand)))
+		scores.append((poker.score(hand), " ".join(hand)))
 	scores.sort(reverse=True)
 	for s in scores:
 		print s

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import time
-import poker, generate
+import poker, poker2, generate
 
 if __name__ == '__main__':
 
@@ -16,7 +16,7 @@ if __name__ == '__main__':
 	print ("%.4f" % (elapsed)), max2
 
 	start = time.time()
-	max3 = max(generate.gen(5), key=poker.score2)
+	max3 = max(generate.gen(5), key=poker2.score2)
 	elapsed = time.time() - start
 	print ("%.4f" % (elapsed)), max3
 
