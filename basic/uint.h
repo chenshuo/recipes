@@ -23,6 +23,14 @@ class UnsignedInt // copyable
 
   std::string toHex() const;
   std::string toDec() const;
+  bool isZero() const { return value_.empty(); }
+  bool isNormal() const { return isZero() || value_.back() != 0; }
+  bool lessThan(const UnsignedInt& x) const
+  {
+    const value_type& rhs = x.value_;
+    return rhs.size() > value_.size() ||
+           (rhs.size() == value_.size() && x.highest() > highest());
+  }
 
   void swap(UnsignedInt& rhs) { value_.swap(rhs.value_); }
 
@@ -81,9 +89,16 @@ class UnsignedInt // copyable
     }
   }
 
+  void sub(const UnsignedInt& x);
+
   void multiply(const uint32_t x)
   {
     const uint64_t multiplier = x;
+    if (multiplier == 0)
+    {
+      value_.clear();
+      return;
+    }
     uint64_t carry = 0;
     for (size_t i = 0; i < value_.size(); ++i)
     {
@@ -159,6 +174,11 @@ class UnsignedInt // copyable
  private:
   void parseDec(const std::string& str);
   void parseHex(const std::string& str);
+
+  uint32_t highest() const
+  {
+    return value_.empty() ? 0 : value_.back();
+  }
 
   value_type value_;
 

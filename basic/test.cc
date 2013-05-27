@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(test_initialize_string)
     string nines(i, '9');
     UnsignedInt u9(nines);
     BOOST_CHECK_EQUAL(u9.toDec(), nines);
-    const UnsignedInt::value_type& v = u9.getValue();
+    // const UnsignedInt::value_type& v = u9.getValue();
     // printf("%3zd %3zd %zd\n", v.size(), v.capacity(), v.capacity()-v.size());
     // printf("%zd ", v.capacity()-v.size());
   }
@@ -179,6 +179,56 @@ BOOST_AUTO_TEST_CASE(test_add_other)
   BOOST_CHECK_EQUAL(u2.getValue().size(), 2);
   u1.add(u2);
   BOOST_CHECK_EQUAL(u1.getValue().size(), 3);
+}
+
+BOOST_AUTO_TEST_CASE(test_sub)
+{
+  UnsignedInt u1(1);
+  {
+  UnsignedInt u0(2);
+  u0.sub(u1);
+  BOOST_CHECK_EQUAL(u0.getValue().size(), 1);
+  BOOST_CHECK_EQUAL(u0.getValue()[0], 1);
+
+  u0.sub(u1);
+  BOOST_CHECK_EQUAL(u0.getValue().size(), 0);
+  }
+
+  {
+  UnsignedInt u2(0xffffffff);
+  u2.add(2);
+  BOOST_CHECK_EQUAL(u2.getValue().size(), 2);
+  BOOST_CHECK_EQUAL(u2.getValue()[0], 1);
+  BOOST_CHECK_EQUAL(u2.getValue()[1], 1);
+
+  u2.sub(u1);
+  BOOST_CHECK_EQUAL(u2.getValue().size(), 2);
+  BOOST_CHECK_EQUAL(u2.getValue()[0], 0);
+  BOOST_CHECK_EQUAL(u2.getValue()[1], 1);
+
+  u2.sub(u1);
+  BOOST_CHECK_EQUAL(u2.getValue().size(), 1);
+  BOOST_CHECK_EQUAL(u2.getValue()[0], 0xffffffff);
+
+  u2.sub(u2);
+  BOOST_CHECK_EQUAL(u2.getValue().size(), 0);
+  }
+
+  {
+  UnsignedInt u3(0xffffffff);
+  u3.add(2);
+  u3.sub(u3);
+  BOOST_CHECK_EQUAL(u3.getValue().size(), 0);
+  }
+
+  {
+  UnsignedInt u4("10000000000000000", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(u4.getValue().size(), 3);
+  u4.sub(1);
+  BOOST_CHECK_EQUAL(u4.getValue().size(), 2);
+  BOOST_CHECK_EQUAL(u4.getValue()[0], 0xffffffff);
+  BOOST_CHECK_EQUAL(u4.getValue()[1], 0xffffffff);
+  }
 }
 
 BOOST_AUTO_TEST_CASE(test_multiply_word)

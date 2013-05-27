@@ -7,6 +7,42 @@
 const char kDigits[] = "0123456789abcdef";
 BOOST_STATIC_ASSERT(sizeof kDigits == 17);
 
+void UnsignedInt::sub(const UnsignedInt& x)
+{
+  if (lessThan(x))
+  {
+    assert(0 && "Underflow");
+    abort();
+  }
+  const value_type& rhs = x.value_;
+  assert (rhs.size() <= value_.size());
+  size_t len = std::min(value_.size(), rhs.size());
+  uint64_t carry = 0;
+
+  for (size_t i = 0; i < len; ++i)
+  {
+    uint64_t sum = value_[i] - static_cast<uint64_t>(rhs[i]) - carry;
+    value_[i] = sum & kMask_;
+    carry = sum > kMask_;
+  }
+  if (carry)
+  {
+    for (size_t i = len; i < value_.size() && carry; ++i)
+    {
+      uint64_t sum = value_[i] - carry;
+      value_[i] = sum & kMask_;
+      carry = sum > kMask_;
+    }
+  }
+  if (carry)
+  {
+    assert(0 && "Underflow");
+    abort();
+  }
+  while (!value_.empty() && value_.back() == 0)
+    value_.pop_back();
+}
+
 std::string UnsignedInt::toHex() const
 {
   std::string result;
