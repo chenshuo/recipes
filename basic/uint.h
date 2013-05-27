@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <string>
 #include <vector>
+#include <assert.h>
 #include <stdint.h>
 
 class UnsignedInt // copyable
@@ -29,7 +31,11 @@ class UnsignedInt // copyable
   {
     const value_type& rhs = x.value_;
     return rhs.size() > value_.size() ||
-           (rhs.size() == value_.size() && x.highest() > highest());
+           (rhs.size() == value_.size() &&
+            std::lexicographical_compare(value_.rbegin(),
+                                         value_.rend(),
+                                         rhs.rbegin(),
+                                         rhs.rend()));
   }
 
   void swap(UnsignedInt& rhs) { value_.swap(rhs.value_); }
@@ -156,6 +162,7 @@ class UnsignedInt // copyable
 
     if (!value_.empty() && value_.back() == 0)
       value_.pop_back();
+    assert(isNormal());
     return carry;
   }
 

@@ -95,6 +95,35 @@ BOOST_AUTO_TEST_CASE(test_initialize_string)
   }
 }
 
+BOOST_AUTO_TEST_CASE(test_lessthan)
+{
+  UnsignedInt u0;
+  BOOST_CHECK_EQUAL(u0.lessThan(u0), false);
+
+  UnsignedInt u1(1);
+  BOOST_CHECK_EQUAL(u1.lessThan(u1), false);
+  BOOST_CHECK_EQUAL(u0.lessThan(u1), true);
+  BOOST_CHECK_EQUAL(u1.lessThan(u0), false);
+
+  UnsignedInt u2(2);
+  BOOST_CHECK_EQUAL(u1.lessThan(u2), true);
+  BOOST_CHECK_EQUAL(u2.lessThan(u1), false);
+
+  UnsignedInt u3("100000000", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(u3.getValue().size(), 2);
+  BOOST_CHECK_EQUAL(u1.lessThan(u3), true);
+  BOOST_CHECK_EQUAL(u3.lessThan(u1), false);
+
+  UnsignedInt u4("100000001", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(u3.lessThan(u4), true);
+  BOOST_CHECK_EQUAL(u4.lessThan(u3), false);
+
+  UnsignedInt u5("100000002", UnsignedInt::kHex);
+  UnsignedInt u6("200000001", UnsignedInt::kHex);
+  BOOST_CHECK_EQUAL(u5.lessThan(u6), true);
+  BOOST_CHECK_EQUAL(u6.lessThan(u5), false);
+}
+
 BOOST_AUTO_TEST_CASE(test_add_word)
 {
   UnsignedInt u0;
