@@ -21,7 +21,8 @@ TESTS= atomic_unittest \
        requestinventory_test2 \
        self_deadlock \
        weakcallback_test \
-       signalslot_test
+       signalslot_test \
+       waiter_test
 
 all: $(TESTS)
 
@@ -73,6 +74,9 @@ weakcallback_test: LDFLAGS += -lboost_unit_test_framework
 signalslot_test: test/SignalSlot_test.cc Thread.cc
 signalslot_test: CXXFLAGS += -Wextra --std=c++0x -DBOOST_TEST_DYN_LINK
 signalslot_test: LDFLAGS += -lboost_unit_test_framework
+
+waiter_test: test/Waiter_test.cc Thread.cc
+waiter_test: CXXFLAGS += --std=c++0x
 
 clean:
 	rm -f $(TESTS)
