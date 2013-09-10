@@ -8,6 +8,7 @@ icmpecho: icmpecho.cc faketcp.cc
 rejectall: rejectall.cc faketcp.cc
 acceptall: acceptall.cc faketcp.cc
 discardall: discardall.cc faketcp.cc
+echoall: echoall.cc faketcp.cc
 connectmany: connectmany.cc faketcp.cc
 
 $(BINARIES):
