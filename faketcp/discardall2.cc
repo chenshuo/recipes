@@ -1,17 +1,26 @@
 #include "faketcp.h"
 
+#include <map>
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <linux/if_ether.h>
 
-void tcp_input(int fd, const void* input, const void* ippayload, int tot_len)
+struct TcpState
+{
+  uint32_t rcv_nxt;
+//  uint32_t snd_una;
+};
+
+std::map<SocketAddr, TcpState> expectedSeqs;
+
+void tcp_input(int fd, const void* input, const void* payload, int tot_len)
 {
   const struct iphdr* iphdr = static_cast<const struct iphdr*>(input);
-  const struct tcphdr* tcphdr = static_cast<const struct tcphdr*>(ippayload);
+  const struct tcphdr* tcphdr = static_cast<const struct tcphdr*>(payload);
   const int iphdr_len = iphdr->ihl*4;
   const int tcp_seg_len = tot_len - iphdr_len;
   const int tcphdr_size = sizeof(*tcphdr);
@@ -19,7 +28,6 @@ void tcp_input(int fd, const void* input, const void* ippayload, int tot_len)
       && tcp_seg_len >= tcphdr->doff*4)
   {
     const int tcphdr_len = tcphdr->doff*4;
-    const void* payload = ippayload + tcphdr_len;
     const int payload_len = tot_len - iphdr_len - tcphdr_len;
 
     char source[INET_ADDRSTRLEN];
@@ -49,59 +57,78 @@ void tcp_input(int fd, const void* input, const void* ippayload, int tot_len)
     bzero(&out, output_len + 4);
     memcpy(output, input, sizeof(struct iphdr));
 
+    out.iphdr.tot_len = htons(output_len);
     std::swap(out.iphdr.saddr, out.iphdr.daddr);
     out.iphdr.check = 0;
+    out.iphdr.check = in_checksum(output, sizeof(struct iphdr));
 
     out.tcphdr.source = tcphdr->dest;
     out.tcphdr.dest = tcphdr->source;
     out.tcphdr.doff = sizeof(struct tcphdr) / 4;
     out.tcphdr.window = htons(5000);
 
+    SocketAddr addr = { out.iphdr.saddr, out.iphdr.daddr, out.tcphdr.source, out.tcphdr.dest };
     bool response = false;
     const uint32_t seq = ntohl(tcphdr->seq);
     if (tcphdr->syn)
     {
-      out.tcphdr.seq = htonl(seq);
+      out.tcphdr.seq = htonl(123456);
       out.tcphdr.ack_seq = htonl(seq+1);
       out.tcphdr.syn = 1;
       out.tcphdr.ack = 1;
+      TcpState s = { seq + 1 };
+      expectedSeqs[addr] = s;
       response = true;
     }
     else if (tcphdr->fin)
     {
-      out.tcphdr.seq = htonl(seq);
+      out.tcphdr.seq = htonl(123457);
       out.tcphdr.ack_seq = htonl(seq+1);
       out.tcphdr.fin = 1;
       out.tcphdr.ack = 1;
+      expectedSeqs.erase(addr);
       response = true;
     }
     else if (payload_len > 0)
     {
-      out.tcphdr.seq = htonl(seq);
+      out.tcphdr.seq = htonl(123457);
       out.tcphdr.ack_seq = htonl(seq+payload_len);
-      out.tcphdr.psh = 1;
       out.tcphdr.ack = 1;
-      assert(output + output_len + payload_len < output + sizeof(output));
-      memcpy(output + output_len, payload, payload_len);
-      output_len += payload_len;
-      response = true;
-    }
+      auto it = expectedSeqs.find(addr);
+      if (it != expectedSeqs.end())
+      {
+        if (it->second.rcv_nxt >= seq)
+        {
+          if (it->second.rcv_nxt == seq)
+          {
+            printf("received, seq = %u:%u, len = %u\n", seq, seq+payload_len, payload_len);
+          }
+          else
+          {
+            printf("retransmit, rcv_nxt = %u, seq = %u\n", it->second.rcv_nxt, seq);
+          }
 
-    out.iphdr.tot_len = htons(output_len);
-    out.iphdr.check = in_checksum(output, sizeof(struct iphdr));
+          const uint32_t ack = ntohl(out.tcphdr.ack_seq);
+          it->second.rcv_nxt = ack;
+          response = true;
+        }
+        else
+        {
+          printf("packet loss, rcv_nxt = %u, seq = %u\n", it->second.rcv_nxt, seq);
+        }
+      }
+      else
+      {
+        // RST
+      }
+    }
 
     unsigned char* pseudo = output + output_len;
-    if (payload_len % 2 == 1)
-    {
-      *pseudo = 0;
-      ++pseudo;
-    }
-    unsigned int len = sizeof(struct tcphdr)+payload_len;
     pseudo[0] = 0;
     pseudo[1] = IPPROTO_TCP;
-    pseudo[2] = len / 256;
-    pseudo[3] = len % 256;
-    out.tcphdr.check = in_checksum(&out.iphdr.saddr, len + 12 + (payload_len % 2));
+    pseudo[2] = 0;
+    pseudo[3] = sizeof(struct tcphdr);
+    out.tcphdr.check = in_checksum(&out.iphdr.saddr, sizeof(struct tcphdr)+12);
     if (response)
     {
       write(fd, output, output_len);

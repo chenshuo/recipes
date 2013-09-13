@@ -1,12 +1,21 @@
 #include "faketcp.h"
 
+#include <map>
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <linux/if_ether.h>
+
+struct TcpState
+{
+  uint32_t rcv_nxt;
+  uint32_t snd_una;
+};
+
+std::map<SocketAddr, TcpState> expectedSeqs;
 
 void tcp_input(int fd, const void* input, const void* ippayload, int tot_len)
 {
@@ -57,6 +66,7 @@ void tcp_input(int fd, const void* input, const void* ippayload, int tot_len)
     out.tcphdr.doff = sizeof(struct tcphdr) / 4;
     out.tcphdr.window = htons(5000);
 
+    SocketAddr addr = { out.iphdr.saddr, out.iphdr.daddr, out.tcphdr.source, out.tcphdr.dest };
     bool response = false;
     const uint32_t seq = ntohl(tcphdr->seq);
     if (tcphdr->syn)
@@ -65,6 +75,8 @@ void tcp_input(int fd, const void* input, const void* ippayload, int tot_len)
       out.tcphdr.ack_seq = htonl(seq+1);
       out.tcphdr.syn = 1;
       out.tcphdr.ack = 1;
+      TcpState s = { seq + 1, seq + 1 };
+      expectedSeqs[addr] = s;
       response = true;
     }
     else if (tcphdr->fin)
@@ -73,9 +85,10 @@ void tcp_input(int fd, const void* input, const void* ippayload, int tot_len)
       out.tcphdr.ack_seq = htonl(seq+1);
       out.tcphdr.fin = 1;
       out.tcphdr.ack = 1;
+      expectedSeqs.erase(addr);
       response = true;
     }
-    else if (payload_len > 0)
+    else
     {
       out.tcphdr.seq = htonl(seq);
       out.tcphdr.ack_seq = htonl(seq+payload_len);
@@ -84,7 +97,27 @@ void tcp_input(int fd, const void* input, const void* ippayload, int tot_len)
       assert(output + output_len + payload_len < output + sizeof(output));
       memcpy(output + output_len, payload, payload_len);
       output_len += payload_len;
-      response = true;
+      auto it = expectedSeqs.find(addr);
+      if (it != expectedSeqs.end())
+      {
+        const uint32_t ack = ntohl(tcphdr->ack_seq);
+        printf("seq = %u, ack = %u\n", seq, ack);
+        printf("rcv_nxt = %u, snd_una = %u\n", it->second.rcv_nxt, it->second.snd_una);
+        if (payload_len > 0 && it->second.rcv_nxt == seq)
+        {
+          it->second.snd_una = seq+payload_len;
+          response = true;
+        }
+        if (tcphdr->ack && ack == it->second.snd_una)
+        {
+          it->second.rcv_nxt = ack;
+        }
+        printf("rcv_nxt = %u, snd_una = %u\n", it->second.rcv_nxt, it->second.snd_una);
+      }
+      else
+      {
+        // RST
+      }
     }
 
     out.iphdr.tot_len = htons(output_len);
