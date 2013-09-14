@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
@@ -103,14 +104,14 @@ void tcp_input(int fd, const void* input, const void* ippayload, int tot_len)
         const uint32_t ack = ntohl(tcphdr->ack_seq);
         printf("seq = %u, ack = %u\n", seq, ack);
         printf("rcv_nxt = %u, snd_una = %u\n", it->second.rcv_nxt, it->second.snd_una);
+        if (tcphdr->ack && ack == it->second.snd_una)
+        {
+          it->second.rcv_nxt = ack;
+        }
         if (payload_len > 0 && it->second.rcv_nxt == seq)
         {
           it->second.snd_una = seq+payload_len;
           response = true;
-        }
-        if (tcphdr->ack && ack == it->second.snd_una)
-        {
-          it->second.rcv_nxt = ack;
         }
         printf("rcv_nxt = %u, snd_una = %u\n", it->second.rcv_nxt, it->second.snd_una);
       }
@@ -173,7 +174,9 @@ int main()
       close(fd);
       exit(1);
     }
-    printf("read %d bytes from tunnel interface %s.\n", nread, ifname);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    printf("%ld.%06ld read %d bytes %s.\n", tv.tv_sec, tv.tv_usec, nread, ifname);
 
     const int iphdr_len = iphdr.ihl*4;
     if (nread >= iphdr_size

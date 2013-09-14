@@ -48,8 +48,8 @@ uint16_t in_checksum(const void* buf, int len)
   {
     sum += *data++;
   }
-  // while (sum >> 16)
-  sum = (sum & 0xFFFF) + (sum >> 16);
+  while (sum >> 16)
+    sum = (sum & 0xFFFF) + (sum >> 16);
   assert(sum <= 0xFFFF);
   return ~sum;
 }
