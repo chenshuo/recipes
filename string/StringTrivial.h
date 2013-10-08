@@ -29,7 +29,7 @@ class String
   }
   */
 
-  ~String()
+  ~String() noexcept
   {
     delete[] data_;
   }
@@ -51,7 +51,7 @@ class String
   }
 
   // C++11 move-ctor
-  String(String&& rhs)
+  String(String&& rhs) noexcept
     : data_(rhs.data_)
   {
     rhs.data_ = nullptr;
