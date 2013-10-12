@@ -1,6 +1,7 @@
 #include <boost/functional/hash/hash.hpp>
 
 #include <deque>
+#include <type_traits>
 #include <unordered_set>
 #include <vector>
 
@@ -179,10 +180,8 @@ struct State
   template<typename FUNC>
   void move(const FUNC& func) const
   {
-    if (0)
-    {
-      std::function<void(const State&)> typecheck = func;
-    }
+    static_assert(std::is_convertible<FUNC, std::function<void(const State&)>>::value,
+                  "func must be callable with a 'const State&' parameter.");
     const Mask mask = toMask();
 
     for (int i = 0; i < kBlocks; ++i)
