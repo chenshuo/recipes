@@ -187,80 +187,45 @@ struct State
     for (int i = 0; i < kBlocks; ++i)
     {
       Block b = blocks_[i];
-      if (b.top > 0 && mask.empty(b.top-1, b.left))
+
+      // move up
+      if (b.top > 0 && mask.empty(b.top-1, b.left)
+                    && mask.empty(b.top-1, b.right()))
       {
-        bool moveUp = false;
-        if (b.shape == Shape::kHorizon || b.shape == Shape::kSquare)
-        {
-          if (mask.empty(b.top-1, b.left+1))
-            moveUp = true;
-        }
-        else
-          moveUp = true;
-        if (moveUp)
-        {
-          State next = *this;
-          next.step++;
-          next.blocks_[i].top--;
-          func(next);
-        }
+        State next = *this;
+        next.step++;
+        next.blocks_[i].top--;
+        func(next);
       }
 
-      if (b.bottom() < kRows-1 && mask.empty(b.bottom()+1, b.left))
+      // move down
+      if (b.bottom() < kRows-1 && mask.empty(b.bottom()+1, b.left)
+                               && mask.empty(b.bottom()+1, b.right()))
       {
-        bool moveDown = false;
-        if (b.shape == Shape::kHorizon || b.shape == Shape::kSquare)
-        {
-          if (mask.empty(b.bottom()+1, b.left+1))
-            moveDown = true;
-        }
-        else
-          moveDown = true;
-        if (moveDown)
-        {
-          State next = *this;
-          next.step++;
-          next.blocks_[i].top++;
-          func(next);
-        }
+        State next = *this;
+        next.step++;
+        next.blocks_[i].top++;
+        func(next);
       }
 
-      if (b.left > 0 && mask.empty(b.top, b.left-1))
+      // move left
+      if (b.left > 0 && mask.empty(b.top,      b.left-1)
+                     && mask.empty(b.bottom(), b.left-1))
       {
-        bool moveLeft = false;
-        if (b.shape == Shape::kVertical || b.shape == Shape::kSquare)
-        {
-          if (mask.empty(b.top+1, b.left-1))
-            moveLeft = true;
-        }
-        else
-          moveLeft = true;
-        if (moveLeft)
-        {
-          State next = *this;
-          next.step++;
-          next.blocks_[i].left--;
-          func(next);
-        }
+        State next = *this;
+        next.step++;
+        next.blocks_[i].left--;
+        func(next);
       }
 
-      if (b.right() < kColumns-1 && mask.empty(b.top, b.right()+1))
+      // move right
+      if (b.right() < kColumns-1 && mask.empty(b.top,      b.right()+1)
+                                 && mask.empty(b.bottom(), b.right()+1))
       {
-        bool moveRight = false;
-        if (b.shape == Shape::kVertical || b.shape == Shape::kSquare)
-        {
-          if (mask.empty(b.top+1, b.right()+1))
-            moveRight = true;
-        }
-        else
-          moveRight = true;
-        if (moveRight)
-        {
-          State next = *this;
-          next.step++;
-          next.blocks_[i].left++;
-          func(next);
-        }
+        State next = *this;
+        next.step++;
+        next.blocks_[i].left++;
+        func(next);
       }
     }
   }
