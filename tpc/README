@@ -1,0 +1,2 @@
+A simple wrapper of Sockets API in C++11, supports blocking IO only.
+TPC stands for thread-per-connection, which is the current model for blocking IO.
