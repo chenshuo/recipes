@@ -18,7 +18,7 @@ class Acceptor : noncopyable
   Acceptor(Acceptor&&) = default;
   Acceptor& operator=(Acceptor&&) = default;
 
-  // Thread safe
+  // thread safe
   TcpStreamPtr accept();
 
  private:

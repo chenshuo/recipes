@@ -22,12 +22,16 @@ class TcpStream : noncopyable
   static TcpStreamPtr connect(const InetAddress& serverAddr, const InetAddress& localAddr);
 
   // NOT thread safe
+  int readAll(void* buf, int len);  // read len bytes, unless error happens
+  int readSome(void* buf, int len); // read len or less bytes
+
   int sendAll(const void* buf, int len);  // send len bytes, unless error happens
   int sendSome(const void* buf, int len); // send len or less bytes
 
-  int readAll(const void* buf, int len);  // read len bytes, unless error happens
-  int readSome(const void* buf, int len); // read len or less bytes
-  
+  // thread safe
+  int setNoDelay(bool on);
+  int shutdownWrite();
+
  private:
   Socket sock_;
 };

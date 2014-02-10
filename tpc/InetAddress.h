@@ -19,14 +19,17 @@ class InetAddress : copyable
 
   // default copy/assignment are Okay
 
-  std::string toIp() const;
-  std::string toIpPort() const;
+  std::string toIpString() const;
+  std::string toIpPortString() const;
 
   const struct sockaddr_in& getSockAddrInet() const { return saddr_; }
   void setSockAddrInet(const struct sockaddr_in& saddr) { saddr_ = saddr; }
 
   uint32_t ipNetEndian() const { return saddr_.sin_addr.s_addr; }
   uint16_t portNetEndian() const { return saddr_.sin_port; }
+
+  uint32_t ipHostEndian() const { return ntohl(saddr_.sin_addr.s_addr); }
+  uint16_t portHostEndian() const { return ntohs(saddr_.sin_port); }
 
  private:
   struct sockaddr_in saddr_;

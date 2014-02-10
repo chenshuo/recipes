@@ -14,6 +14,7 @@ struct copyable
 {
 };
 
+// for passing string parameter to a function
 struct StringPiece : copyable
 {
  public:
@@ -24,6 +25,7 @@ struct StringPiece : copyable
 };
 
 template<typename To, typename From>
-inline To implicit_cast(const From &f) {
-    return f;
+inline To implicit_cast(const From &f)
+{
+  return f;
 }

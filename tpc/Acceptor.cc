@@ -2,6 +2,7 @@
 
 #include "TcpStream.h"
 
+#include <stdio.h>
 #include <sys/socket.h>
 
 Acceptor::Acceptor(const InetAddress& listenAddr)
@@ -21,6 +22,7 @@ TcpStreamPtr Acceptor::accept()
   }
   else
   {
+    perror("Acceptor::accept");
     return TcpStreamPtr();
   }
 }

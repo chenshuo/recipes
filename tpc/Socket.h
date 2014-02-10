@@ -10,7 +10,7 @@ class Socket : noncopyable
 {
  public:
   explicit Socket(int sockfd);
-  ~Socket();
+  ~Socket();  // close sockfd_
 
   Socket(Socket&& rhs)
     : Socket(rhs.sockfd_)
