@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <netdb.h>
+#include <string.h>
 #include <strings.h> // bzero
 #include <arpa/inet.h>
 
@@ -16,19 +17,19 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly)
 
 std::string InetAddress::toIp() const
 {
-  char buf[32];
+  char buf[32] = "";
   ::inet_ntop(AF_INET, &saddr_.sin_addr, buf, sizeof buf);
   return buf;
 }
 
 std::string InetAddress::toIpPort() const
 {
-  char buf[32]; // "255.255.255.255:65535" 4*4+5+1 = 22
+  char buf[32] = ""; // "255.255.255.255:65535" 4*4+5+1 = 22
+  ::inet_ntop(AF_INET, &saddr_.sin_addr, buf, sizeof buf);
+  int end = ::strlen(buf);
   uint16_t port = portHostEndian();
-  snprintf(buf, sizeof buf, ":%u", port);
-  std::string ip = toIp();
-  ip += buf;
-  return ip;
+  snprintf(buf + end, sizeof buf - end, ":%u", port);
+  return buf;
 }
 
 static const int kResolveBufSize = 4096; // RFC6891: EDNS payload 4096 bytes
@@ -41,9 +42,8 @@ bool InetAddress::resolveSlow(const char* hostname, InetAddress* out)
   int herrno = 0;
   bzero(&hent, sizeof(hent));
 
-  while (buf.size() <= 16 * kResolveBufSize)
+  while (buf.size() <= 16 * kResolveBufSize)  // 64 KiB
   {
-    printf("len = %zd\n", buf.size());
     int ret = gethostbyname_r(hostname, &hent, buf.data(), buf.size(), &he, &herrno);
     if (ret == 0 && he != NULL)
     {

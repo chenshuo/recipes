@@ -63,3 +63,28 @@ int TcpStream::sendSome(const void* buf, int len)
   // FIXME: EINTR
   return ::write(sock_.fd(), buf, len);
 }
+
+TcpStreamPtr TcpStream::connect(const InetAddress& serverAddr)
+{
+  TcpStreamPtr stream;
+  Socket sock(Socket::createTcp());
+  if (sock.connect(serverAddr) == 0)
+  {
+    // FIXME: do poll(POLLOUT) to check errors
+    stream.reset(new TcpStream(std::move(sock)));
+  }
+  return stream;
+}
+
+TcpStreamPtr connect(const InetAddress& serverAddr, const InetAddress& localAddr)
+{
+  TcpStreamPtr stream;
+  Socket sock(Socket::createTcp());
+  sock.bindOrDie(localAddr);
+  if (sock.connect(serverAddr) == 0)
+  {
+    // FIXME: do poll(POLLOUT) to check errors
+    stream.reset(new TcpStream(std::move(sock)));
+  }
+  return stream;
+}

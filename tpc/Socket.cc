@@ -42,7 +42,7 @@ Socket::~Socket()
 void Socket::bindOrDie(const InetAddress& addr)
 {
   const struct sockaddr_in& saddr = addr.getSockAddrInet();
-  int ret = ::bind(sockfd_,  sockaddr_cast(&saddr), static_cast<socklen_t>(sizeof saddr));
+  int ret = ::bind(sockfd_, sockaddr_cast(&saddr), sizeof saddr);
   if (ret)
   {
     perror("Socket::bindOrDie");
@@ -58,6 +58,19 @@ void Socket::listenOrDie()
     perror("Socket::listen");
     abort();
   }
+}
+
+int Socket::connect(const InetAddress& addr)
+{
+  const struct sockaddr_in& saddr = addr.getSockAddrInet();
+  return ::connect(sockfd_, sockaddr_cast(&saddr), sizeof saddr);
+}
+
+void Socket::setReuseAddr(bool on)
+{
+  int optval = on ? 1 : 0;
+  ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR,
+               &optval, sizeof optval);
 }
 
 Socket Socket::createTcp()

@@ -34,6 +34,7 @@ class InetAddress : copyable
   uint32_t ipHostEndian() const { return ntohl(saddr_.sin_addr.s_addr); }
   uint16_t portHostEndian() const { return ntohs(saddr_.sin_port); }
 
+  // resolve hostname to IP address, not changing port or sin_family
   // return true on success.
   // thread safe
   static bool resolve(const char* hostname, InetAddress*);

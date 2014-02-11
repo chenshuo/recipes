@@ -34,6 +34,11 @@ class Socket : noncopyable
   // Sockets API
   void bindOrDie(const InetAddress& addr);
   void listenOrDie();
+  // return 0 on success
+  int connect(const InetAddress& addr);
+
+  void setReuseAddr(bool on);
+  int setNoDelay(bool on);
 
   // factory methods
   static Socket createTcp();

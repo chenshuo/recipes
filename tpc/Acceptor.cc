@@ -8,6 +8,7 @@
 Acceptor::Acceptor(const InetAddress& listenAddr)
   : listenSock_(Socket::createTcp())
 {
+  listenSock_.setReuseAddr(true);
   listenSock_.bindOrDie(listenAddr);
   listenSock_.listenOrDie();
 }
