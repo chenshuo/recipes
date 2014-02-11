@@ -40,6 +40,8 @@ class InetAddress : copyable
   static std::vector<InetAddress> resolveAll(const char* hostname, uint16_t port = 0);
 
  private:
+  static bool resolveSlow(const char* hostname, InetAddress*);
+
   struct sockaddr_in saddr_;
 };
 

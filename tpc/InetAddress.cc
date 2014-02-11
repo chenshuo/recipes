@@ -31,10 +31,44 @@ std::string InetAddress::toIpPort() const
   return ip;
 }
 
+static const int kResolveBufSize = 4096; // RFC6891: EDNS payload 4096 bytes
+
+bool InetAddress::resolveSlow(const char* hostname, InetAddress* out)
+{
+  std::vector<char> buf(2 * kResolveBufSize);
+  struct hostent hent;
+  struct hostent* he = NULL;
+  int herrno = 0;
+  bzero(&hent, sizeof(hent));
+
+  while (buf.size() <= 16 * kResolveBufSize)
+  {
+    printf("len = %zd\n", buf.size());
+    int ret = gethostbyname_r(hostname, &hent, buf.data(), buf.size(), &he, &herrno);
+    if (ret == 0 && he != NULL)
+    {
+      assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
+      out->saddr_.sin_addr = *reinterpret_cast<struct in_addr*>(he->h_addr);
+      return true;
+    }
+    else if (ret == ERANGE)
+    {
+      buf.resize(buf.size() * 2);
+    }
+    else
+    {
+      if (ret)
+        perror("InetAddress::resolve");
+      return false;
+    }
+  }
+  return false;
+}
+
 bool InetAddress::resolve(const char* hostname, InetAddress* out)
 {
   assert(out);
-  char buf[4096];
+  char buf[kResolveBufSize];
   struct hostent hent;
   struct hostent* he = NULL;
   int herrno = 0;
@@ -49,9 +83,7 @@ bool InetAddress::resolve(const char* hostname, InetAddress* out)
   }
   else if (ret == ERANGE)
   {
-    // FIXME
-    perror("InetAddress::resolve");
-    return false;
+    return resolveSlow(hostname, out);
   }
   else
   {
