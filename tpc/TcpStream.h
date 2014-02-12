@@ -29,8 +29,8 @@ class TcpStream : noncopyable
   int sendSome(const void* buf, int len); // send len or less bytes
 
   // thread safe
-  int setNoDelay(bool on);
-  int shutdownWrite();
+  void setNoDelay(bool on);
+  void shutdownWrite();
 
  private:
   Socket sock_;

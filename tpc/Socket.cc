@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/socket.h>
 
 namespace
@@ -66,11 +67,32 @@ int Socket::connect(const InetAddress& addr)
   return ::connect(sockfd_, sockaddr_cast(&saddr), sizeof saddr);
 }
 
+void Socket::shutdownWrite()
+{
+  if (::shutdown(sockfd_, SHUT_WR) < 0)
+  {
+    perror("Socket::shutdownWrite");
+  }
+}
+
 void Socket::setReuseAddr(bool on)
 {
   int optval = on ? 1 : 0;
-  ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR,
-               &optval, sizeof optval);
+  if (::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR,
+                   &optval, sizeof optval) < 0)
+  {
+    perror("Socket::setReuseAddr");
+  }
+}
+
+void Socket::setTcpNoDelay(bool on)
+{
+  int optval = on ? 1 : 0;
+  if (::setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY,
+               &optval, static_cast<socklen_t>(sizeof optval)) < 0)
+  {
+    perror("Socket::setTcpNoDelay");
+  }
 }
 
 Socket Socket::createTcp()

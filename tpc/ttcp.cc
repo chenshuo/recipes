@@ -107,6 +107,10 @@ void transmit(const Options& opt)
     return;
   }
 
+  if (opt.nodelay)
+  {
+    stream->setNoDelay(true);
+  }
   printf("connected\n");
   double start = now();
   struct SessionMessage sessionMessage = { 0, 0 };
@@ -128,6 +132,9 @@ void transmit(const Options& opt)
     payload->data[i] = "0123456789ABCDEF"[i % 16];
   }
 
+  double total_mb = 1.0 * opt.length * opt.number / 1024 / 1024;
+  printf("%.3f MiB in total\n", total_mb);
+
   for (int i = 0; i < opt.number; ++i)
   {
     int nw = stream->sendAll(payload, total_len);
@@ -141,8 +148,7 @@ void transmit(const Options& opt)
   }
 
   double elapsed = now() - start;
-  double total_mb = 1.0 * opt.length * opt.number / 1024 / 1024;
-  printf("%.3f MiB transferred\n%.3f MiB/s\n", total_mb, total_mb / elapsed);
+  printf("%.3f seconds\n%.3f MiB/s\n", elapsed, total_mb / elapsed);
 }
 
 void receive(const Options& opt)
@@ -162,13 +168,17 @@ void receive(const Options& opt)
 
   sessionMessage.number = ntohl(sessionMessage.number);
   sessionMessage.length = ntohl(sessionMessage.length);
-  printf("receive number = %d\nreceive length = %d\n",
-         sessionMessage.number, sessionMessage.length);
+  printf("receive buffer length = %d\nreceive number of buffers = %d\n",
+         sessionMessage.length, sessionMessage.number);
+  double total_mb = 1.0 * sessionMessage.number * sessionMessage.length / 1024 / 1024;
+  printf("%.3f MiB in total\n", total_mb);
+
   const int total_len = sizeof(int32_t) + sessionMessage.length;
   PayloadMessage* payload = static_cast<PayloadMessage*>(::malloc(total_len));
   std::unique_ptr<PayloadMessage, void (*)(void*)> freeIt(payload, ::free);
   assert(payload);
 
+  double start = now();
   for (int i = 0; i < sessionMessage.number; ++i)
   {
     payload->length = 0;
@@ -191,6 +201,8 @@ void receive(const Options& opt)
       return;
     }
   }
+  double elapsed = now() - start;
+  printf("%.3f seconds\n%.3f MiB/s\n", elapsed, total_mb / elapsed);
 }
 
 int main(int argc, char* argv[])

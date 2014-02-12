@@ -64,6 +64,16 @@ int TcpStream::sendSome(const void* buf, int len)
   return ::write(sock_.fd(), buf, len);
 }
 
+void TcpStream::setNoDelay(bool on)
+{
+  sock_.setTcpNoDelay(on);
+}
+
+void TcpStream::shutdownWrite()
+{
+  sock_.shutdownWrite();
+}
+
 TcpStreamPtr TcpStream::connect(const InetAddress& serverAddr)
 {
   TcpStreamPtr stream;

@@ -36,9 +36,10 @@ class Socket : noncopyable
   void listenOrDie();
   // return 0 on success
   int connect(const InetAddress& addr);
+  void shutdownWrite();
 
   void setReuseAddr(bool on);
-  int setNoDelay(bool on);
+  void setTcpNoDelay(bool on);
 
   // factory methods
   static Socket createTcp();
