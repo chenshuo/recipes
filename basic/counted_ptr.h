@@ -90,7 +90,6 @@ class counted_ptr
 
   int use_count() const noexcept
   {
-    // use __atomic_load_n
     return count_ ? __atomic_load_n(count_, __ATOMIC_SEQ_CST) : 0;
   }
 
