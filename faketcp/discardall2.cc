@@ -97,7 +97,7 @@ void tcp_input(int fd, const void* input, const void* payload, int tot_len)
       auto it = expectedSeqs.find(addr);
       if (it != expectedSeqs.end())
       {
-        if (it->second.rcv_nxt >= seq)
+        if (it->second.rcv_nxt >= seq)  // FIXME: wrap!
         {
           if (it->second.rcv_nxt == seq)
           {

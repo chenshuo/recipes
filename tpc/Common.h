@@ -14,14 +14,28 @@ struct copyable
 {
 };
 
-// for passing string parameter to a function
-struct StringPiece : copyable
+// For passing C-style string argument to a function.
+class StringArg : copyable
 {
  public:
-  // FIXME
+  StringArg(const char* str)
+    : str_(str)
+  { }
+
+  StringArg(const string& str)
+    : str_(str.c_str())
+  { }
+
+#ifndef MUDUO_STD_STRING
+  StringArg(const std::string& str)
+    : str_(str.c_str())
+  { }
+#endif
+
+  const char* c_str() const { return str_; }
+
  private:
-  const char* data_;
-  int length_;
+  const char* str_;
 };
 
 template<typename To, typename From>

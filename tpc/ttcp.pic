@@ -1,0 +1,24 @@
+.PS
+C: box invis "client"
+line from C.s down 1.8
+line right 0.04
+line left 0.08 down 0.12
+line right 0.04
+line down 1
+S: box invis "server" at C+(3,0)
+line from S.s down 1.8
+line right 0.04
+line left 0.08 down 0.12
+line right 0.04
+line down 1
+arrow from C.s-(0, 0.2) to S.s-(0, 0.4) "SessionMessage(num=1024, len=8192)" "" aligned
+arrow from C.s-(0, 0.5) to S.s-(0, 0.7) "PayloadMessage(len=8192+4)" "" aligned
+arrow <- from C.s-(0, 1.0) to S.s-(0, 0.8) "Ack(=8192)" "" aligned
+arrow from C.s-(0, 1.1) to S.s-(0, 1.3) "PayloadMessage(len=8192+4)" "" aligned
+arrow <- from C.s-(0, 1.6) to S.s-(0, 1.4) "Ack(=8192)" "" aligned
+box invis "1     " at C.s-(0,0.5)
+box invis "2     " at C.s-(0,1.1)
+arrow from C.s-(0, 2.1) to S.s-(0, 2.3) "PayloadMessage(len=8192+4)" "" aligned
+arrow <- from C.s-(0, 2.6) to S.s-(0, 2.4) "Ack(=8192)" "" aligned
+box invis "1024          " at C.s-(0,2.1)
+.PE
