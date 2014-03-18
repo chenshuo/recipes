@@ -1,6 +1,10 @@
 #include "StringTrivial.h"
 #include <vector>
 
+using namespace trivial2;
+
+const char String::kEmpty[] = "";
+
 void foo(String x)
 {
 }

@@ -1,5 +1,11 @@
+#pragma once
+
 #include <utility>
+#include <assert.h>
 #include <string.h>
+
+namespace trivial
+{
 
 // A trivial String class that designed for write-on-paper in an interview
 class String
@@ -86,3 +92,76 @@ class String
  private:
   char* data_;
 };
+
+}
+
+namespace trivial2
+{
+
+// string in C++11 with a length member
+class String
+{
+ public:
+  String() noexcept
+    : data_(nullptr), len_(0)
+  { }
+
+  ~String()
+  {
+    delete[] data_;
+  }
+
+  // only read str when len > 0
+  String(const char* str, size_t len)
+    : data_(len > 0 ? new char[len+1] : nullptr), len_(len)
+  {
+    if (len_ > 0)
+    {
+      memcpy(data_, str, len_);
+      data_[len_] = '\0';
+    }
+    else
+    {
+      assert(data_ == nullptr);
+    }
+  }
+
+  String(const char* str)
+    : String(str, strlen(str))
+  { }
+
+  String(const String& rhs)
+    : String(rhs.data_, rhs.len_)
+  { }
+
+  String(String&& rhs) noexcept
+    : data_(rhs.data_), len_(rhs.len_)
+  {
+    rhs.len_ = 0;
+    rhs.data_ = nullptr;
+  }
+
+  String& operator=(String rhs)
+  {
+    swap(rhs);
+    return *this;
+  }
+
+  void swap(String& rhs) noexcept
+  {
+    std::swap(len_, rhs.len_);
+    std::swap(data_, rhs.data_);
+  }
+
+  // const char* data() const { return c_str(); }
+  const char* c_str() const noexcept { return data_ ? data_ : kEmpty; }
+  size_t size() const noexcept { return len_; }
+
+ private:
+  char* data_;
+  size_t len_;
+  static const char kEmpty[];
+};
+
+// const char String::kEmpty[] = "";
+}
