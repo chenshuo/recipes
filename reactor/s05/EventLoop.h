@@ -114,7 +114,7 @@ class EventLoop : boost::noncopyable
   boost::scoped_ptr<Channel> wakeupChannel_;
   ChannelList activeChannels_;
   MutexLock mutex_;
-  std::vector<Functor> pendingFunctors_; // @BuardedBy mutex_
+  std::vector<Functor> pendingFunctors_; // @GuardedBy mutex_
 };
 
 }
