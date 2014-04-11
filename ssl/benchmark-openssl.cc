@@ -7,6 +7,8 @@
 
 #include <stdio.h>
 
+#include "timer.h"
+
 muduo::net::Buffer clientOut, serverOut;
 
 double now()
@@ -74,7 +76,8 @@ int main(int argc, char* argv[])
 
   EC_KEY* ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
   SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);
-  SSL_CTX_set_tmp_ecdh(ctx, ecdh);
+  if (argc > 3)
+    SSL_CTX_set_tmp_ecdh(ctx, ecdh);
   EC_KEY_free(ecdh);
 
   const char* CertFile = argv[1];
@@ -105,6 +108,7 @@ int main(int argc, char* argv[])
   double start = now();
   const int N = 1000;
   SSL *ssl, *ssl_client;
+  Timer tc, ts;
   for (int i = 0; i < N; ++i)
   {
     ssl = SSL_new (ctx);
@@ -112,16 +116,24 @@ int main(int argc, char* argv[])
     SSL_set_bio(ssl, &client, &server);
     SSL_set_bio(ssl_client, &server, &client);
 
+    tc.start();
     int ret = SSL_connect(ssl_client);
+    tc.stop();
     //printf("%d %d\n", ret, BIO_retry_type(&server));
+    ts.start();
     int ret2 = SSL_accept(ssl);
+    ts.stop();
     //printf("%d %d\n", ret2, BIO_retry_type(&client));
 
     while (true)
     {
-      int ret = SSL_do_handshake(ssl_client);
+      tc.start();
+      ret = SSL_do_handshake(ssl_client);
+      tc.stop();
       //printf("client handshake %d %d\n", ret, BIO_retry_type(&server));
-      int ret2 = SSL_do_handshake(ssl);
+      ts.start();
+      ret2 = SSL_do_handshake(ssl);
+      ts.stop();
       //printf("server handshake %d %d\n", ret2, BIO_retry_type(&client));
       //if (ret == -1 && BIO_retry_type(&server) == 0)
       //  break;
@@ -144,6 +156,10 @@ int main(int argc, char* argv[])
   }
   double elapsed = now() - start;
   printf("%.2fs %.1f handshakes/s\n", elapsed, N / elapsed);
+  printf("client %.3f %.1f\n", tc.seconds(), N / tc.seconds());
+  printf("server %.3f %.1f\n", ts.seconds(), N / ts.seconds());
+  printf("server/client %.2f\n", ts.seconds() / tc.seconds());
+
 
   double start2 = now();
   const int M = 300;
@@ -153,21 +169,8 @@ int main(int argc, char* argv[])
     int n = SSL_write(ssl_client, buf, sizeof buf);
     if (n < 0)
     {
-      //char errbuf[512];
-      //polarssl_strerror(n, errbuf, sizeof errbuf);
-      //printf("%s\n", errbuf);
+      printf("%d\n", n);
     }
-    /*
-    n = ssl_read(&ssl_server, buf, 8192);
-    if (n != 1024)
-      break;
-    if (n < 0)
-    {
-      char errbuf[512];
-      polarssl_strerror(n, errbuf, sizeof errbuf);
-      printf("%s\n", errbuf);
-    }
-    */
     clientOut.retrieveAll();
   }
   elapsed = now() - start2;

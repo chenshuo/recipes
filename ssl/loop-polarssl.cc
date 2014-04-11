@@ -1,3 +1,8 @@
+/*
+ * Remember to turn off CPU frequency scaling before testing.
+ */
+
+
 #include <polarssl/ctr_drbg.h>
 #include <polarssl/error.h>
 #include <polarssl/entropy.h>
@@ -11,9 +16,18 @@
 
 #include <stdio.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 
 bool useRSA = false;
+bool useECDHE = false;
 const int N = 500;
+
+double now()
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec + tv.tv_usec / 1000000.0;
+}
 
 // FIXME: net_recv with buffer
 
@@ -82,6 +96,9 @@ void serverThread(entropy_context* entropy, int* serverFd)
   // ssl_set_dbg(&ssl_server, my_debug, (void*)"server");
   ecp_group_id curves[] = { POLARSSL_ECP_DP_SECP256R1, POLARSSL_ECP_DP_NONE };
   ssl_set_curves(&ssl_server, curves);
+  int ciphersuites[] = { TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA, TLS_RSA_WITH_AES_256_CBC_SHA, 0 };
+  if (!useECDHE)
+    ssl_set_ciphersuites(&ssl_server, ciphersuites);
 
   for (int i = 0; i < N; ++i)
   {
@@ -113,10 +130,13 @@ int main(int argc, char* argv[])
   if (argc > 1)
     useRSA = true;
 
+  useECDHE = argc > 2;
+
   int fds[2];
   if (::socketpair(AF_UNIX, SOCK_STREAM, 0, fds))
     abort();
 
+  double start = now();
   muduo::Thread client(boost::bind(&clientThread, &entropy, &fds[0]), "ssl client");
   muduo::Thread server(boost::bind(&serverThread, &entropy, &fds[1]), "ssl server");
   client.start();
@@ -124,5 +144,7 @@ int main(int argc, char* argv[])
 
   client.join();
   server.join();
+  double elapsed = now() - start;
+  printf("%.2fs %.1f handshakes/s\n", elapsed, N / elapsed);
   entropy_free(&entropy);
 }

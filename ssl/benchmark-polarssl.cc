@@ -6,8 +6,10 @@
 #include <polarssl/certs.h>
 
 #include <muduo/net/Buffer.h>
+#include <string>
 #include <stdio.h>
 #include <sys/time.h>
+#include "timer.h"
 
 muduo::net::Buffer clientOut, serverOut;
 
@@ -53,7 +55,6 @@ int net_send(void* ctx, const unsigned char* buf, size_t len)
 
 int main(int argc, char* argv[])
 {
-  unsigned char buf[16384] = { 0 };
   entropy_context entropy;
   entropy_init(&entropy);
   ctr_drbg_context ctr_drbg;
@@ -69,7 +70,9 @@ int main(int argc, char* argv[])
 
   const char* srv_cert = test_srv_crt_ec;
   const char* srv_key = test_srv_key_ec;
-  bool useRSA = argc > 1;
+  std::string arg = argc > 1 ? argv[1] : "r";
+  bool useRSA = arg == "r" || arg == "er";
+  bool useECDHE = arg == "er" || arg == "ee";
   if (useRSA)
   {
     srv_cert = test_srv_crt;
@@ -99,16 +102,29 @@ int main(int argc, char* argv[])
   ssl_set_own_cert(&ssl_server, &cert, &pkey);
   ecp_group_id curves[] = { POLARSSL_ECP_DP_SECP256R1, POLARSSL_ECP_DP_SECP224K1, POLARSSL_ECP_DP_NONE };
   ssl_set_curves(&ssl_server, curves);
+  if (useECDHE)
+  {
+    int ciphersuites[] = { TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, 0 };
+    ssl_set_ciphersuites(&ssl_server, ciphersuites);
+  }
+  else
+  {
+    int ciphersuites[] = { TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA, TLS_RSA_WITH_AES_256_CBC_SHA, 0 };
+    ssl_set_ciphersuites(&ssl_server, ciphersuites);
+  }
 
   double start = now();
-  const int N = 100;
+  Timer tc, ts;
+  const int N = 500;
   for (int i = 0; i < N; ++i)
   {
     ssl_session_reset(&ssl);
     ssl_session_reset(&ssl_server);
     while (true)
     {
+      tc.start();
       int ret = ssl_handshake(&ssl);
+      tc.stop();
       //printf("ssl %d\n", ret);
       if (ret < 0)
       {
@@ -125,7 +141,9 @@ int main(int argc, char* argv[])
         printf("client done %s %s\n", ssl_get_version(&ssl), ssl_get_ciphersuite(&ssl));
       }
 
+      ts.start();
       int ret2 = ssl_handshake(&ssl_server);
+      ts.stop();
       // printf("srv %d\n", ret2);
       if (ret2 < 0)
       {
@@ -148,9 +166,13 @@ int main(int argc, char* argv[])
   }
   double elapsed = now() - start;
   printf("%.2fs %.1f handshakes/s\n", elapsed, N / elapsed);
+  printf("client %.3f %.1f\n", tc.seconds(), N / tc.seconds());
+  printf("server %.3f %.1f\n", ts.seconds(), N / ts.seconds());
+  printf("server/client %.2f\n", ts.seconds() / tc.seconds());
 
   double start2 = now();
   const int M = 200;
+  unsigned char buf[16384] = { 0 };
   for (int i = 0; i < M*1024; ++i)
   {
     int n = ssl_write(&ssl, buf, 1024);
