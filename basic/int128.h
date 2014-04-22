@@ -45,7 +45,7 @@ struct uint128
     return *this;
   }
 
-  uint128& multiply(uint128 rhs) __attribute__ ((noinline))
+  uint128& multiply(uint128 rhs) // __attribute__ ((noinline))
   {
     uint64_t h = low * rhs.high + high * rhs.low;
     *this = multiply128(low, rhs.low);
@@ -53,7 +53,7 @@ struct uint128
     return *this;
   }
 
-  static uint128 multiply128(uint64_t x, uint64_t y) __attribute__ ((noinline))
+  static uint128 multiply128(uint64_t x, uint64_t y) // __attribute__ ((noinline))
   {
 #if __x86_64__
     uint128 prod(x);
