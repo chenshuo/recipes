@@ -14,23 +14,23 @@ void UnsignedInt::sub(const UnsignedInt& x)
     assert(0 && "Underflow");
     abort();
   }
-  const value_type& rhs = x.value_;
-  assert (rhs.size() <= value_.size());
-  size_t len = std::min(value_.size(), rhs.size());
+  const value_type& rhs = x.limbs_;
+  assert (rhs.size() <= limbs_.size());
+  size_t len = std::min(limbs_.size(), rhs.size());
   uint64_t carry = 0;
 
   for (size_t i = 0; i < len; ++i)
   {
-    uint64_t sum = value_[i] - static_cast<uint64_t>(rhs[i]) - carry;
-    value_[i] = sum & kMask_;
+    uint64_t sum = limbs_[i] - static_cast<uint64_t>(rhs[i]) - carry;
+    limbs_[i] = sum & kMask_;
     carry = sum > kMask_;
   }
   if (carry)
   {
-    for (size_t i = len; i < value_.size() && carry; ++i)
+    for (size_t i = len; i < limbs_.size() && carry; ++i)
     {
-      uint64_t sum = value_[i] - carry;
-      value_[i] = sum & kMask_;
+      uint64_t sum = limbs_[i] - carry;
+      limbs_[i] = sum & kMask_;
       carry = sum > kMask_;
     }
   }
@@ -39,25 +39,25 @@ void UnsignedInt::sub(const UnsignedInt& x)
     assert(0 && "Underflow");
     abort();
   }
-  while (!value_.empty() && value_.back() == 0)
-    value_.pop_back();
+  while (!limbs_.empty() && limbs_.back() == 0)
+    limbs_.pop_back();
 }
 
 std::string UnsignedInt::toHex() const
 {
   std::string result;
-  result.reserve(value_.size()*8);
+  result.reserve(limbs_.size()*8);
 
-  if (value_.empty())
+  if (limbs_.empty())
   {
     result.push_back('0');
     return result;
   }
 
-  assert(value_.size() > 0);
-  for (size_t i = 0; i < value_.size()-1; ++i)
+  assert(limbs_.size() > 0);
+  for (size_t i = 0; i < limbs_.size()-1; ++i)
   {
-    uint32_t x = value_[i];
+    uint32_t x = limbs_[i];
     for (int j = 0; j < 8; ++j)
     {
       int lsd = x % 16;
@@ -66,7 +66,7 @@ std::string UnsignedInt::toHex() const
     }
   }
 
-  uint32_t x = value_.back();
+  uint32_t x = limbs_.back();
   do
   {
     int lsd = x % 16;
@@ -83,16 +83,16 @@ std::string UnsignedInt::toDec() const
 {
   const uint32_t segment = 1000000000;
   std::string result;
-  if (value_.empty())
+  if (limbs_.empty())
   {
     result.push_back('0');
     return result;
   }
 
-  result.reserve(9*value_.size() + 7*value_.size()/11 + 1);
+  result.reserve(9*limbs_.size() + 7*limbs_.size()/11 + 1);
   // log10(2**32) = 32*log10(2) = 9.633 digits per word
   UnsignedInt copy = *this;
-  while (copy.value_.size() > 1)
+  while (copy.limbs_.size() > 1)
   {
     uint32_t x = copy.devide(segment);
     for (int i = 0; i < 9; ++i)
@@ -103,7 +103,7 @@ std::string UnsignedInt::toDec() const
     }
   }
 
-  uint32_t x = copy.value_[0];
+  uint32_t x = copy.limbs_[0];
   do
   {
     int lsd = x % 10;
@@ -146,18 +146,18 @@ uint32_t fromHex(char c)
 
 void UnsignedInt::parseHex(const std::string& str)
 {
-  value_.reserve((str.size()+7) / 8);
+  limbs_.reserve((str.size()+7) / 8);
   for (size_t i = 0; i < str.size(); ++i)
   {
     if (i % 8 == 0)
-      value_.push_back(0);
+      limbs_.push_back(0);
     uint32_t digit = fromHex(str[str.size() - i - 1]);
     uint32_t shift = 4 * (i % 8);
-    value_.back() |= (digit << shift);
+    limbs_.back() |= (digit << shift);
   }
-  if (value_.size() == 1 && value_[0] == 0)
+  if (limbs_.size() == 1 && limbs_[0] == 0)
   {
-    value_.clear();
+    limbs_.clear();
   }
 }
 
@@ -185,7 +185,7 @@ void UnsignedInt::parseDec(const std::string& str)
   const uint32_t kSegmentDigits = 9;
   // log2(10)/32 = 0.10381025296523
   // 8/77 = 0.103896103896104
-  value_.reserve(1 + str.size() * 8 / 77);
+  limbs_.reserve(1 + str.size() * 8 / 77);
 
   int first = str.size() % kSegmentDigits;
   if (first)
