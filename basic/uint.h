@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <ext/numeric>
 #include <assert.h>
 #include <stdint.h>
 
@@ -39,6 +40,19 @@ class UnsignedInt // copyable
   }
 
   void swap(UnsignedInt& rhs) { limbs_.swap(rhs.limbs_); }
+
+  void assign(const uint32_t x)
+  {
+    if (x == 0)
+    {
+      limbs_.clear();
+    }
+    else
+    {
+      limbs_.resize(1);
+      limbs_[0] = x;
+    }
+  }
 
   void add(const uint32_t x)
   {
@@ -164,6 +178,30 @@ class UnsignedInt // copyable
       limbs_.pop_back();
     assert(isNormal());
     return carry;
+  }
+
+  // pow(this, n)
+  void power(uint32_t n)
+  {
+    if (n == 0)
+    {
+      assign(1);
+    }
+    else if (n > 1)
+    {
+      // FIXME: if n is a power of 2, we can do this in-place.
+      UnsignedInt result(1);
+      while (n)
+      {
+        if (n & 1)
+        {
+          result.multiply(*this);
+        }
+        multiply(*this);
+        n /= 2;
+      }
+      swap(result);
+    }
   }
 
   typedef std::vector<uint32_t> value_type;
