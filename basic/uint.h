@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <ext/numeric>
 #include <assert.h>
 #include <stdint.h>
 
@@ -17,7 +18,7 @@ class UnsignedInt // copyable
   {
     if (x > 0)
     {
-      value_.push_back(x);
+      limbs_.push_back(x);
     }
   }
 
@@ -25,73 +26,86 @@ class UnsignedInt // copyable
 
   std::string toHex() const;
   std::string toDec() const;
-  bool isZero() const { return value_.empty(); }
-  bool isNormal() const { return isZero() || value_.back() != 0; }
+  bool isZero() const { return limbs_.empty(); }
+  bool isNormal() const { return isZero() || limbs_.back() != 0; }
   bool lessThan(const UnsignedInt& x) const
   {
-    const value_type& rhs = x.value_;
-    return rhs.size() > value_.size() ||
-           (rhs.size() == value_.size() &&
-            std::lexicographical_compare(value_.rbegin(),
-                                         value_.rend(),
+    const value_type& rhs = x.limbs_;
+    return rhs.size() > limbs_.size() ||
+           (rhs.size() == limbs_.size() &&
+            std::lexicographical_compare(limbs_.rbegin(),
+                                         limbs_.rend(),
                                          rhs.rbegin(),
                                          rhs.rend()));
   }
 
-  void swap(UnsignedInt& rhs) { value_.swap(rhs.value_); }
+  void swap(UnsignedInt& rhs) { limbs_.swap(rhs.limbs_); }
+
+  void assign(const uint32_t x)
+  {
+    if (x == 0)
+    {
+      limbs_.clear();
+    }
+    else
+    {
+      limbs_.resize(1);
+      limbs_[0] = x;
+    }
+  }
 
   void add(const uint32_t x)
   {
-    if (value_.empty())
+    if (limbs_.empty())
     {
-      value_.push_back(x);
+      limbs_.push_back(x);
       return;
     }
 
-    uint64_t sum = value_[0] + static_cast<uint64_t>(x);
-    value_[0] = sum & kMask_;
+    uint64_t sum = limbs_[0] + static_cast<uint64_t>(x);
+    limbs_[0] = sum & kMask_;
     uint64_t carry = sum > kMask_;
 
-    for (size_t i = 1; i < value_.size() && carry; ++i)
+    for (size_t i = 1; i < limbs_.size() && carry; ++i)
     {
-      sum = value_[i] + carry;
-      value_[i] = sum & kMask_;
+      sum = limbs_[i] + carry;
+      limbs_[i] = sum & kMask_;
       carry = sum > kMask_;
     }
 
     if (carry)
     {
-      value_.push_back(carry);
+      limbs_.push_back(carry);
     }
   }
 
   void add(const UnsignedInt& x)
   {
-    const value_type& rhs = x.value_;
-    if (rhs.size() > value_.size())
+    const value_type& rhs = x.limbs_;
+    if (rhs.size() > limbs_.size())
     {
-      value_.resize(rhs.size());
+      limbs_.resize(rhs.size());
     }
-    size_t len = std::min(value_.size(), rhs.size());
+    size_t len = std::min(limbs_.size(), rhs.size());
     uint64_t carry = 0;
     for (size_t i = 0; i < len; ++i)
     {
-      uint64_t sum = value_[i] + static_cast<uint64_t>(rhs[i]) + carry;
-      value_[i] = sum & kMask_;
+      uint64_t sum = limbs_[i] + static_cast<uint64_t>(rhs[i]) + carry;
+      limbs_[i] = sum & kMask_;
       carry = sum > kMask_;
     }
     if (carry)
     {
-      for (size_t i = len; i < value_.size() && carry; ++i)
+      for (size_t i = len; i < limbs_.size() && carry; ++i)
       {
-        uint64_t sum = value_[i] + carry;
-        value_[i] = sum & kMask_;
+        uint64_t sum = limbs_[i] + carry;
+        limbs_[i] = sum & kMask_;
         carry = sum > kMask_;
       }
     }
     if (carry)
     {
-      value_.push_back(carry);
+      limbs_.push_back(carry);
     }
   }
 
@@ -102,80 +116,104 @@ class UnsignedInt // copyable
     const uint64_t multiplier = x;
     if (multiplier == 0)
     {
-      value_.clear();
+      limbs_.clear();
       return;
     }
     uint64_t carry = 0;
-    for (size_t i = 0; i < value_.size(); ++i)
+    for (size_t i = 0; i < limbs_.size(); ++i)
     {
-      uint64_t prod = value_[i] * multiplier + carry;
-      value_[i] = prod & kMask_;
+      uint64_t prod = limbs_[i] * multiplier + carry;
+      limbs_[i] = prod & kMask_;
       carry = prod / 0x10000 / 0x10000;
     }
     if (carry)
     {
-      value_.push_back(carry);
+      limbs_.push_back(carry);
     }
   }
 
   void multiply(const UnsignedInt& x)
   {
-    const value_type& rhs = x.value_;
-    if (value_.empty() || rhs.empty())
+    const value_type& rhs = x.limbs_;
+    if (limbs_.empty() || rhs.empty())
     {
-      value_.clear();
+      limbs_.clear();
       return;
     }
-    value_type result(value_.size() + rhs.size());
+    value_type result(limbs_.size() + rhs.size());
     for (size_t i = 0; i < rhs.size(); ++i)
     {
       if (rhs[i] == 0)
         continue;
       uint64_t carry = 0;
-      for (size_t j = 0; j < value_.size(); ++j)
+      for (size_t j = 0; j < limbs_.size(); ++j)
       {
-        uint64_t prod = uint64_t(rhs[i]) * value_[j]
+        uint64_t prod = uint64_t(rhs[i]) * limbs_[j]
                         + result[i+j]
                         + carry;
         result[i+j] = prod & kMask_;
         carry = prod / 0x10000 / 0x10000;
       }
-      result[i + value_.size()] = carry;
+      result[i + limbs_.size()] = carry;
     }
     if (result.back() == 0)
       result.pop_back();
-    result.swap(value_);
+    result.swap(limbs_);
   }
 
   // returns remainder
   uint32_t devide(const uint32_t x)
   {
     uint64_t carry = 0;
-    for (size_t i = value_.size(); i > 0; --i)
+    for (size_t i = limbs_.size(); i > 0; --i)
     {
       uint64_t prod = carry << 32;
-      prod += value_[i-1];
+      prod += limbs_[i-1];
 
-      value_[i-1] = prod / x;
+      limbs_[i-1] = prod / x;
       carry = prod % x;
     }
 
-    if (!value_.empty() && value_.back() == 0)
-      value_.pop_back();
+    if (!limbs_.empty() && limbs_.back() == 0)
+      limbs_.pop_back();
     assert(isNormal());
     return carry;
+  }
+
+  // pow(this, n)
+  void power(uint32_t n)
+  {
+    if (n == 0)
+    {
+      assign(1);
+    }
+    else if (n > 1)
+    {
+      // FIXME: if n is a power of 2, we can do this in-place.
+      UnsignedInt result(1);
+      while (n)
+      {
+        if (n & 1)
+        {
+          result.multiply(*this);
+        }
+        multiply(*this);
+        n /= 2;
+      }
+      swap(result);
+    }
   }
 
   typedef std::vector<uint32_t> value_type;
 
   const value_type& getValue() const
   {
-    return value_;
+    return limbs_;
   }
 
   void setValue(int n, uint32_t x)
   {
-    value_.assign(n, x);
+    limbs_.assign(n, x);
   }
 
  private:
@@ -184,10 +222,10 @@ class UnsignedInt // copyable
 
   uint32_t highest() const
   {
-    return value_.empty() ? 0 : value_.back();
+    return limbs_.empty() ? 0 : limbs_.back();
   }
 
-  value_type value_;
+  value_type limbs_;
 
   const static uint32_t kMask_ = 0xFFFFFFFF;
 };

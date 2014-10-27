@@ -25,7 +25,7 @@ struct SocketAddr
   }
 };
 
-int tun_alloc(char *dev);
+int tun_alloc(char dev[IFNAMSIZ]);
 uint16_t in_checksum(const void* buf, int len);
 
 void icmp_input(int fd, const void* input, const void* payload, int len);
