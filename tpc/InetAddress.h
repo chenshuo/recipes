@@ -10,8 +10,8 @@ class InetAddress : copyable
 {
  public:
   // InetAddress()
-  InetAddress(StringPiece ip, uint16_t port);
-  InetAddress(StringPiece ipPort);  // "1.2.3.4:5678"
+  InetAddress(StringArg ip, uint16_t port);
+  InetAddress(StringArg ipPort);  // "1.2.3.4:5678"
   explicit InetAddress(uint16_t port, bool loopbackOnly = false);  // for listening
 
   InetAddress(const struct sockaddr_in& saddr)

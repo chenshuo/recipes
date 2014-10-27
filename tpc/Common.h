@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 class noncopyable
 {
@@ -22,15 +23,9 @@ class StringArg : copyable
     : str_(str)
   { }
 
-  StringArg(const string& str)
-    : str_(str.c_str())
-  { }
-
-#ifndef MUDUO_STD_STRING
   StringArg(const std::string& str)
     : str_(str.c_str())
   { }
-#endif
 
   const char* c_str() const { return str_; }
 
