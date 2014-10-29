@@ -95,9 +95,28 @@ void Socket::setTcpNoDelay(bool on)
   }
 }
 
-Socket Socket::createTcp()
+int Socket::read(void* buf, int len)
 {
-  int sockfd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  // FIXME: EINTR
+  return ::read(sockfd_, buf, len);
+}
+
+int Socket::write(const void* buf, int len)
+{
+  // FIXME: EINTR
+  return ::write(sockfd_, buf, len);
+}
+
+Socket Socket::createTCP()
+{
+  int sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP);
+  assert(sockfd >= 0);
+  return Socket(sockfd);
+}
+
+Socket Socket::createUDP()
+{
+  int sockfd = ::socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_UDP);
   assert(sockfd >= 0);
   return Socket(sockfd);
 }

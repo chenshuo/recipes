@@ -24,16 +24,16 @@ TcpStream::TcpStream(Socket&& sock)
 {
 }
 
-int TcpStream::readAll(void* buf, int len)
+int TcpStream::receiveAll(void* buf, int len)
 {
   // FIXME: EINTR
   return ::recv(sock_.fd(), buf, len, MSG_WAITALL);
 }
 
-int TcpStream::readSome(void* buf, int len)
+int TcpStream::receiveSome(void* buf, int len)
 {
   // FIXME: EINTR
-  return ::read(sock_.fd(), buf, len);
+  return sock_.read(buf, len);
 }
 
 int TcpStream::sendAll(const void* buf, int len)
@@ -41,7 +41,7 @@ int TcpStream::sendAll(const void* buf, int len)
   int written = 0;
   while (written < len)
   {
-    int nr = ::write(sock_.fd(), buf, len);
+    int nr = sock_.write(buf, len);
     if (nr > 0)
     {
       written += nr;
@@ -61,7 +61,7 @@ int TcpStream::sendAll(const void* buf, int len)
 int TcpStream::sendSome(const void* buf, int len)
 {
   // FIXME: EINTR
-  return ::write(sock_.fd(), buf, len);
+  return sock_.write(buf, len);
 }
 
 void TcpStream::setNoDelay(bool on)
@@ -77,7 +77,7 @@ void TcpStream::shutdownWrite()
 TcpStreamPtr TcpStream::connect(const InetAddress& serverAddr)
 {
   TcpStreamPtr stream;
-  Socket sock(Socket::createTcp());
+  Socket sock(Socket::createTCP());
   if (sock.connect(serverAddr) == 0)
   {
     // FIXME: do poll(POLLOUT) to check errors
@@ -86,10 +86,10 @@ TcpStreamPtr TcpStream::connect(const InetAddress& serverAddr)
   return stream;
 }
 
-TcpStreamPtr connect(const InetAddress& serverAddr, const InetAddress& localAddr)
+TcpStreamPtr TcpStream::connect(const InetAddress& serverAddr, const InetAddress& localAddr)
 {
   TcpStreamPtr stream;
-  Socket sock(Socket::createTcp());
+  Socket sock(Socket::createTCP());
   sock.bindOrDie(localAddr);
   if (sock.connect(serverAddr) == 0)
   {

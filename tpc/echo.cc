@@ -21,7 +21,7 @@ int main()
       printf("thread for no. %d client started.\n", count);
       char buf[4096];
       int nr = 0;
-      while ( (nr = stream->readSome(buf, sizeof(buf))) > 0)
+      while ( (nr = stream->receiveSome(buf, sizeof(buf))) > 0)
       {
         int nw = stream->sendAll(buf, nr);
         if (nw < nr)

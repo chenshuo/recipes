@@ -37,8 +37,8 @@ class InetAddress : copyable
   // resolve hostname to IP address, not changing port or sin_family
   // return true on success.
   // thread safe
-  static bool resolve(const char* hostname, InetAddress*);
-  static std::vector<InetAddress> resolveAll(const char* hostname, uint16_t port = 0);
+  static bool resolve(StringArg hostname, InetAddress*);
+  static std::vector<InetAddress> resolveAll(StringArg hostname, uint16_t port = 0);
 
  private:
   static bool resolveSlow(const char* hostname, InetAddress*);

@@ -6,6 +6,11 @@
 #include <strings.h> // bzero
 #include <arpa/inet.h>
 
+InetAddress::InetAddress(StringArg ip, uint16_t port)
+  : InetAddress(port, false)
+{
+  resolve(ip, this);
+}
 
 InetAddress::InetAddress(uint16_t port, bool loopbackOnly)
 {
@@ -65,7 +70,7 @@ bool InetAddress::resolveSlow(const char* hostname, InetAddress* out)
   return false;
 }
 
-bool InetAddress::resolve(const char* hostname, InetAddress* out)
+bool InetAddress::resolve(StringArg hostname, InetAddress* out)
 {
   assert(out);
   char buf[kResolveBufSize];
@@ -74,7 +79,7 @@ bool InetAddress::resolve(const char* hostname, InetAddress* out)
   int herrno = 0;
   bzero(&hent, sizeof(hent));
 
-  int ret = gethostbyname_r(hostname, &hent, buf, sizeof buf, &he, &herrno);
+  int ret = gethostbyname_r(hostname.c_str(), &hent, buf, sizeof buf, &he, &herrno);
   if (ret == 0 && he != NULL)
   {
     assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
@@ -83,7 +88,7 @@ bool InetAddress::resolve(const char* hostname, InetAddress* out)
   }
   else if (ret == ERANGE)
   {
-    return resolveSlow(hostname, out);
+    return resolveSlow(hostname.c_str(), out);
   }
   else
   {

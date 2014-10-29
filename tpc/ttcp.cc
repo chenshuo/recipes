@@ -141,7 +141,7 @@ void transmit(const Options& opt)
     assert(nw == total_len);
 
     int ack = 0;
-    int nr = stream->readAll(&ack, sizeof(ack));
+    int nr = stream->receiveAll(&ack, sizeof(ack));
     assert(nr == sizeof(ack));
     ack = ntohl(ack);
     assert(ack == opt.length);
@@ -160,7 +160,7 @@ void receive(const Options& opt)
     return;
   }
   struct SessionMessage sessionMessage = { 0, 0 };
-  if (stream->readAll(&sessionMessage, sizeof(sessionMessage)) != sizeof(sessionMessage))
+  if (stream->receiveAll(&sessionMessage, sizeof(sessionMessage)) != sizeof(sessionMessage))
   {
     perror("read SessionMessage");
     return;
@@ -182,14 +182,14 @@ void receive(const Options& opt)
   for (int i = 0; i < sessionMessage.number; ++i)
   {
     payload->length = 0;
-    if (stream->readAll(&payload->length, sizeof(payload->length)) != sizeof(payload->length))
+    if (stream->receiveAll(&payload->length, sizeof(payload->length)) != sizeof(payload->length))
     {
       perror("read length");
       return;
     }
     payload->length = ntohl(payload->length);
     assert(payload->length == sessionMessage.length);
-    if (stream->readAll(payload->data, payload->length) != payload->length)
+    if (stream->receiveAll(payload->data, payload->length) != payload->length)
     {
       perror("read payload data");
       return;
