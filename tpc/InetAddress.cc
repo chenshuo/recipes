@@ -6,11 +6,13 @@
 #include <strings.h> // bzero
 #include <arpa/inet.h>
 
+/*
 InetAddress::InetAddress(StringArg ip, uint16_t port)
   : InetAddress(port, false)
 {
-  resolve(ip, this);
+  ::inet_pton();
 }
+*/
 
 InetAddress::InetAddress(uint16_t port, bool loopbackOnly)
 {

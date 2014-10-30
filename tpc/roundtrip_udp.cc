@@ -65,8 +65,14 @@ void runServer()
 void runClient(const char* server_hostname)
 {
   Socket sock(Socket::createUDP());
-  InetAddress serverAddr(server_hostname, g_port);
-  if (sock.connect(serverAddr))
+  InetAddress serverAddr(g_port);
+  if (!InetAddress::resolve(server_hostname, &serverAddr))
+  {
+    printf("Unable to resolve %s\n", server_hostname);
+    return;
+  }
+
+  if (sock.connect(serverAddr) != 0)
   {
     perror("connect to server");
     return;
@@ -99,13 +105,14 @@ void runClient(const char* server_hostname)
     {
       int64_t back = now();
       int64_t mine = (back + message.request) / 2;
-      printf("round trip %jd clock error %jd\n", back - message.request, message.response - mine);
+      printf("now %jd round trip %jd clock error %jd\n",
+             back, back - message.request, message.response - mine);
     }
     else if (nr < 0)
     {
       perror("send Message");
     }
-    else 
+    else
     {
       printf("received message of %d bytes, expect %zd bytes.\n", nr, sizeof message);
     }

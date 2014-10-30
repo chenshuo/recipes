@@ -1,4 +1,5 @@
 #include "TcpStream.h"
+#include "InetAddress.h"
 
 #include <errno.h>
 #include <signal.h>
@@ -16,6 +17,11 @@ class IgnoreSigPipe
     ::signal(SIGPIPE, SIG_IGN);
   }
 } initObj;
+
+bool isSelfConnection(const Socket& sock)
+{
+  return sock.getLocalAddr() == sock.getPeerAddr();
+}
 
 }
 
@@ -76,22 +82,23 @@ void TcpStream::shutdownWrite()
 
 TcpStreamPtr TcpStream::connect(const InetAddress& serverAddr)
 {
-  TcpStreamPtr stream;
-  Socket sock(Socket::createTCP());
-  if (sock.connect(serverAddr) == 0)
-  {
-    // FIXME: do poll(POLLOUT) to check errors
-    stream.reset(new TcpStream(std::move(sock)));
-  }
-  return stream;
+  return connectInternal(serverAddr, nullptr);
 }
 
 TcpStreamPtr TcpStream::connect(const InetAddress& serverAddr, const InetAddress& localAddr)
 {
+  return connectInternal(serverAddr, &localAddr);
+}
+
+TcpStreamPtr TcpStream::connectInternal(const InetAddress& serverAddr, const InetAddress* localAddr)
+{
   TcpStreamPtr stream;
   Socket sock(Socket::createTCP());
-  sock.bindOrDie(localAddr);
-  if (sock.connect(serverAddr) == 0)
+  if (localAddr)
+  {
+    sock.bindOrDie(*localAddr);
+  }
+  if (sock.connect(serverAddr) == 0 && !isSelfConnection(sock))
   {
     // FIXME: do poll(POLLOUT) to check errors
     stream.reset(new TcpStream(std::move(sock)));

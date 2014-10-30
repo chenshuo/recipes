@@ -1,8 +1,8 @@
 #include "Socket.h"
-
 #include "InetAddress.h"
 
 #include <assert.h>
+#include <strings.h>  // bzero
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -93,6 +93,30 @@ void Socket::setTcpNoDelay(bool on)
   {
     perror("Socket::setTcpNoDelay");
   }
+}
+
+InetAddress Socket::getLocalAddr() const
+{
+  struct sockaddr_in localaddr;
+  bzero(&localaddr, sizeof localaddr);
+  socklen_t addrlen = static_cast<socklen_t>(sizeof localaddr);
+  if (::getsockname(sockfd_, sockaddr_cast(&localaddr), &addrlen) < 0)
+  {
+    perror("Socket::getLocalAddr");
+  }
+  return InetAddress(localaddr);
+}
+
+InetAddress Socket::getPeerAddr() const
+{
+  struct sockaddr_in peeraddr;
+  bzero(&peeraddr, sizeof peeraddr);
+  socklen_t addrlen = static_cast<socklen_t>(sizeof peeraddr);
+  if (::getpeername(sockfd_, sockaddr_cast(&peeraddr), &addrlen) < 0)
+  {
+    perror("Socket::getPeerAddr");
+  }
+  return InetAddress(peeraddr);
 }
 
 int Socket::read(void* buf, int len)

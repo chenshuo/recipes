@@ -33,6 +33,7 @@ class TcpStream : noncopyable
   void shutdownWrite();
 
  private:
+  static TcpStreamPtr connectInternal(const InetAddress& serverAddr, const InetAddress* localAddr);
   Socket sock_;
 };
 
