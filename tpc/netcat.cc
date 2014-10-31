@@ -19,7 +19,7 @@ int write_n(int fd, const void* buf, int length)
     }
     else if (nw == 0)
     {
-      break;
+      break;  // EOF
     }
     else if (errno != EINTR)
     {
@@ -32,6 +32,7 @@ int write_n(int fd, const void* buf, int length)
 
 void run(TcpStreamPtr stream)
 {
+  // Caution: a bad example for closing connection
   std::thread thr([&stream] () {
     char buf[8192];
     int nr = 0;
@@ -43,9 +44,8 @@ void run(TcpStreamPtr stream)
         break;
       }
     }
-    ::exit(0);
+    ::exit(0);  // should somehow notify main thread instead
   });
-  thr.detach();
 
   char buf[8192];
   int nr = 0;
@@ -57,6 +57,8 @@ void run(TcpStreamPtr stream)
       break;
     }
   }
+  stream->shutdownWrite();
+  thr.join();
 }
 
 int main(int argc, const char* argv[])
