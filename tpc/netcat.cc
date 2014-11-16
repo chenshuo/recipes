@@ -72,10 +72,11 @@ int main(int argc, const char* argv[])
   int port = atoi(argv[2]);
   if (strcmp(argv[1], "-l") == 0)
   {
-    Acceptor acceptor((InetAddress(port)));  // an extra pair of () is needed
-    TcpStreamPtr stream(acceptor.accept());
+    std::unique_ptr<Acceptor> acceptor(new Acceptor(InetAddress(port)));
+    TcpStreamPtr stream(acceptor->accept());
     if (stream)
     {
+      acceptor.reset();  // stop listening
       run(std::move(stream));
     }
     else

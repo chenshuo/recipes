@@ -44,6 +44,7 @@ def main(argv):
         server_socket.bind(('', port))
         server_socket.listen(5)
         (client_socket, client_address) = server_socket.accept()
+        server_socket.close()
         relay(client_socket)
     else:
         # client

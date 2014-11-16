@@ -11,7 +11,7 @@ def get_message():
 
 def chargen(sock):
     message = get_message()
-    print len(message)
+    # print len(message)
     try:
         while True:
             sock.sendall(message)
@@ -31,8 +31,9 @@ def main(argv):
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind(('', port))
         server_socket.listen(5)
-        (client_socket, client_address) = server_socket.accept()
-        chargen(client_socket)
+        while True:
+            (client_socket, client_address) = server_socket.accept()
+            chargen(client_socket)
     else:
         # client
         sock = socket.create_connection((argv[1], port))
