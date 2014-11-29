@@ -47,16 +47,16 @@ int TcpStream::sendAll(const void* buf, int len)
   int written = 0;
   while (written < len)
   {
-    int nr = sock_.write(buf, len);
-    if (nr > 0)
+    int nw = sock_.write(static_cast<const char*>(buf) + written, len - written);
+    if (nw > 0)
     {
-      written += nr;
+      written += nw;
     }
-    else if (nr == 0)
+    else if (nw == 0)
     {
       break;
     }
-    else if (errno != EINTR)  // nr < 0
+    else if (errno != EINTR)  // nw < 0
     {
       break;
     }
