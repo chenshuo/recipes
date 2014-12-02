@@ -10,23 +10,6 @@
 
 muduo::AtomicInt64 g_bytes;
 
-std::string getMessage()
-{
-  std::string line;
-  for (int i = 33; i < 127; ++i)
-  {
-    line.push_back(char(i));
-  }
-  line += line;
-
-  std::string message;
-  for (size_t i = 0; i < 127-33; ++i)
-  {
-    message += line.substr(i, 72) + '\n';
-  }
-  return message;
-}
-
 void measure()
 {
   muduo::Timestamp start = muduo::Timestamp::now();
@@ -46,21 +29,19 @@ void measure()
   }
 }
 
-void chargen(TcpStreamPtr stream)
+void discard(TcpStreamPtr stream)
 {
-  std::string message = getMessage();
+  char buf[65536];
   while (true)
   {
-    int nw = stream->sendAll(message.data(), message.size());
-    g_bytes.add(nw);
-    if (nw < static_cast<int>(message.size()))
-    {
+    int nr = stream->receiveSome(buf, sizeof buf);
+    if (nr <= 0)
       break;
-    }
+    g_bytes.add(nr);
   }
 }
 
-// a thread-per-connection current chargen server and client
+// a thread-per-connection current discard server and client
 int main(int argc, char* argv[])
 {
   if (argc < 3)
@@ -82,7 +63,7 @@ int main(int argc, char* argv[])
       TcpStreamPtr tcpStream = acceptor.accept();
       printf("accepted no. %d client\n", ++count);
 
-      std::thread thr(chargen, std::move(tcpStream));
+      std::thread thr(discard, std::move(tcpStream));
       thr.detach();
     }
   }
@@ -95,7 +76,7 @@ int main(int argc, char* argv[])
       TcpStreamPtr stream(TcpStream::connect(addr));
       if (stream)
       {
-        chargen(std::move(stream));
+        discard(std::move(stream));
       }
       else
       {

@@ -9,6 +9,8 @@ CC=${CC:-g++}
 
 $CC -std=c++11 -Wall -Wextra -g -O2 $SRCS chargen.cc ../datetime/Timestamp.cc -o chargen -lpthread
 
+$CC -std=c++11 -Wall -Wextra -g -O2 $SRCS discard.cc ../datetime/Timestamp.cc -o discard -lpthread
+
 $CC -std=c++11 -Wall -Wextra -g -O2 $SRCS echo.cc -o echo -lpthread
 
 $CC -std=c++11 -Wall -Wextra -g -O2 $SRCS echo_client.cc -o echo_client
