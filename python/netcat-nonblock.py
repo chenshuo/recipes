@@ -63,8 +63,8 @@ def relay(sock):
             if event & select.POLLOUT:
                 if fileno == sock.fileno():
                     assert len(socketOutputBuffer) > 0
-                    nw = nonBlockingWrite(sock.fileno(), data)
-                    if nw < len(data):
+                    nw = nonBlockingWrite(sock.fileno(), socketOutputBuffer)
+                    if nw < len(socketOutputBuffer):
                         assert nw > 0
                         socketOutputBuffer = socketOutputBuffer[nw:]
                     else:
