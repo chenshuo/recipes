@@ -109,7 +109,7 @@ void transmit(const Options& opt)
 
   if (opt.nodelay)
   {
-    stream->setNoDelay(true);
+    stream->setTcpNoDelay(true);
   }
   printf("connected\n");
   double start = now();

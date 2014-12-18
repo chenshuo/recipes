@@ -32,7 +32,6 @@ def relay(sock):
     # setNonBlocking(sys.stdout)
 
     done = False
-    stdoutOutputBuffer = ''
     socketOutputBuffer = ''
     while not done:
         events = poll.poll(10000)  # 10 seconds

@@ -17,6 +17,10 @@ $CC -std=c++11 -Wall -Wextra -g -O2 $SRCS echo_client.cc -o echo_client
 
 $CC -std=c++11 -Wall -Wextra -g -O2 $SRCS netcat.cc -o netcat -lpthread
 
+$CC -std=c++11 -Wall -Wextra -g -O2 $SRCS nodelay.cc -o nodelay
+
+$CC -std=c++11 -Wall -Wextra -g -O2 $SRCS nodelay_server.cc -o nodelay_server
+
 $CC -std=c++11 -Wall -Wextra -g -O2 $SRCS roundtrip_udp.cc -o roundtrip_udp -lpthread
 
 $CC -std=c++11 -Wall -Wextra -g -O2 $SRCS sender.cc -o sender -lpthread

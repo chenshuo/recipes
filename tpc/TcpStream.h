@@ -29,7 +29,7 @@ class TcpStream : noncopyable
   int sendSome(const void* buf, int len); // send len or less bytes
 
   // thread safe
-  void setNoDelay(bool on);
+  void setTcpNoDelay(bool on);
   void shutdownWrite();
 
  private:

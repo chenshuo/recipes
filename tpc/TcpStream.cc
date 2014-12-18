@@ -70,7 +70,7 @@ int TcpStream::sendSome(const void* buf, int len)
   return sock_.write(buf, len);
 }
 
-void TcpStream::setNoDelay(bool on)
+void TcpStream::setTcpNoDelay(bool on)
 {
   sock_.setTcpNoDelay(on);
 }
