@@ -16,16 +16,18 @@ int main(int argc, char* argv[])
 {
   if (argc < 3)
   {
-    printf("Usage: %s [-b] [-D] hostname message_length\n", argv[0]);
-    printf("  -b Buffering before sending.\n"
-           "  -D Set TCP_NODELAY.\n");
+    printf("Usage: %s [-b] [-D] [-n num] hostname message_length\n", argv[0]);
+    printf("  -b Buffering request before sending.\n"
+           "  -D Set TCP_NODELAY.\n"
+           "  -n num Send num concurrent requests, default = 1.\n");
     return 0;
   }
 
   int opt = 0;
   bool buffering = false;
   bool tcpnodelay = false;
-  while ( (opt = getopt(argc, argv, "bD")) != -1)
+  int num = 1;
+  while ( (opt = getopt(argc, argv, "bDn:")) != -1)
   {
     switch (opt)
     {
@@ -34,6 +36,9 @@ int main(int argc, char* argv[])
         break;
       case 'D':
         tcpnodelay = true;
+        break;
+      case 'n':
+        num = atoi(optarg);
         break;
       default:
         printf("Unknown option '%c'\n", opt);
@@ -77,27 +82,35 @@ int main(int argc, char* argv[])
     printf("connected\n");
   }
 
-  printf("sending %d bytes\n", len);
 
   double start = now();
-  if (buffering)
+  for (int n = 0; n < num; ++n)
   {
-    std::vector<char> message(len + sizeof len, 'S');
-    memcpy(message.data(), &len, sizeof len);
-    int nw = stream->sendAll(message.data(), message.size());
-    printf("%f sent %d bytes\n", now(), nw);
-  }
-  else
-  {
-    stream->sendAll(&len, sizeof len);
-    usleep(1000); // prevent kernel merging TCP segments
-    std::string message(len, 'S');
-    int nw = stream->sendAll(message.data(), message.size());
-    printf("%f sent %d bytes\n", now(), nw);
+    printf("Request no. %d, sending %d bytes\n", n, len);
+    if (buffering)
+    {
+      std::vector<char> message(len + sizeof len, 'S');
+      memcpy(message.data(), &len, sizeof len);
+      int nw = stream->sendAll(message.data(), message.size());
+      printf("%.6f sent %d bytes\n", now(), nw);
+    }
+    else
+    {
+      stream->sendAll(&len, sizeof len);
+      printf("%.6f sent header\n", now());
+      usleep(1000); // prevent kernel merging TCP segments
+      std::string payload(len, 'S');
+      int nw = stream->sendAll(payload.data(), payload.size());
+      printf("%.6f sent %d bytes\n", now(), nw);
+    }
   }
 
-  int ack = 0;
-  int nr = stream->receiveAll(&ack, sizeof ack);
-  printf("received %d bytes, ack = %d\n", nr, ack);
-  printf("%f seconds\n", now() - start);
+  printf("Sent all %d requests, receiving responses.\n", num);
+  for (int n = 0; n < num; ++n)
+  {
+    int ack = 0;
+    int nr = stream->receiveAll(&ack, sizeof ack);
+    printf("%.6f received %d bytes, ack = %d\n", now(), nr, ack);
+  }
+  printf("total %f seconds\n", now() - start);
 }

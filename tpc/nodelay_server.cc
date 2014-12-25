@@ -16,27 +16,38 @@ double now()
   return tv.tv_sec + tv.tv_usec / 1000000.0;
 }
 
-int main()
+// an interative request-response server
+int main(int argc, char* argv[])
 {
   InetAddress listenAddr(3210);
   Acceptor acceptor(listenAddr);
   printf("Accepting... Ctrl-C to exit\n");
   int count = 0;
+  bool nodelay = argc > 1 && strcmp(argv[1], "-D") == 0;
   while (true)
   {
     TcpStreamPtr tcpStream = acceptor.accept();
     printf("accepted no. %d client\n", ++count);
+    if (nodelay)
+      tcpStream->setTcpNoDelay(true);
 
-    int len = 0;
-    int nr = tcpStream->receiveAll(&len, sizeof len);
-    printf("%f received header %d bytes, len = %d\n", now(), nr, len);
+    while (true)
+    {
+      int len = 0;
+      int nr = tcpStream->receiveAll(&len, sizeof len);
+      if (nr <= 0)
+        break;
+      printf("%f received header %d bytes, len = %d\n", now(), nr, len);
+      assert(nr == sizeof len);
 
-    std::vector<char> buf(len);
-    nr = tcpStream->receiveAll(buf.data(), len);
-    printf("%f received payload %d bytes\n", now(), nr);
-    assert(nr == len);
-    int nw = tcpStream->sendAll(&len, sizeof len);
-    assert(nw == sizeof len);
+      std::vector<char> payload(len);
+      nr = tcpStream->receiveAll(payload.data(), len);
+      printf("%f received payload %d bytes\n", now(), nr);
+      assert(nr == len);
+      int nw = tcpStream->sendAll(&len, sizeof len);
+      assert(nw == sizeof len);
+    }
+
     printf("no. %d client ended.\n", count);
   }
 }
