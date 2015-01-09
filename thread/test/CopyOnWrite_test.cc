@@ -39,7 +39,8 @@ void traverse()
     assert(!g_foos.unique());
   }
 
-  assert(!foos.unique());
+  // assert(!foos.unique()); this may not hold
+
   for (std::vector<Foo>::const_iterator it = foos->begin();
       it != foos->end(); ++it)
   {
