@@ -30,19 +30,37 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
   /* This callback is invoked when there is data to read on bev. */
   struct evbuffer *input = bufferevent_get_input(bev);
   struct evbuffer *output = bufferevent_get_output(bev);
+  // printf("read_cb %zd %zd\n", evbuffer_get_length(input), evbuffer_get_length(output));
 
   /* Copy all the data from the input buffer to the output buffer. */
   evbuffer_add_buffer(output, input);
+}
+
+static void echo_write_complete_cb(struct bufferevent *bev, void *ctx)
+{
+  struct evbuffer *output = bufferevent_get_output(bev);
+  size_t remain = evbuffer_get_length(output);
+  printf("write_complete_cb, remain %zd\n", remain);
+  if (remain == 0)
+    bufferevent_free(bev);
 }
 
 static void echo_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
   struct evbuffer *output = bufferevent_get_output(bev);
   size_t remain = evbuffer_get_length(output);
+
+  if (events & BEV_EVENT_EOF) {
+    printf("EOF, remain %zd\n", remain);
+    if (remain > 0) {
+      // bufferevent_disable(bev, EV_READ);
+      bufferevent_setcb(bev, echo_read_cb, echo_write_complete_cb, echo_event_cb, NULL);
+    } else {
+      bufferevent_free(bev);
+    }
+  }
   if (events & BEV_EVENT_ERROR) {
     perror("Error from bufferevent");
-  }
-  if (events & (BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
     printf("closing, remain %zd\n", remain);
     bufferevent_free(bev);
   }

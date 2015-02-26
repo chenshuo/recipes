@@ -1,11 +1,12 @@
 #include "InetAddress.h"
 #include "TcpStream.h"
+#include <unistd.h>
 
 int main(int argc, const char* argv[])
 {
   if (argc < 3)
   {
-    printf("Usage: %s hostname message_length\n", argv[0]);
+    printf("Usage: %s hostname message_length [scp]\n", argv[0]);
     return 0;
   }
 
@@ -33,7 +34,38 @@ int main(int argc, const char* argv[])
   int nw = stream->sendAll(message.c_str(), message.size());
   printf("sent %d bytes\n", nw);
 
+  if (argc > 3)
+  {
+    for (char cmd : std::string(argv[3]))
+    {
+      if (cmd == 's')  // shutdown
+      {
+        printf("shutdown write\n");
+        stream->shutdownWrite();
+      }
+      else if (cmd == 'p') // pause
+      {
+        printf("sleeping for 10 seconds\n");
+        ::sleep(10);
+        printf("done\n");
+      }
+      else if (cmd == 'c') // close
+      {
+        printf("close without reading response\n");
+        return 0;
+      }
+      else
+      {
+        printf("unknown command '%c'\n", cmd);
+      }
+    }
+  }
+
   std::vector<char> receive(len);
   int nr = stream->receiveAll(receive.data(), receive.size());
   printf("received %d bytes\n", nr);
+  if (nr != nw)
+  {
+    printf("!!! Incomplete response !!!\n");
+  }
 }
