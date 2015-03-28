@@ -25,5 +25,7 @@ $CC -std=c++11 -Wall -Wextra -g -O2 $SRCS roundtrip_udp.cc -o roundtrip_udp -lpt
 
 $CC -std=c++11 -Wall -Wextra -g -O2 $SRCS sender.cc -o sender -lpthread
 
+$CC -std=c++11 -Wall -Wextra -g -O2 $SRCS sudoku_loadtest.cc ../datetime/Timestamp.cc -o sudoku_loadtest -lpthread
+
 $CC -std=c++11 -Wall -Wextra -g -O2 $SRCS ttcp.cc -o ttcp -lboost_program_options
 

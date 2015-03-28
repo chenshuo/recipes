@@ -23,8 +23,8 @@ int main(int argc, const char* argv[])
   TcpStreamPtr stream(TcpStream::connect(addr));
   if (!stream)
   {
-    printf("Unable to connect %s\n", addr.toIpPort().c_str());
     perror("");
+    printf("Unable to connect %s\n", addr.toIpPort().c_str());
     return 0;
   }
 
