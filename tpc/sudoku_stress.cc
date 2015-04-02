@@ -6,9 +6,11 @@
 
 #include <thread>
 #include <assert.h>
+#include <unistd.h>
 
 muduo::AtomicInt32 g_req;
 muduo::AtomicInt32 g_resp;
+muduo::AtomicInt32 g_resp_bad;
 
 void measure(int total, bool norecv)
 {
@@ -62,7 +64,26 @@ void sender(TcpStream* stream, int total)
     ++id;
     g_req.increment();
   }
-  printf("sender thread finished.\n");
+  printf("sender thread finished: %d requests\n", g_req.get());
+}
+
+bool readResponse(TcpStream* stream, bool* bad)
+{
+  static std::string input;
+  while (input.find("\r\n") == std::string::npos)
+  {
+    char buf[256];
+    int nr = stream->receiveSome(buf, 256);
+    if (nr <= 0)
+      return false;
+    input.append(buf, nr);
+  }
+
+  size_t crlf = input.find("\r\n");
+  assert(crlf != std::string::npos);
+  *bad = (crlf + 2 != 100);
+  input.erase(0, crlf + 2);
+  return true;
 }
 
 int main(int argc, char* argv[])
@@ -96,10 +117,19 @@ int main(int argc, char* argv[])
   }
 
   bool norecv = false;
-  if (argc > 3 && std::string(argv[3]) == "-r")
+  int recvDelay = 0;
+  if (argc > 3)
   {
-    printf("do not receive responses.\n");
-    norecv = true;
+    if (std::string(argv[3]) == "-r")
+    {
+      printf("do not receive responses.\n");
+      norecv = true;
+    }
+    else
+    {
+      recvDelay = atoi(argv[3]);
+      printf("delay receiving by %d seconds.\n", recvDelay);
+    }
   }
 
   std::thread measureThr(measure, total, norecv);
@@ -109,20 +139,24 @@ int main(int argc, char* argv[])
 
   if (!norecv)
   {
-    for (int i = 0; i < total; ++i)
+    if (recvDelay > 0)
+      sleep(recvDelay);
+    bool bad = false;
+    while (readResponse(stream.get(), &bad))
     {
-      char buf[256];
-      int nr = stream->receiveAll(buf, 100);
-      if (nr != 100)
+      if (g_resp.incrementAndGet() >= total)
         break;
-      assert(buf[16] == ':' && buf[98] == '\r' && buf[99] == '\n');
-      g_resp.increment();
+      if (bad)
+      {
+        g_resp_bad.increment();
+      }
     }
-    printf("all responses received.\n");
+    printf("all responses received: total=%d bad=%d\n", g_resp.get(), g_resp_bad.get());
   }
 
   sendThr.join();
   measureThr.join();
-  printf("total requests  %d\ntotal responses %d\n", g_req.get(), g_resp.get());
+  printf("total requests  %d\ntotal responses %d\nbad responses %d\n",
+         g_req.get(), g_resp.get(), g_resp_bad.get());
   getchar();
 }
