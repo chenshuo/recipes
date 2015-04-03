@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 
 Acceptor::Acceptor(const InetAddress& listenAddr)
-  : listenSock_(Socket::createTcp())
+  : listenSock_(Socket::createTCP())
 {
   listenSock_.setReuseAddr(true);
   listenSock_.bindOrDie(listenAddr);

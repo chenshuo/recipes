@@ -10,11 +10,11 @@ class InetAddress : copyable
 {
  public:
   // InetAddress()
-  InetAddress(StringPiece ip, uint16_t port);
-  InetAddress(StringPiece ipPort);  // "1.2.3.4:5678"
+  InetAddress(StringArg ip, uint16_t port);
+  explicit InetAddress(StringArg ipPort);  // "1.2.3.4:5678"
   explicit InetAddress(uint16_t port, bool loopbackOnly = false);  // for listening
 
-  InetAddress(const struct sockaddr_in& saddr)
+  explicit InetAddress(const struct sockaddr_in& saddr)
     : saddr_(saddr)
   { }
 
@@ -37,8 +37,15 @@ class InetAddress : copyable
   // resolve hostname to IP address, not changing port or sin_family
   // return true on success.
   // thread safe
-  static bool resolve(const char* hostname, InetAddress*);
-  static std::vector<InetAddress> resolveAll(const char* hostname, uint16_t port = 0);
+  static bool resolve(StringArg hostname, InetAddress*);
+  static std::vector<InetAddress> resolveAll(StringArg hostname, uint16_t port = 0);
+
+  bool operator==(const InetAddress& rhs) const
+  {
+    return saddr_.sin_family == rhs.saddr_.sin_family
+        && ipNetEndian() == rhs.ipNetEndian()
+        && portNetEndian() == rhs.portNetEndian();
+  }
 
  private:
   static bool resolveSlow(const char* hostname, InetAddress*);

@@ -41,8 +41,15 @@ class Socket : noncopyable
   void setReuseAddr(bool on);
   void setTcpNoDelay(bool on);
 
+  InetAddress getLocalAddr() const;
+  InetAddress getPeerAddr() const;
+
+  int read(void* buf, int len);
+  int write(const void* buf, int len);
+
   // factory methods
-  static Socket createTcp();
+  static Socket createTCP();
+  static Socket createUDP();
 
  private:
   int sockfd_;

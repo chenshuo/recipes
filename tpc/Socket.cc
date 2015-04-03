@@ -1,8 +1,8 @@
 #include "Socket.h"
-
 #include "InetAddress.h"
 
 #include <assert.h>
+#include <strings.h>  // bzero
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -95,9 +95,52 @@ void Socket::setTcpNoDelay(bool on)
   }
 }
 
-Socket Socket::createTcp()
+InetAddress Socket::getLocalAddr() const
 {
-  int sockfd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  struct sockaddr_in localaddr;
+  bzero(&localaddr, sizeof localaddr);
+  socklen_t addrlen = static_cast<socklen_t>(sizeof localaddr);
+  if (::getsockname(sockfd_, sockaddr_cast(&localaddr), &addrlen) < 0)
+  {
+    perror("Socket::getLocalAddr");
+  }
+  return InetAddress(localaddr);
+}
+
+InetAddress Socket::getPeerAddr() const
+{
+  struct sockaddr_in peeraddr;
+  bzero(&peeraddr, sizeof peeraddr);
+  socklen_t addrlen = static_cast<socklen_t>(sizeof peeraddr);
+  if (::getpeername(sockfd_, sockaddr_cast(&peeraddr), &addrlen) < 0)
+  {
+    perror("Socket::getPeerAddr");
+  }
+  return InetAddress(peeraddr);
+}
+
+int Socket::read(void* buf, int len)
+{
+  // FIXME: EINTR
+  return ::read(sockfd_, buf, len);
+}
+
+int Socket::write(const void* buf, int len)
+{
+  // FIXME: EINTR
+  return ::write(sockfd_, buf, len);
+}
+
+Socket Socket::createTCP()
+{
+  int sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP);
+  assert(sockfd >= 0);
+  return Socket(sockfd);
+}
+
+Socket Socket::createUDP()
+{
+  int sockfd = ::socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_UDP);
   assert(sockfd >= 0);
   return Socket(sockfd);
 }

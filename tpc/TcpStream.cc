@@ -1,4 +1,5 @@
 #include "TcpStream.h"
+#include "InetAddress.h"
 
 #include <errno.h>
 #include <signal.h>
@@ -17,6 +18,11 @@ class IgnoreSigPipe
   }
 } initObj;
 
+bool isSelfConnection(const Socket& sock)
+{
+  return sock.getLocalAddr() == sock.getPeerAddr();
+}
+
 }
 
 TcpStream::TcpStream(Socket&& sock)
@@ -24,16 +30,16 @@ TcpStream::TcpStream(Socket&& sock)
 {
 }
 
-int TcpStream::readAll(void* buf, int len)
+int TcpStream::receiveAll(void* buf, int len)
 {
   // FIXME: EINTR
   return ::recv(sock_.fd(), buf, len, MSG_WAITALL);
 }
 
-int TcpStream::readSome(void* buf, int len)
+int TcpStream::receiveSome(void* buf, int len)
 {
   // FIXME: EINTR
-  return ::read(sock_.fd(), buf, len);
+  return sock_.read(buf, len);
 }
 
 int TcpStream::sendAll(const void* buf, int len)
@@ -41,16 +47,16 @@ int TcpStream::sendAll(const void* buf, int len)
   int written = 0;
   while (written < len)
   {
-    int nr = ::write(sock_.fd(), buf, len);
-    if (nr > 0)
+    int nw = sock_.write(static_cast<const char*>(buf) + written, len - written);
+    if (nw > 0)
     {
-      written += nr;
+      written += nw;
     }
-    else if (nr == 0)
+    else if (nw == 0)
     {
       break;
     }
-    else if (errno != EINTR)  // nr < 0
+    else if (errno != EINTR)  // nw < 0
     {
       break;
     }
@@ -61,10 +67,10 @@ int TcpStream::sendAll(const void* buf, int len)
 int TcpStream::sendSome(const void* buf, int len)
 {
   // FIXME: EINTR
-  return ::write(sock_.fd(), buf, len);
+  return sock_.write(buf, len);
 }
 
-void TcpStream::setNoDelay(bool on)
+void TcpStream::setTcpNoDelay(bool on)
 {
   sock_.setTcpNoDelay(on);
 }
@@ -76,22 +82,23 @@ void TcpStream::shutdownWrite()
 
 TcpStreamPtr TcpStream::connect(const InetAddress& serverAddr)
 {
-  TcpStreamPtr stream;
-  Socket sock(Socket::createTcp());
-  if (sock.connect(serverAddr) == 0)
-  {
-    // FIXME: do poll(POLLOUT) to check errors
-    stream.reset(new TcpStream(std::move(sock)));
-  }
-  return stream;
+  return connectInternal(serverAddr, nullptr);
 }
 
-TcpStreamPtr connect(const InetAddress& serverAddr, const InetAddress& localAddr)
+TcpStreamPtr TcpStream::connect(const InetAddress& serverAddr, const InetAddress& localAddr)
+{
+  return connectInternal(serverAddr, &localAddr);
+}
+
+TcpStreamPtr TcpStream::connectInternal(const InetAddress& serverAddr, const InetAddress* localAddr)
 {
   TcpStreamPtr stream;
-  Socket sock(Socket::createTcp());
-  sock.bindOrDie(localAddr);
-  if (sock.connect(serverAddr) == 0)
+  Socket sock(Socket::createTCP());
+  if (localAddr)
+  {
+    sock.bindOrDie(*localAddr);
+  }
+  if (sock.connect(serverAddr) == 0 && !isSelfConnection(sock))
   {
     // FIXME: do poll(POLLOUT) to check errors
     stream.reset(new TcpStream(std::move(sock)));
