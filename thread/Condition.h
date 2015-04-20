@@ -41,6 +41,7 @@ class Condition : boost::noncopyable
     struct timespec abstime;
     clock_gettime(CLOCK_REALTIME, &abstime);
     abstime.tv_sec += seconds;
+    abstime.tv_nsec = 0;
     return ETIMEDOUT == pthread_cond_timedwait(&pcond_, mutex_.getPthreadMutex(), &abstime);
   }
 
