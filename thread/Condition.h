@@ -13,6 +13,7 @@
 #include <boost/noncopyable.hpp>
 #include <pthread.h>
 #include <errno.h>
+#include <sys/time.h>
 
 namespace muduo
 {
@@ -39,8 +40,10 @@ class Condition : boost::noncopyable
   bool waitForSeconds(int seconds)
   {
     struct timespec abstime;
-    clock_gettime(CLOCK_REALTIME, &abstime);
-    abstime.tv_sec += seconds;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    abstime.tv_sec = tv.tv_sec + seconds;
+    abstime.tv_nsec = 0;
     return ETIMEDOUT == pthread_cond_timedwait(&pcond_, mutex_.getPthreadMutex(), &abstime);
   }
 
