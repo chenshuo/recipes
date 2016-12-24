@@ -5,8 +5,7 @@
 from itertools import permutations
 
 N = 8
-cols = range(N)
-for perm in permutations(cols):
-    if (N == len(set(perm[i]-i for i in cols))
-          == len(set(perm[i]+i for i in cols))):
-        print perm
+for rows in permutations(range(N)):
+    if (N == len(set(rows[i]-i for i in range(N)))    # Diagonal
+          == len(set(rows[i]+i for i in range(N)))):  # Anti-diagonal
+        print rows
