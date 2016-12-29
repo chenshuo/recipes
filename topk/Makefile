@@ -13,7 +13,7 @@ CXXFLAGS = -g -O2 -Wall -Wextra -Werror \
 
 LDFLAGS = -L$(MUDUO_LIBRARY) -lmuduo_net -lmuduo_base -lpthread
 
-all: sender merger
+all: sender merger word_freq word_freq_shards
 
 clean:
 	rm -f sender core
@@ -23,5 +23,11 @@ sender: sender.cc
 
 merger: merger.cc
 	g++ $(CXXFLAGS) -o $@ $^ -lboost_system -lpthread
+
+word_freq: word_freq.cc
+	g++ $(CXXFLAGS) -std=c++1y -o $@ $^
+
+word_freq_shards: word_freq_shards.cc
+	g++ $(CXXFLAGS) -std=c++11 -o $@ $^
 
 .PHONY: all clean
