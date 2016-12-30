@@ -107,11 +107,9 @@ void combine(const int nbuckets)
 {
   for (int i = 0; i < nbuckets; ++i)
   {
-    std::unordered_map<string, int64_t> counts(read_shard(i, nbuckets));
-
     // std::cout << "  sorting " << std::endl;
     std::vector<std::pair<int64_t, string>> counts;
-    for (const auto& entry : counts)
+    for (const auto& entry : read_shard(i, nbuckets))
     {
       counts.push_back(make_pair(entry.second, entry.first));
     }
