@@ -12,7 +12,7 @@ class Source
   explicit Source(std::istream* in)
     : in_(in),
       count_(0),
-      query_()
+      word_()
   {
   }
 
@@ -27,7 +27,7 @@ class Source
         count_ = atoll(line.c_str());
         if (count_ > 0)
         {
-          query_ = line.substr(tab+1);
+          word_ = line.substr(tab+1);
           return true;
         }
       }
@@ -42,13 +42,13 @@ class Source
 
   void output(std::ostream& out)
   {
-    out << count_ << '\t' << query_ << '\n';
+    out << count_ << '\t' << word_ << '\n';
   }
 
  private:
   std::istream* in_;
   int64_t count_;
-  std::string query_;
+  std::string word_;
 };
 
 boost::asio::ip::tcp::endpoint get_endpoint(const std::string& ipport)

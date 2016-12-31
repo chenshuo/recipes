@@ -31,10 +31,10 @@ class Sharder : boost::noncopyable
     assert(buckets_.size() == static_cast<size_t>(nbuckets));
   }
 
-  void output(const string& query, int64_t count)
+  void output(const string& word, int64_t count)
   {
-    size_t idx = std::hash<string>()(query) % buckets_.size();
-    buckets_[idx] << query << '\t' << count << '\n';
+    size_t idx = std::hash<string>()(word) % buckets_.size();
+    buckets_[idx] << word << '\t' << count << '\n';
   }
 
  protected:
@@ -47,23 +47,23 @@ void shard(int nbuckets, int argc, char* argv[])
   for (int i = 1; i < argc; ++i)
   {
     std::cout << "  processing input file " << argv[i] << std::endl;
-    std::unordered_map<string, int64_t> queries;
+    std::unordered_map<string, int64_t> counts;
     std::ifstream in(argv[i]);
     while (in && !in.eof())
     {
-      queries.clear();
-      string query;
-      while (getline(in, query))
+      counts.clear();
+      string word;
+      while (in >> word)
       {
-        queries[query] += 1;
-        if (queries.size() > kMaxSize)
+        counts[word] += 1;
+        if (counts.size() > kMaxSize)
         {
           std::cout << "    split" << std::endl;
           break;
         }
       }
 
-      for (auto kv : queries)
+      for (auto kv : counts)
       {
         sharder.output(kv.first, kv.second);
       }
@@ -76,7 +76,7 @@ void shard(int nbuckets, int argc, char* argv[])
 
 std::unordered_map<string, int64_t> read_shard(int idx, int nbuckets)
 {
-  std::unordered_map<string, int64_t> queries;
+  std::unordered_map<string, int64_t> counts;
 
   char buf[256];
   snprintf(buf, sizeof buf, "shard-%05d-of-%05d", idx, nbuckets);
@@ -93,25 +93,25 @@ std::unordered_map<string, int64_t> read_shard(int idx, int nbuckets)
         int64_t count = strtol(line.c_str() + tab, NULL, 10);
         if (count > 0)
         {
-          queries[line.substr(0, tab)] += count;
+          counts[line.substr(0, tab)] += count;
         }
       }
     }
   }
 
   ::unlink(buf);
-  return queries;
+  return counts;
 }
 
 void combine(const int nbuckets)
 {
   for (int i = 0; i < nbuckets; ++i)
   {
-    std::unordered_map<string, int64_t> queries(read_shard(i, nbuckets));
+    std::unordered_map<string, int64_t> counts(read_shard(i, nbuckets));
 
     // std::cout << "  sorting " << std::endl;
     std::vector<std::pair<int64_t, string>> counts;
-    for (const auto& entry : queries)
+    for (const auto& entry : counts)
     {
       counts.push_back(make_pair(entry.second, entry.first));
     }
@@ -132,13 +132,13 @@ void combine(const int nbuckets)
 
 // ======= merge =======
 
-class Source
+class Source  // copyable
 {
  public:
   explicit Source(std::ifstream* in)
     : in_(in),
       count_(0),
-      query_()
+      word_()
   {
   }
 
@@ -153,7 +153,7 @@ class Source
         count_ = strtol(line.c_str(), NULL, 10);
         if (count_ > 0)
         {
-          query_ = line.substr(tab+1);
+          word_ = line.substr(tab+1);
           return true;
         }
       }
@@ -166,15 +166,15 @@ class Source
     return count_ < rhs.count_;
   }
 
-  void output(std::ostream& out) const
+  void outputTo(std::ostream& out) const
   {
-    out << count_ << '\t' << query_ << '\n';
+    out << count_ << '\t' << word_ << '\n';
   }
 
  private:
   std::ifstream* in_;
   int64_t count_;
-  string query_;
+  string word_;
 };
 
 void merge(const int nbuckets)
@@ -200,7 +200,7 @@ void merge(const int nbuckets)
   while (!keys.empty())
   {
     std::pop_heap(keys.begin(), keys.end());
-    keys.back().output(out);
+    keys.back().outputTo(out);
 
     if (keys.back().next())
     {
