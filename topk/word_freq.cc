@@ -14,9 +14,9 @@ int main()
     counts[word]++;
   }
 
-  std::vector<std::pair<int, WordCount::iterator>> freq;
+  std::vector<std::pair<int, WordCount::const_iterator>> freq;
   freq.reserve(counts.size());
-  for (WordCount::iterator it = counts.begin(); it != counts.end(); ++it)
+  for (auto it = counts.cbegin(); it != counts.cend(); ++it)
   {
     freq.push_back(make_pair(it->second, it));
   }
