@@ -21,7 +21,8 @@ int main()
     freq.push_back(make_pair(it->second, it));
   }
 
-  std::sort(freq.begin(), freq.end(), [](const auto& lhs, const auto& rhs) {
+  std::sort(freq.begin(), freq.end(), [](const std::pair<int, WordCount::const_iterator>& lhs,  // const auto& lhs in C++14
+                                         const std::pair<int, WordCount::const_iterator>& rhs) {
     return lhs.first > rhs.first;
   });
   // printf("%zd\n", sizeof(freq[0]));
