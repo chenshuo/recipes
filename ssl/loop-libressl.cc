@@ -5,7 +5,7 @@
 
 #include <tls.h>
 
-struct tls* client()
+struct tls* client(int sockfd)
 {
   struct tls_config* cfg = tls_config_new();
   assert(cfg != NULL);
@@ -20,21 +20,21 @@ struct tls* client()
   int ret = tls_configure(ctx, cfg);
   assert(ret == 0);
 
+  ret = tls_connect_socket(ctx, sockfd, "Test Server Cert");
+  assert(ret == 0);
+
   return ctx;
 }
 
-int main(int argc, char* argv[])
+struct tls* server(int sockfd)
 {
-  int ret = tls_init();
-  assert(ret == 0);
-
   struct tls_config* cfg = tls_config_new();
   assert(cfg != NULL);
 
-  ret = tls_config_set_cert_file(cfg, "cert.crt");
+  int ret = tls_config_set_cert_file(cfg, "server.pem");
   assert(ret == 0);
 
-  ret = tls_config_set_key_file(cfg, "keyfile.key");
+  ret = tls_config_set_key_file(cfg, "server.pem");
   assert(ret == 0);
 
   tls_config_verify_client_optional(cfg);
@@ -42,28 +42,62 @@ int main(int argc, char* argv[])
   assert(ctx != NULL);
 
   ret = tls_configure(ctx, cfg);
-  // printf("%s\n", tls_error(ctx));
+  assert(ret == 0);
+
+  struct tls* sctx = NULL;
+  ret = tls_accept_socket(ctx, &sctx, sockfd);
+  assert(ret == 0 && sctx != NULL);
+
+  return sctx;
+}
+
+bool handshake(struct tls* cctx, struct tls* sctx)
+{
+  int client_done = false, server_done = false;
+
+  while (!(client_done && server_done))
+  {
+    if (!client_done)
+    {
+      int ret = tls_handshake(cctx);
+      printf("c %d\n", ret);
+      if (ret == 0)
+        client_done = true;
+      else if (ret == -1)
+      {
+        printf("client handshake failed: %s\n", tls_error(cctx));
+        break;
+      }
+    }
+
+    if (!server_done)
+    {
+      int ret = tls_handshake(sctx);
+      printf("s %d\n", ret);
+      if (ret == 0)
+        server_done = true;
+      else if (ret == -1)
+      {
+        printf("server handshake failed: %s\n", tls_error(cctx));
+        break;
+      }
+    }
+  }
+
+  return client_done && server_done;
+}
+
+int main(int argc, char* argv[])
+{
+  int ret = tls_init();
   assert(ret == 0);
 
   int fds[2];
   socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, fds);
 
-  struct tls* sctx = NULL;
-  ret = tls_accept_socket(ctx, &sctx, fds[0]);
-  assert(ret == 0);
+  struct tls* cctx = client(fds[0]);
+  struct tls* sctx = server(fds[1]);
 
-  struct tls* cctx = client();
-  ret = tls_connect_socket(cctx, fds[1], "Test Server Cert");
-  assert(ret == 0);
-
-  do {
-    printf("ctx ");
-    ret = tls_handshake(sctx);
-    printf("%d\n", ret);
-    ret = tls_handshake(cctx);
-    printf("%d\n", ret);
-  } while (ret == TLS_WANT_POLLIN || ret == TLS_WANT_POLLOUT);
-
-  printf("%s\n", tls_error(cctx));
-  // printf("%s\n", tls_error(sctx));
+  if (handshake(cctx, sctx))
+    printf("cipher %s\n", tls_conn_cipher(cctx));
 }
