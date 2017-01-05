@@ -13,13 +13,6 @@
 
 muduo::net::Buffer clientOut, serverOut;
 
-double now()
-{
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return tv.tv_sec + tv.tv_usec / 1000000.0;
-}
-
 int net_recv(void* ctx, unsigned char* buf, size_t len)
 {
   muduo::net::Buffer* in = static_cast<muduo::net::Buffer*>(ctx);

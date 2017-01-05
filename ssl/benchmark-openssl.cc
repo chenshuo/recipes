@@ -11,13 +11,6 @@
 
 muduo::net::Buffer clientOut, serverOut;
 
-double now()
-{
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return tv.tv_sec + tv.tv_usec / 1000000.0;
-}
-
 int bread(BIO *b, char *buf, int len)
 {
   BIO_clear_retry_flags(b);

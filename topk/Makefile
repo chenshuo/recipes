@@ -2,21 +2,22 @@ MUDUO_BUILD ?= release
 MUDUO_DIRECTORY ?= $(HOME)/build/$(MUDUO_BUILD)-install
 MUDUO_INCLUDE = $(MUDUO_DIRECTORY)/include
 MUDUO_LIBRARY = $(MUDUO_DIRECTORY)/lib
-SRC = ../src
 
 CXXFLAGS = -g -O2 -Wall -Wextra -Werror \
-		-Wno-unused-parameter -Wconversion\
-		-Wold-style-cast -Woverloaded-virtual \
-		-Wpointer-arith -Wshadow -Wwrite-strings \
-		-march=native -rdynamic \
-		-I$(MUDUO_INCLUDE)
+	-Wno-unused-parameter -Wconversion\
+	-Wold-style-cast -Woverloaded-virtual \
+	-Wpointer-arith -Wshadow -Wwrite-strings \
+	-march=native -rdynamic \
+	-I$(MUDUO_INCLUDE)
 
 LDFLAGS = -L$(MUDUO_LIBRARY) -lmuduo_net -lmuduo_base -lpthread
 
-all: sender merger word_freq word_freq_shards
+BINARIES = sender merger word_freq word_freq_shards
+
+all: $(BINARIES)
 
 clean:
-	rm -f sender core
+	rm -f $(BINARIES) core
 
 sender: sender.cc
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
