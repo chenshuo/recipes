@@ -10,6 +10,7 @@
 #include <boost/weak_ptr.hpp>
 
 #include <unistd.h>
+#include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <linux/unistd.h>
@@ -76,7 +77,8 @@ struct ThreadData
       ptid.reset();
     }
 
-    muduo::CurrentThread::t_threadName = name_.c_str();
+    muduo::CurrentThread::t_threadName = name_.empty() ? "muduoThread" : name_.c_str();
+    ::prctl(PR_SET_NAME, muduo::CurrentThread::t_threadName);
     func_(); // FIXME: surround with try-catch, see muduo
     muduo::CurrentThread::t_threadName = "finished";
   }

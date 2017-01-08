@@ -8,5 +8,5 @@ LIB="TlsAcceptor.cc TlsConfig.cc TlsStream.cc ../tpc/lib/InetAddress.cc ../tpc/l
 g++ $CXXFLAGS -iquote ../tpc/include -I../ -std=c++11 -pthread $LIB server.cc -o server $LDFLAGS
 g++ $CXXFLAGS -iquote ../tpc/include -I../ -std=c++11 -pthread $LIB client.cc -o client $LDFLAGS
 
-g++ $CXXFLAGS loop-libressl.cc -o loop-libressl $LDFLAGS
 g++ $CXXFLAGS benchmark-libressl.cc -o benchmark-libressl $LDFLAGS
+g++ $CXXFLAGS loop-libressl.cc -o loop-libressl -iquote ../ -pthread $LDFLAGS ../thread/Thread.cc

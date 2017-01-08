@@ -140,6 +140,7 @@ void throughput(int block_size, struct tls* cctx, struct tls* sctx)
   // throughput is half of real value, because client and server share one core.
   printf("bs %5d sec %.3f tot %d thr %.1fKB/s wr %.2fB client %.3f server %.3f\n", block_size, secs, total,
          block_size / secs * total / 1024, clientWrite * 1.0 / total, tclient.seconds(), tserver.seconds());
+  delete[] message;
 }
 
 int main(int argc, char* argv[])
