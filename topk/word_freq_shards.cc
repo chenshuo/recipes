@@ -55,7 +55,7 @@ void shard(int nbuckets, int argc, char* argv[])
       string word;
       while (in >> word)
       {
-        counts[word] += 1;
+        counts[word]++;
         if (counts.size() > kMaxSize)
         {
           std::cout << "    split" << std::endl;
@@ -63,7 +63,7 @@ void shard(int nbuckets, int argc, char* argv[])
         }
       }
 
-      for (auto kv : counts)
+      for (const auto& kv : counts)
       {
         sharder.output(kv.first, kv.second);
       }
@@ -72,7 +72,7 @@ void shard(int nbuckets, int argc, char* argv[])
   std::cout << "shuffling done" << std::endl;
 }
 
-// ======= combine =======
+// ======= sort_shards =======
 
 std::unordered_map<string, int64_t> read_shard(int idx, int nbuckets)
 {
@@ -103,7 +103,7 @@ std::unordered_map<string, int64_t> read_shard(int idx, int nbuckets)
   return counts;
 }
 
-void combine(const int nbuckets)
+void sort_shards(const int nbuckets)
 {
   for (int i = 0; i < nbuckets; ++i)
   {
@@ -133,7 +133,7 @@ void combine(const int nbuckets)
 class Source  // copyable
 {
  public:
-  explicit Source(std::ifstream* in)
+  explicit Source(std::istream* in)
     : in_(in),
       count_(0),
       word_()
@@ -170,7 +170,7 @@ class Source  // copyable
   }
 
  private:
-  std::ifstream* in_;
+  std::istream* in_;
   int64_t count_;
   string word_;
 };
@@ -216,6 +216,6 @@ int main(int argc, char* argv[])
 {
   int nbuckets = 10;
   shard(nbuckets, argc, argv);
-  combine(nbuckets);
+  sort_shards(nbuckets);
   merge(nbuckets);
 }
