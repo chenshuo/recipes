@@ -34,7 +34,7 @@ class StringArg : copyable
 };
 
 template<typename To, typename From>
-inline To implicit_cast(const From &f)
+inline To implicit_cast(From f)
 {
   return f;
 }
