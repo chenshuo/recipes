@@ -15,8 +15,6 @@ class TlsContext : noncopyable
     check(tls_configure(context_, config->get()));
   }
 
-  // TlsContext() : context_(NULL) {}
-
   TlsContext(TlsContext&& rhs)
   {
     swap(rhs);
@@ -38,9 +36,11 @@ class TlsContext : noncopyable
     std::swap(context_, rhs.context_);
   }
 
-  void reset(struct tls* ctx) { context_ = ctx; }
+  // void reset(struct tls* ctx) { context_ = ctx; }
 
-  struct tls* get() { return context_; }
+  // struct tls* get() { return context_; }
+
+  const char* cipher() { return tls_conn_cipher(context_); }
 
   // if there is no error, this will segfault.
   const char* error() { return tls_error(context_); }
@@ -48,6 +48,13 @@ class TlsContext : noncopyable
   int connect(const char* hostport, const char* servername = nullptr)
   {
     return tls_connect_servername(context_, hostport, nullptr, servername);
+  }
+
+  TlsContext accept(int sockfd)
+  {
+    struct tls* conn_ctx = nullptr;
+    check(tls_accept_socket(context_, &conn_ctx, sockfd));
+    return TlsContext(conn_ctx);
   }
 
   int handshake()
@@ -59,8 +66,9 @@ class TlsContext : noncopyable
     return ret;
   }
 
-  // void accept(
  private:
+  explicit TlsContext(struct tls* context) : context_(context) {}
+
   void check(int ret)
   {
     if (ret != 0)

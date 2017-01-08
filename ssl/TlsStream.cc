@@ -15,4 +15,5 @@ TlsStreamPtr TlsStream::connect(TlsConfig* config, const char* hostport, const c
     return stream;
   }
   stream.reset(new TlsStream(std::move(context)));
+  return stream;
 }

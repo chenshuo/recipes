@@ -14,6 +14,7 @@ class TlsStream : noncopyable
   explicit TlsStream(TlsContext&& context)
     : context_(std::move(context))  // must be established
   {
+    LOG_INFO << context_.cipher();
   }
 
   ~TlsStream() = default;

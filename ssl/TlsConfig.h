@@ -5,9 +5,6 @@
 
 #include <tls.h>
 
-class TlsStream;
-typedef std::unique_ptr<TlsStream> TlsStreamPtr;
-
 class TlsConfig : noncopyable
 {
  public:
