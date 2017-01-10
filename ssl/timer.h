@@ -27,6 +27,12 @@ struct Timer
     total_ += gettime() - start_;
   }
 
+  void reset()
+  {
+    start_ = 0;
+    total_ = 0;
+  }
+
   double seconds() const
   {
     return total_ / 1e9;

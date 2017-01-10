@@ -7,6 +7,7 @@
 #include "timer.h"
 
 muduo::net::Buffer clientOut, serverOut;
+int64_t clientWrite, serverWrite;
 
 ssize_t net_read(struct tls *ctx, void *buf, size_t len, void *arg)
 {
@@ -27,6 +28,8 @@ ssize_t net_read(struct tls *ctx, void *buf, size_t len, void *arg)
 ssize_t net_write(struct tls *ctx, const void *buf, size_t len, void *arg)
 {
   muduo::net::Buffer* out = static_cast<muduo::net::Buffer*>(arg);
+  int64_t& wr = (out == &clientOut ? clientWrite : serverWrite);
+  wr += len;
   out->append(buf, len);
   return len;
 }
@@ -107,6 +110,38 @@ void handshake(struct tls* cctx, struct tls* sctx)
   }
 }
 
+void throughput(int block_size, struct tls* cctx, struct tls* sctx)
+{
+  double start = now();
+  int total = 0;
+  int batch = 1024;
+  char* message = new char[block_size];
+  bzero(message, block_size);
+  clientWrite = 0;
+  tclient.reset();
+  tserver.reset();
+  while (now() - start < 10)
+  {
+    for (int i = 0; i < batch; ++i)
+    {
+      tclient.start();
+      int nw = tls_write(cctx, message, block_size);
+      tclient.stop();
+      assert(nw == block_size);
+      tserver.start();
+      int nr = tls_read(sctx, message, block_size);
+      tserver.stop();
+      assert(nr == block_size);
+    }
+    total += batch;
+    batch *= 2;
+  }
+  double secs = now() - start;
+  // throughput is half of real value, because client and server share one core.
+  printf("bs %5d sec %.3f tot %d thr %.1fKB/s wr %.2fB client %.3f server %.3f\n", block_size, secs, total,
+         block_size / secs * total / 1024, clientWrite * 1.0 / total, tclient.seconds(), tserver.seconds());
+}
+
 int main(int argc, char* argv[])
 {
   int ret = tls_init();
@@ -128,5 +163,10 @@ int main(int argc, char* argv[])
   all.stop();
   printf("%f secs, %f handshakes/sec\n", all.seconds(), N / all.seconds());
   printf("client %f secs, server %f secs\n", tclient.seconds(), tserver.seconds());
+
+  for (int i = 1; i <= 1024 * 16; i *= 2)
+  {
+    throughput(i, cctx, sctx);
+  }
 }
 
