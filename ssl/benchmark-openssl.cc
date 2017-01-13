@@ -53,6 +53,8 @@ long bctrl(BIO *, int cmd, long num, void *)
   switch (cmd) {
     case BIO_CTRL_FLUSH:
       return 1;
+    case BIO_CB_FREE:
+      printf("ctrl BIO_CB_FREE %d\n", cmd);
     default:
       return 0;
   }
@@ -65,7 +67,7 @@ int main(int argc, char* argv[])
   SSL_library_init();
   OPENSSL_config(NULL);
 
-  SSL_CTX* ctx = SSL_CTX_new(TLSv1_1_server_method());
+  SSL_CTX* ctx = SSL_CTX_new(TLSv1_2_server_method());
 
   EC_KEY* ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
   SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);
@@ -73,14 +75,14 @@ int main(int argc, char* argv[])
     SSL_CTX_set_tmp_ecdh(ctx, ecdh);
   EC_KEY_free(ecdh);
 
-  const char* CertFile = argv[1];
-  const char* KeyFile = argv[2];
+  const char* CertFile = "server.pem";  // argv[1];
+  const char* KeyFile = "server.pem";  // argv[2];
   SSL_CTX_use_certificate_file(ctx, CertFile, SSL_FILETYPE_PEM);
   SSL_CTX_use_PrivateKey_file(ctx, KeyFile, SSL_FILETYPE_PEM);
   if (!SSL_CTX_check_private_key(ctx))
     abort();
 
-  SSL_CTX* ctx_client = SSL_CTX_new(TLSv1_1_client_method());
+  SSL_CTX* ctx_client = SSL_CTX_new(TLSv1_2_client_method());
 
   BIO_METHOD method;
   bzero(&method, sizeof method);

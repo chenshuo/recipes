@@ -65,6 +65,9 @@ struct tls* server()
   ret = tls_config_set_key_file(cfg, "server.pem");
   assert(ret == 0);
 
+  ret = tls_config_set_ecdhecurve(cfg, "prime256v1");
+  assert(ret == 0);
+
   // tls_config_verify_client_optional(cfg);
   struct tls* ctx = tls_server();
   assert(ctx != NULL);
