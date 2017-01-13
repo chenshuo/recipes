@@ -89,16 +89,13 @@ int main(int argc, char* argv[])
   method.bread = bread;
   method.bwrite = bwrite;
   method.ctrl = bctrl;
-  BIO client, server;
-  bzero(&client, sizeof client);
-  bzero(&server, sizeof server);
-  BIO_set(&client, &method);
-  BIO_set(&server, &method);
-  client.ptr = &clientOut;
-  client.init = 1;
-  server.ptr = &serverOut;
-  server.init = 1;
 
+  BIO* client = BIO_new(&method);
+  BIO* server = BIO_new(&method);
+  client->ptr = &clientOut;
+  client->init = 1;
+  server->ptr = &serverOut;
+  server->init = 1;
 
   double start = now();
   const int N = 1000;
@@ -108,8 +105,8 @@ int main(int argc, char* argv[])
   {
     ssl = SSL_new (ctx);
     ssl_client = SSL_new (ctx_client);
-    SSL_set_bio(ssl, &client, &server);
-    SSL_set_bio(ssl_client, &server, &client);
+    SSL_set_bio(ssl, client, server);
+    SSL_set_bio(ssl_client, server, client);
 
     tc.start();
     int ret = SSL_connect(ssl_client);
