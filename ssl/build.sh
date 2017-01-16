@@ -9,7 +9,9 @@ g++ $CXXFLAGS -iquote ../tpc/include -I../ -std=c++11 -pthread $LIB server.cc -o
 g++ $CXXFLAGS -iquote ../tpc/include -I../ -std=c++11 -pthread $LIB client.cc -o client $LDFLAGS
 
 g++ $CXXFLAGS benchmark-libressl.cc -o benchmark-libressl $LDFLAGS
-g++ -Wall -I $HOME/muduo -O2 -g benchmark-openssl.cc -o benchmark-openssl -lssl -lcrypto -lrt
+g++ -Wall -O2 -g benchmark-openssl.cc -o benchmark-openssl -lssl -lcrypto -lrt
+
+g++ -Wall -Wno-deprecated-declarations -O2 -g footprint-openssl.cc -o footprint-openssl -lssl -lcrypto -lrt
 
 g++ $CXXFLAGS loop-libressl.cc -o loop-libressl -iquote ../ -pthread $LDFLAGS ../thread/Thread.cc
 
