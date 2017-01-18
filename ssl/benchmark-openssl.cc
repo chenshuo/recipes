@@ -15,6 +15,7 @@ int main(int argc, char* argv[])
   OPENSSL_config(NULL);
 
   SSL_CTX* ctx = SSL_CTX_new(TLSv1_2_server_method());
+  SSL_CTX_set_options(ctx, SSL_OP_NO_COMPRESSION);
 
   EC_KEY* ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
   SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);

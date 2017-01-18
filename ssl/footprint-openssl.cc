@@ -9,8 +9,11 @@
 
 #include "timer.h"
 
-void (*__MALLOC_HOOK_VOLATILE old_free_hook) (void *__ptr, const void *);
-void *(*__MALLOC_HOOK_VOLATILE old_malloc_hook)(size_t __size, const void *);
+#include <string>
+#include <vector>
+
+void (*old_free_hook) (void *__ptr, const void *);
+void *(*old_malloc_hook)(size_t __size, const void *);
 
 void my_free_hook (void*, const void *);
 
@@ -67,6 +70,7 @@ int main(int argc, char* argv[])
   OPENSSL_config(NULL);
 
   SSL_CTX* ctx = SSL_CTX_new(TLSv1_2_server_method());
+  SSL_CTX_set_options(ctx, SSL_OP_NO_COMPRESSION);
 
   EC_KEY* ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
   SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);
@@ -84,8 +88,9 @@ int main(int argc, char* argv[])
 
   init_hook();
 
-  const int N = 3;
+  const int N = 10;
   SSL *ssl, *ssl_client;
+  std::vector<SSL*> ssls;
   for (int i = 0; i < N; ++i)
   {
     printf("=============================================== BIO_new_bio_pair %d\n", i);
@@ -116,12 +121,19 @@ int main(int argc, char* argv[])
 
     if (i == 0)
       printf ("SSL connection using %s %s\n", SSL_get_version(ssl_client), SSL_get_cipher (ssl_client));
+    /*
     if (i != N-1)
     {
       printf("=============================================== SSL_free server %d\n", i);
       SSL_free (ssl);
       printf("=============================================== SSL_free client %d\n", i);
       SSL_free (ssl_client);
+    }
+    else
+    */
+    {
+      ssls.push_back(ssl);
+      ssls.push_back(ssl_client);
     }
   }
 
@@ -145,12 +157,13 @@ int main(int argc, char* argv[])
   }
   double elapsed = now() - start2;
   printf("%.2f %.1f MiB/s\n", elapsed, M / elapsed);
-  printf("=============================================== SSL_CTX_free\n");
-  SSL_free (ssl);
-  SSL_free (ssl_client);
-  printf("=============================================== end\n");
+  printf("=============================================== SSL_free\n");
+  for (int i = 0; i < ssls.size(); ++i)
+    SSL_free(ssls[i]);
 
+  printf("=============================================== SSL_CTX_free\n");
   SSL_CTX_free (ctx);
   SSL_CTX_free (ctx_client);
   // OPENSSL_cleanup();  // only in 1.1.0
+  printf("=============================================== end\n");
 }

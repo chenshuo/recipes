@@ -55,7 +55,6 @@ done:
   return err;
 }
 
-
 int tun_alloc(char dev[IFNAMSIZ])
 {
   struct ifreq ifr;
