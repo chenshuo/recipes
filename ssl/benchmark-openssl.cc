@@ -9,6 +9,7 @@
 
 int main(int argc, char* argv[])
 {
+  printf("Compiled with " OPENSSL_VERSION_TEXT "\n");
   SSL_load_error_strings();
   // ERR_load_BIO_strings();
   SSL_library_init();
@@ -73,11 +74,28 @@ int main(int argc, char* argv[])
         break;
     }
 
-    //printf ("SSL connection using %s %s\n", SSL_get_version(ssl), SSL_get_cipher (ssl));
     if (i == 0)
-      printf ("SSL connection using %s %s\n", SSL_get_version(ssl_client), SSL_get_cipher (ssl_client));
-    //SSL_clear(ssl);
-    //SSL_clear(ssl_client);
+    {
+      printf("SSL connection using %s %s\n", SSL_get_version(ssl_client), SSL_get_cipher (ssl_client));
+#ifdef OPENSSL_IS_BORINGSSL
+      printf("Curve: %s\n", SSL_get_curve_name(SSL_get_curve_id(ssl_client)));
+#elif OPENSSL_VERSION_NUMBER >= 0x10002000L
+      EVP_PKEY *key;
+      if (SSL_get_server_tmp_key(ssl_client, &key))
+      {
+        if (EVP_PKEY_id(key) == EVP_PKEY_EC)
+        {
+          EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key);
+          int nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(ec));
+          EC_KEY_free(ec);
+          const char *cname = EC_curve_nid2nist(nid);
+          if (!cname)
+            cname = OBJ_nid2sn(nid);
+          printf("Curve: %s, %d bits\n", cname, EVP_PKEY_bits(key));
+        }
+      }
+#endif
+    }
     if (i != N-1)
     {
       SSL_free (ssl);
