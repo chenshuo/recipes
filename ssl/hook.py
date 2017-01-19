@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import re
+import re, sys
 
 # 0x4460e2 malloc (17408) returns 0xd96fe0
 M = re.compile('.* malloc \((\\d+)\) returns (.*)')
@@ -23,7 +23,11 @@ def dump():
     for key in sorted(sections):
         print "   ", key, sections[key]
 
-with open('hook') as f:
+hook = 'hook'
+if len(sys.argv) > 1:
+    hook = sys.argv[1]
+
+with open(hook) as f:
     for line in f:
         m = M.search(line)
         if m:
