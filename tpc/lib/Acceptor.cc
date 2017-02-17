@@ -28,3 +28,17 @@ TcpStreamPtr Acceptor::accept()
   }
 }
 
+Socket Acceptor::acceptSocketOrDie()
+{
+  // FIXME: use accept4
+  int sockfd = ::accept(listenSock_.fd(), NULL, NULL);
+  if (sockfd >= 0)
+  {
+    return Socket(sockfd);
+  }
+  else
+  {
+    perror("Acceptor::acceptSocketOrDie");
+    abort();
+  }
+}
