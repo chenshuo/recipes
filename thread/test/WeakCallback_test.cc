@@ -8,6 +8,7 @@
 #endif
 
 #include <stdio.h>
+#include <boost/noncopyable.hpp>
 
 class String
 {
