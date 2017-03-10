@@ -3,107 +3,35 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
-#include <muduo/net/Buffer.h>
-
 #include <stdio.h>
 
 #include "timer.h"
 
-muduo::net::Buffer clientOut, serverOut;
-
-double now()
-{
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return tv.tv_sec + tv.tv_usec / 1000000.0;
-}
-
-int bread(BIO *b, char *buf, int len)
-{
-  BIO_clear_retry_flags(b);
-  muduo::net::Buffer* in = static_cast<muduo::net::Buffer*>(b->ptr);
-  // printf("%s recv %d\n", in == &clientOut ? "server" : "client", len);
-  if (in->readableBytes() > 0)
-  {
-    size_t n = std::min(in->readableBytes(), static_cast<size_t>(len));
-    memcpy(buf, in->peek(), n);
-    in->retrieve(n);
-
-    /*
-    if (n < len)
-      printf("got %zd\n", n);
-    else
-      printf("\n");
-      */
-    return n;
-  }
-  else
-  {
-    //printf("got 0\n");
-    BIO_set_retry_read(b);
-    return -1;
-  }
-}
-
-int bwrite(BIO *b, const char *buf, int len)
-{
-  BIO_clear_retry_flags(b);
-  muduo::net::Buffer* out = static_cast<muduo::net::Buffer*>(b->ptr);
-  // printf("%s send %d\n", out == &clientOut ? "client" : "server", len);
-  out->append(buf, len);
-  return len;
-}
-
-long bctrl(BIO *, int cmd, long num, void *)
-{
-  //printf("ctrl %d\n", cmd);
-  switch (cmd) {
-    case BIO_CTRL_FLUSH:
-      return 1;
-    default:
-      return 0;
-  }
-}
-
 int main(int argc, char* argv[])
 {
+  printf("Compiled with " OPENSSL_VERSION_TEXT "\n");
   SSL_load_error_strings();
   // ERR_load_BIO_strings();
   SSL_library_init();
   OPENSSL_config(NULL);
 
-  SSL_CTX* ctx = SSL_CTX_new(TLSv1_1_server_method());
+  SSL_CTX* ctx = SSL_CTX_new(TLSv1_2_server_method());
+  SSL_CTX_set_options(ctx, SSL_OP_NO_COMPRESSION);
 
   EC_KEY* ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
   SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);
-  if (argc > 3)
-    SSL_CTX_set_tmp_ecdh(ctx, ecdh);
+  // if (argc > 3)
+  SSL_CTX_set_tmp_ecdh(ctx, ecdh);
   EC_KEY_free(ecdh);
 
-  const char* CertFile = argv[1];
-  const char* KeyFile = argv[2];
+  const char* CertFile = "server.pem";  // argv[1];
+  const char* KeyFile = "server.pem";  // argv[2];
   SSL_CTX_use_certificate_file(ctx, CertFile, SSL_FILETYPE_PEM);
   SSL_CTX_use_PrivateKey_file(ctx, KeyFile, SSL_FILETYPE_PEM);
   if (!SSL_CTX_check_private_key(ctx))
     abort();
 
-  SSL_CTX* ctx_client = SSL_CTX_new(TLSv1_1_client_method());
-
-  BIO_METHOD method;
-  bzero(&method, sizeof method);
-  method.bread = bread;
-  method.bwrite = bwrite;
-  method.ctrl = bctrl;
-  BIO client, server;
-  bzero(&client, sizeof client);
-  bzero(&server, sizeof server);
-  BIO_set(&client, &method);
-  BIO_set(&server, &method);
-  client.ptr = &clientOut;
-  client.init = 1;
-  server.ptr = &serverOut;
-  server.init = 1;
-
+  SSL_CTX* ctx_client = SSL_CTX_new(TLSv1_2_client_method());
 
   double start = now();
   const int N = 1000;
@@ -111,10 +39,13 @@ int main(int argc, char* argv[])
   Timer tc, ts;
   for (int i = 0; i < N; ++i)
   {
+    BIO *client, *server;
+    BIO_new_bio_pair(&client, 0, &server, 0);
+
     ssl = SSL_new (ctx);
     ssl_client = SSL_new (ctx_client);
-    SSL_set_bio(ssl, &client, &server);
-    SSL_set_bio(ssl_client, &server, &client);
+    SSL_set_bio(ssl, server, server);
+    SSL_set_bio(ssl_client, client, client);
 
     tc.start();
     int ret = SSL_connect(ssl_client);
@@ -143,11 +74,28 @@ int main(int argc, char* argv[])
         break;
     }
 
-    //printf ("SSL connection using %s %s\n", SSL_get_version(ssl), SSL_get_cipher (ssl));
     if (i == 0)
-      printf ("SSL connection using %s %s\n", SSL_get_version(ssl_client), SSL_get_cipher (ssl_client));
-    //SSL_clear(ssl);
-    //SSL_clear(ssl_client);
+    {
+      printf("SSL connection using %s %s\n", SSL_get_version(ssl_client), SSL_get_cipher (ssl_client));
+#ifdef OPENSSL_IS_BORINGSSL
+      printf("Curve: %s\n", SSL_get_curve_name(SSL_get_curve_id(ssl_client)));
+#elif OPENSSL_VERSION_NUMBER >= 0x10002000L
+      EVP_PKEY *key;
+      if (SSL_get_server_tmp_key(ssl_client, &key))
+      {
+        if (EVP_PKEY_id(key) == EVP_PKEY_EC)
+        {
+          EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key);
+          int nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(ec));
+          EC_KEY_free(ec);
+          const char *cname = EC_curve_nid2nist(nid);
+          if (!cname)
+            cname = OBJ_nid2sn(nid);
+          printf("Curve: %s, %d bits\n", cname, EVP_PKEY_bits(key));
+        }
+      }
+#endif
+    }
     if (i != N-1)
     {
       SSL_free (ssl);
@@ -166,12 +114,16 @@ int main(int argc, char* argv[])
   char buf[1024] = { 0 };
   for (int i = 0; i < M*1024; ++i)
   {
-    int n = SSL_write(ssl_client, buf, sizeof buf);
-    if (n < 0)
+    int nw = SSL_write(ssl_client, buf, sizeof buf);
+    if (nw != sizeof buf)
     {
-      printf("%d\n", n);
+      printf("nw = %d\n", nw);
     }
-    clientOut.retrieveAll();
+    int nr = SSL_read(ssl, buf, sizeof buf);
+    if (nr != sizeof buf)
+    {
+      printf("nr = %d\n", nr);
+    }
   }
   elapsed = now() - start2;
   printf("%.2f %.1f MiB/s\n", elapsed, M / elapsed);

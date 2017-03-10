@@ -6,13 +6,12 @@
 #include <strings.h> // bzero
 #include <arpa/inet.h>
 
-/*
 InetAddress::InetAddress(StringArg ip, uint16_t port)
   : InetAddress(port, false)
 {
-  ::inet_pton();
+  if (::inet_pton(AF_INET, ip.c_str(), &saddr_.sin_addr) != 1)
+    assert("Invalid IP format");
 }
-*/
 
 InetAddress::InetAddress(uint16_t port, bool loopbackOnly)
 {

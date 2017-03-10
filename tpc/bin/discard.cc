@@ -1,5 +1,5 @@
-#include "../thread/Atomic.h"
-#include "../datetime/Timestamp.h"
+#include "thread/Atomic.h"
+#include "datetime/Timestamp.h"
 #include "Acceptor.h"
 #include "InetAddress.h"
 #include "TcpStream.h"

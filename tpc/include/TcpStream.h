@@ -16,7 +16,7 @@ class TcpStream : noncopyable
   explicit TcpStream(Socket&& sock);  // sock must be connected
   ~TcpStream() = default;
   TcpStream(TcpStream&&) = default;
-  TcpStream& operator=(TcpStream&&) = default;
+  // TcpStream& operator=(TcpStream&&) = default;
 
   static TcpStreamPtr connect(const InetAddress& serverAddr);
   static TcpStreamPtr connect(const InetAddress& serverAddr, const InetAddress& localAddr);
