@@ -32,6 +32,7 @@ class String
 class Foo : boost::noncopyable
 {
  public:
+  Foo() { }
   void zero();
   void zeroc() const;
   void one(int);
