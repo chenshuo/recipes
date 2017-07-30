@@ -13,3 +13,4 @@ g++ factorial.cc uint.cc -o bin/factorial-opt -Wall -Wextra -g -O2 -DNDEBUG
 g++ fibonacci.cc uint.cc -o bin/fibonacci-opt -Wall -Wextra -g -O2 -DNDEBUG
 g++ combination.cc uint.cc -o bin/combination-opt -Wall -Wextra -g -O2 -DNDEBUG
 g++ partitions.cc uint.cc -o bin/partition-opt -Wall -Wextra -g -O2 -DNDEBUG
+g++ numheaps.cc uint.cc -o bin/numheaps-opt -std=c++0x -Wall -Wextra -g -O2 -DNDEBUG
