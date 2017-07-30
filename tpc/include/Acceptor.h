@@ -20,6 +20,7 @@ class Acceptor : noncopyable
 
   // thread safe
   TcpStreamPtr accept();
+  Socket acceptSocketOrDie();
 
  private:
   Socket listenSock_;
