@@ -28,4 +28,10 @@ int main()
   u0.setValue(1000, -1);
   cout << u0.toDec() << endl;
   reserve();
+  u0.setValue(1, 2);
+  u0.power(1024);
+  cout << u0.toDec() << endl;
+  u0.setValue(1, 5);
+  u0.power(1022);
+  cout << u0.toDec() << endl;
 }
