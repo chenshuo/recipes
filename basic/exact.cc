@@ -72,6 +72,18 @@ class Float
     return u.toDec();
   }
 
+  // 0.1111111111
+  //   ||||||||||
+  // 0.5|||||||||
+  // 0.25||||||||
+  // 0.125|||||||
+  // 0.0625||||||
+  // 0.03125|||||
+  // 0.015625||||
+  // 0.0078125|||
+  // 0.00390625||
+  // 0.001953125|
+  // 0.0009765625
   std::pair<std::string, int> fraction() const
   {
     int e = E;
@@ -109,26 +121,40 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-  Float f1 = Float::fromDouble(1);
-  cout << f1.decimal() << endl;
-  Float pi = Float::fromDouble(0x400, 0x921fb54442d18);
-  cout << pi.decimal() << endl;
-  Float f3 = Float::fromDouble(0x3fd, 0x5555555555555);
-  cout << f3.decimal() << endl;
-  Float f01 = Float::fromDouble(0.1);
-  cout << f01.decimal() << endl;
-  Float fy(1023, 2);  // 2 ** 1024
-  cout << fy.decimal() << endl;
+  if (argc > 1)
+  {
+    for (int i = 1; i < argc; ++i)
+    {
+      double x = strtod(argv[i], NULL);
+      printf("%s = %a\n", argv[i], x);
+      cout << Float::fromDouble(x).decimal() << endl;
+      if (i != argc - 1)
+	printf("\n");
+    }
+  }
+  else
+  {
+    Float f1 = Float::fromDouble(1);
+    cout << f1.decimal() << endl;
+    Float pi = Float::fromDouble(0x400, 0x921fb54442d18);
+    cout << pi.decimal() << endl;
+    Float f3 = Float::fromDouble(0x3fd, 0x5555555555555);
+    cout << f3.decimal() << endl;
+    Float f01 = Float::fromDouble(0.1);
+    cout << f01.decimal() << endl;
+    Float fy(1023, 2);  // 2 ** 1024
+    cout << fy.decimal() << endl;
 
-  assert(strtod("0x1.FffffFFFFffffP1023", NULL) == DBL_MAX);
-  Float fx = Float::fromDouble(DBL_MAX);
-  cout << fx.decimal() << endl;
-  Float fm = Float::fromDouble(DBL_MIN);
-  cout << fm.decimal() << endl;
-  Float fe = Float::fromDouble(DBL_EPSILON);
-  cout << fe.decimal() << endl;
-  printf("%a\n", DBL_MAX);
-  printf("%a\n", DBL_MIN);
-  printf("%a\n", DBL_EPSILON);
+    assert(strtod("0x1.FffffFFFFffffP1023", NULL) == DBL_MAX);
+    Float fx = Float::fromDouble(DBL_MAX);
+    cout << fx.decimal() << endl;
+    Float fm = Float::fromDouble(DBL_MIN);
+    cout << fm.decimal() << endl;
+    Float fe = Float::fromDouble(DBL_EPSILON);
+    cout << fe.decimal() << endl;
+    printf("%a\n", DBL_MAX);
+    printf("%a\n", DBL_MIN);
+    printf("%a\n", DBL_EPSILON);
+  }
 }
 

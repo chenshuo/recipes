@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -x
+
 mkdir -p bin
 g++ test.cc uint.cc -o bin/test-dbg -Wall -Wextra -g -O0 \
         -DBOOST_TEST_DYN_LINK -lboost_unit_test_framework
