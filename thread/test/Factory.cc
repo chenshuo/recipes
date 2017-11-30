@@ -116,7 +116,7 @@ class StockFactory : boost::noncopyable
     if (stock)
     {
       muduo::MutexLockGuard lock(mutex_);
-      stocks_.erase(stock->key());
+      stocks_.erase(stock->key());  // This is wrong, see removeStock below for correct implementation.
     }
     delete stock;  // sorry, I lied
   }
@@ -159,7 +159,7 @@ class StockFactory : public boost::enable_shared_from_this<StockFactory>,
     if (stock)
     {
       muduo::MutexLockGuard lock(mutex_);
-      stocks_.erase(stock->key());
+      stocks_.erase(stock->key());  // This is wrong, see removeStock below for correct implementation.
     }
     delete stock;  // sorry, I lied
   }
@@ -212,7 +212,12 @@ class StockFactory : public boost::enable_shared_from_this<StockFactory>,
     if (stock)
     {
       muduo::MutexLockGuard lock(mutex_);
-      stocks_.erase(stock->key());
+      auto it = stocks_.find(stock->key());
+      assert(it != stocks_.end());
+      if (it->second.expired())
+      {
+        stocks_.erase(stock->key());
+      }
     }
   }
 
