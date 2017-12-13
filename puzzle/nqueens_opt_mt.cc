@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
 {
   int nqueens = argc > 1 ? atoi(argv[1]) : 8;
   double start = now();
-  int64_t solutions = backtracking_mt(nqueens);
+  int64_t solutions = argc > 2 ? backtracking(nqueens) : backtracking_mt(nqueens);
   double end = now();
   printf("%ld solutions of %d queens puzzle.\n", solutions, nqueens);
   printf("%f seconds.\n", end - start);
