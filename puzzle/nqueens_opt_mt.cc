@@ -103,7 +103,24 @@ int main(int argc, char* argv[])
 {
   int nqueens = argc > 1 ? atoi(argv[1]) : 8;
   double start = now();
-  int64_t solutions = argc > 2 ? backtracking(nqueens) : backtracking_mt(nqueens);
+  int64_t solutions = 0;
+  if (argc > 2)
+  {
+    if (isdigit(argv[2][0]))
+    {
+      int sub = strtol(argv[2], NULL, 10);
+      solutions = backtrackingsub(nqueens, sub);
+      printf("Solving sub problem of %d\n", sub);
+    }
+    else
+    {
+      solutions = backtracking(nqueens);
+    }
+  }
+  else
+  {
+    solutions = backtracking_mt(nqueens);
+  }
   double end = now();
   printf("%ld solutions of %d queens puzzle.\n", solutions, nqueens);
   printf("%f seconds.\n", end - start);
