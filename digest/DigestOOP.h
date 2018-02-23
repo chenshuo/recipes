@@ -15,7 +15,10 @@ class Digest
   virtual ~Digest() {}
   virtual void update(const void* data, int len) = 0;
 #ifdef __cpp_lib_string_view
-  void update(std::string_view str) { update(str.data(), str.length());
+  void update(std::string_view str)
+  {
+    update(str.data(), str.length());
+  }
 #endif
   virtual std::string digest() = 0;
   virtual int length() const = 0;
