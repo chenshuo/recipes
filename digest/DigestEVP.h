@@ -21,7 +21,9 @@ class Digest
   explicit Digest(Type t)
     : ctx_(EVP_MD_CTX_create())
   {
-    EVP_DigestInit_ex(ctx_, EVP_get_digestbynid(t), NULL);
+    const EVP_MD* method = EVP_get_digestbynid(t);
+    assert(method);
+    EVP_DigestInit_ex(ctx_, method, NULL /*engine*/);
   }
 
   ~Digest()

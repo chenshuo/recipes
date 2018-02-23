@@ -16,6 +16,8 @@ evp::Digest getDefaultDigest()
 
 int main(int argc, char* argv[])
 {
+  OpenSSL_add_all_digests();
+
   evp::Digest md5(evp::Digest::MD5);
   print(md5.digest());
   evp::Digest sha1(evp::Digest::SHA1);
@@ -28,5 +30,7 @@ int main(int argc, char* argv[])
   print(md.digest());
   md = getDefaultDigest();
   md = std::move(md);
+
+  EVP_cleanup();
 }
 
