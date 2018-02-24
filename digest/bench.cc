@@ -2,9 +2,10 @@
 #include "DigestEVP.h"
 #include "DigestOOP.h"
 
-static void BM_MD5_OOP(benchmark::State& state)
+template <oop::Digest::Type type>
+static void BM_Digest_OOP(benchmark::State& state)
 {
-  std::unique_ptr<oop::Digest> digest = oop::Digest::create(oop::Digest::MD5);
+  std::unique_ptr<oop::Digest> digest = oop::Digest::create(type);
   std::string str(state.range(0), 'x');
   for (auto _ : state)
   {
@@ -13,37 +14,38 @@ static void BM_MD5_OOP(benchmark::State& state)
   digest->digest();
   state.SetBytesProcessed(str.size() * state.iterations());
 }
-BENCHMARK(BM_MD5_OOP)->Range(1, 16<<10);
 
-static void BM_MD5_EVP(benchmark::State& state)
+template <oop::Digest::Type type>
+static void BM_Digest_OOP_short(benchmark::State& state)
 {
-  evp::Digest digest(evp::Digest::MD5);
   std::string str(state.range(0), 'x');
   for (auto _ : state)
   {
-    digest.update(str.data(), str.size());
-  }
-  digest->digest();
-  state.SetBytesProcessed(str.size() * state.iterations());
-}
-BENCHMARK(BM_MD5_EVP)->Range(1, 16<<10);
-
-static void BM_SHA1_OOP(benchmark::State& state)
-{
-  std::unique_ptr<oop::Digest> digest = oop::Digest::create(oop::Digest::SHA1);
-  std::string str(state.range(0), 'x');
-  for (auto _ : state)
-  {
+    std::unique_ptr<oop::Digest> digest = oop::Digest::create(type);
     digest->update(str.data(), str.size());
+    digest->digest();
   }
-  digest->digest();
   state.SetBytesProcessed(str.size() * state.iterations());
 }
-BENCHMARK(BM_SHA1_OOP)->Range(1, 16<<10);
 
-static void BM_SHA1_EVP(benchmark::State& state)
+namespace oop
 {
-  evp::Digest digest(evp::Digest::SHA1);
+const Digest::Type MD5 = Digest::MD5;
+BENCHMARK_TEMPLATE(BM_Digest_OOP, MD5)->Range(1, 16<<10);
+const Digest::Type SHA1 = Digest::SHA1;
+BENCHMARK_TEMPLATE(BM_Digest_OOP, SHA1)->Range(1, 16<<10);
+const Digest::Type SHA256 = Digest::SHA256;
+BENCHMARK_TEMPLATE(BM_Digest_OOP, SHA256)->Range(1, 16<<10);
+
+BENCHMARK_TEMPLATE(BM_Digest_OOP_short, MD5)->Range(1, 16<<10);
+BENCHMARK_TEMPLATE(BM_Digest_OOP_short, SHA1)->Range(1, 16<<10);
+BENCHMARK_TEMPLATE(BM_Digest_OOP_short, SHA256)->Range(1, 16<<10);
+}
+
+template <evp::Digest::Type type>
+static void BM_Digest_EVP(benchmark::State& state)
+{
+  evp::Digest digest(type);
   std::string str(state.range(0), 'x');
   for (auto _ : state)
   {
@@ -52,32 +54,32 @@ static void BM_SHA1_EVP(benchmark::State& state)
   digest.digest();
   state.SetBytesProcessed(str.size() * state.iterations());
 }
-BENCHMARK(BM_SHA1_EVP)->Range(1, 16<<10);
 
-static void BM_SHA256_OOP(benchmark::State& state)
+template <evp::Digest::Type type>
+static void BM_Digest_EVP_short(benchmark::State& state)
 {
-  std::unique_ptr<oop::Digest> digest = oop::Digest::create(oop::Digest::SHA256);
   std::string str(state.range(0), 'x');
   for (auto _ : state)
   {
-    digest->update(str.data(), str.size());
-  }
-  digest.digest();
-  state.SetBytesProcessed(str.size() * state.iterations());
-}
-BENCHMARK(BM_SHA256_OOP)->Range(1, 16<<10);
-
-static void BM_SHA256_EVP(benchmark::State& state)
-{
-  evp::Digest digest(evp::Digest::SHA256);
-  std::string str(state.range(0), 'x');
-  for (auto _ : state)
-  {
+    evp::Digest digest(type);
     digest.update(str.data(), str.size());
+    digest.digest();
   }
-  digest.digest();
   state.SetBytesProcessed(str.size() * state.iterations());
 }
-BENCHMARK(BM_SHA256_EVP)->Range(1, 16<<10);
+
+namespace evp
+{
+const Digest::Type MD5 = Digest::MD5;
+BENCHMARK_TEMPLATE(BM_Digest_EVP, MD5)->Range(1, 16<<10);
+const Digest::Type SHA1 = Digest::SHA1;
+BENCHMARK_TEMPLATE(BM_Digest_EVP, SHA1)->Range(1, 16<<10);
+const Digest::Type SHA256 = Digest::SHA256;
+BENCHMARK_TEMPLATE(BM_Digest_EVP, SHA256)->Range(1, 16<<10);
+
+BENCHMARK_TEMPLATE(BM_Digest_EVP_short, MD5)->Range(1, 16<<10);
+BENCHMARK_TEMPLATE(BM_Digest_EVP_short, SHA1)->Range(1, 16<<10);
+BENCHMARK_TEMPLATE(BM_Digest_EVP_short, SHA256)->Range(1, 16<<10);
+}
 
 BENCHMARK_MAIN();
