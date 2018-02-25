@@ -15,6 +15,7 @@ class Digest
   {
     SHA1 = 1,
     SHA256 = 2,
+    SHA512 = 3,
     MD5 = 5,
   };
 
@@ -28,6 +29,8 @@ class Digest
       method = EVP_sha1();
     else if (t == SHA256)
       method = EVP_sha256();
+    else if (t == SHA512)
+      method = EVP_sha512();
     else
       assert(0 && "Invalid digest type");
     EVP_DigestInit_ex(ctx_, method, NULL /*engine*/);

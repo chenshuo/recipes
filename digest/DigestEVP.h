@@ -15,6 +15,7 @@ class Digest
   {
     SHA1 = NID_sha1,
     SHA256 = NID_sha256,
+    SHA512 = NID_sha512,
     MD5 = NID_md5,
   };
 
