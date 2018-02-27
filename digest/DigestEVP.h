@@ -52,6 +52,11 @@ class Digest
     return EVP_MD_CTX_size(ctx_);
   }
 
+  const char* name() const
+  {
+    return EVP_MD_name(EVP_MD_CTX_md(ctx_));
+  }
+
   Digest(Digest&& rhs)
     : ctx_(rhs.ctx_)
   {

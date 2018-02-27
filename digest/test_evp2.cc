@@ -32,7 +32,7 @@ void testThroughput(evp::Digest::Type type, int nblocks, int block_size)
   d.digest();
   double seconds = now() - start;
   int64_t bytes = int64_t(nblocks) * block_size;
-  printf("%7.2f MiB/s\n", bytes / seconds / 1024 / 1024);
+  printf("%-6s %7.2f MiB/s\n", d.name(), bytes / seconds / 1024 / 1024);
 }
 
 void testLatency(evp::Digest::Type type, int nblocks, int block_size)
@@ -47,7 +47,7 @@ void testLatency(evp::Digest::Type type, int nblocks, int block_size)
   }
   double seconds = now() - start;
   int64_t bytes = int64_t(nblocks) * block_size;
-  printf("%7.0f op/s %8.3f us/op %7.2f MiB/s\n",
+  printf("%-6s %7.0f op/s %8.3f us/op %7.2f MiB/s\n", evp::Digest(type).name(),
       nblocks / seconds, seconds * 1e6 / nblocks, bytes / seconds / 1024 / 1024);
 }
 
