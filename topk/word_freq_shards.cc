@@ -1,3 +1,13 @@
+/* sort word by frequency, sharding version.
+
+  1. read input file, do counting, if counts > 10M keys, write counts to 10 shard files:
+       word \t count
+  2. assume each shard file fits in memory, read each shard file, accumulate counts, and write to 10 count files:
+       count \t word
+  3. merge 10 count files using heap.
+
+Limits: each shard must fit in memory.
+*/
 #include <boost/noncopyable.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 

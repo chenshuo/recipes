@@ -1,3 +1,11 @@
+/* sort word by frequency, sorting version.
+
+   1. read input files, do counting, when count map > 10M keys, output to segment files
+      word \t count  -- sorted by word
+   2. read all segment files, do merging & counting, when count map > 10M keys, output to count files, each word goes to one count file only.
+      count \t word  -- sorted by count
+   3. read all count files, do merging and output
+*/
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -257,5 +265,5 @@ int main(int argc, char* argv[])
 {
   int count = input(argc, argv);
   int m = combine(count);
-  merge (m);
+  merge(m);
 }
