@@ -1,4 +1,4 @@
-/* sort word by frequency, sharding version.
+/* sort word by frequency, sharding while counting version.
 
   1. read input file, do counting, if counts > 10M keys, write counts to 10 shard files:
        word \t count

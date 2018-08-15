@@ -1,30 +1,32 @@
-/* sort word by frequency, sorting while counting version.
+/* sort word by frequency, sorting version.
 
-   1. read input files, do counting, when count map > 10M keys, output to segment files
+   1. read input files, sort every 1GB to segment files
       word \t count  -- sorted by word
    2. read all segment files, do merging & counting, when count map > 10M keys, output to count files, each word goes to one count file only.
       count \t word  -- sorted by count
    3. read all count files, do merging and output
 */
+
+#include <assert.h>
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
-#ifdef STD_STRING
-#warning "STD STRING"
-#include <string>
-using std::string;
-#else
-#include <ext/vstring.h>
-typedef __gnu_cxx::__sso_string string;
-#endif
-
+#include <fcntl.h>
+#include <string.h>
+#include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
+
+using std::string;
+using std::string_view;
+using std::vector;
 
 const size_t kMaxSize = 10 * 1000 * 1000;
 
@@ -35,13 +37,129 @@ inline double now()
   return tv.tv_sec + tv.tv_usec / 1000000.0;
 }
 
+int sort_segments(int count, int fd)
+{
+  const int64_t file_size = lseek(fd, 0, SEEK_END);
+  lseek(fd, 0, SEEK_SET);
+  printf("  file size %ld\n", file_size);
+  int64_t offset = 0;
+  while (offset < file_size)
+  {
+    double t = now();
+    const int64_t len = std::min(file_size - offset, 1000 * 1000 * 1000L);
+    printf("    segment %d reading range: offset %ld len %ld", count, offset, len);
+    char* const buf = (char*)malloc(len);
+    const ssize_t nr = ::pread(fd, buf, len, offset);
+    double sec = now() - t;
+    printf(" %.3f sec %.3f MB/s\n", sec, nr / sec / 1000 / 1000);
+
+    t = now();
+    const char* const start = buf;
+    const char* const end = start + nr;
+    vector<string_view> items;
+    const char* p = start;
+    while (p < end)
+    {
+      const char* nl = static_cast<const char*>(memchr(p, '\n', end - p));
+      if (nl)
+      {
+        string_view s(p, nl - p);
+        items.push_back(s);
+        p = nl + 1;
+      }
+      else
+      {
+        break;
+      }
+    }
+    offset += p - start;
+    printf("    parse %.3f sec %ld items %ld bytes\n", now() - t, items.size(), p - start);
+
+    t = now();
+    std::sort(items.begin(), items.end());
+    printf("    sort %.3f sec\n", now() - t);
+
+    t = now();
+    char name[256];
+    snprintf(name, sizeof name, "segment-%05d", count);
+    ++count;
+    std::ofstream out(name);
+    string_view curr;
+    int cnt = 0;
+    int unique = 0;
+    for (auto it = items.begin(); it != items.end(); ++it)
+    {
+      if (*it != curr)
+      {
+        if (cnt)
+        {
+          out << curr << '\t' << cnt << '\n';
+          ++unique;
+        }
+        curr = *it;
+        cnt = 1;
+      }
+      else
+        ++cnt;
+    }
+    if (cnt)
+    {
+      out << curr << '\t' << cnt << '\n';
+      ++unique;
+    }
+    printf("    unique %.3f sec %d\n", now() - t, unique);
+
+    free(buf);
+  }
+  return count;
+}
+
+int sort_segments(int count, FILE* fp)
+{
+  char line[1024];
+  while (fgets(line, sizeof line, fp))
+  {
+    size_t len = strlen(line);
+    if (len > 0 && line[len-1] == '\n')
+      --len;
+  }
+  return count;
+}
+
 int input(int argc, char* argv[])
 {
   int count = 0;
   double t = now();
+  char buffer[64 * 1024];
   for (int i = 1; i < argc; ++i)
   {
-    std::cout << "  processing input file " << argv[i] << std::endl;
+    std::cout << "processing input file " << argv[i] << std::endl;
+    /*
+    FILE* fp = fopen(argv[i], "r");
+    if (fp)
+    {
+      ::setbuffer(fp, buffer, sizeof buffer);
+      double t = now();
+      count = sort_segments(count, fp);
+      printf("  sort segments %.3f sec\n", now() - t);
+      ::fclose(fp);
+    }
+    else
+      perror("fopen");
+    */
+
+    int fd = open(argv[i], O_RDONLY);
+    if (fd >= 0)
+    {
+      double t = now();
+      count = sort_segments(count, fd);
+      printf("  sort segments %.3f sec\n", now() - t);
+      ::close(fd);
+    }
+    else
+      perror("open");
+
+    /*
     std::map<string, int64_t> counts;
     std::ifstream in(argv[i]);
     while (in && !in.eof())
@@ -70,6 +188,7 @@ int input(int argc, char* argv[])
       }
       std::cout << "  writing " << buf << " " << now() - tt << " sec" << std::endl;
     }
+    */
   }
   std::cout << "reading done " << count << " segments " << now() - t << " sec" << std::endl;
   return count;
