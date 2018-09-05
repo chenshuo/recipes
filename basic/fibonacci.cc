@@ -1,10 +1,20 @@
+// Set skip_to_string = true, N = 1,000,000 measured on i7-7600U laptop
+//   linear : 11.45  s
+//   fast   :  0.639 s
+//   faster :  0.437 s
+//   fastest:  0.215 s
+
 #include "uint.h"
+
+#include <unordered_map>
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <sys/time.h>
+
+const bool skip_to_string = false;
 
 double now()
 {
@@ -71,7 +81,7 @@ std::string fastFibonacci(int N)
     }
   }
   // printf("%f\n", now() - start);
-  return result->toDec();
+  return skip_to_string ? "" : result->toDec();
 };
 
 std::string fasterFibonacci(int N)
@@ -119,52 +129,110 @@ std::string fasterFibonacci(int N)
     }
   }
   // printf("%f\n", now() - start);
-  return result->toDec();
+  return skip_to_string ? "" : result->toDec();
 }
+
+// f(2n) = f(n) * (f(n-1) + f(n+1))
+// f(2n+1) = f(n)^2 + f(n+1)^2
+class Fib
+{
+ public:
+  explicit Fib(int N)
+  {
+    cache_[0] = UnsignedInt(0);
+    cache_[1] = UnsignedInt(1);
+    cache_[2] = UnsignedInt(1);
+    /*
+    cache_[3] = UnsignedInt(2);
+    cache_[4] = UnsignedInt(3);
+    cache_[5] = UnsignedInt(5);
+    cache_[6] = UnsignedInt(8);
+    cache_[7] = UnsignedInt(13);
+    cache_[8] = UnsignedInt(21);
+    cache_[9] = UnsignedInt(34);
+    */
+    calc(N);
+    result_ = &cache_[N];
+  }
+
+  const UnsignedInt& get() const
+  {
+    return *result_;
+  }
+
+ private:
+  void calc(int N)
+  {
+    assert(N >= 0);
+    auto it = cache_.find(N);
+    if (it == cache_.end())
+    {
+      calc(N/2);
+      calc(N/2 + 1);
+      if (N & 1)
+      {
+        UnsignedInt a = cache_[N/2];
+        a.multiply(a);
+        UnsignedInt b = cache_[N/2 + 1];
+        b.multiply(b);
+        a.add(b);
+        cache_[N] = std::move(a);
+      }
+      else
+      {
+        calc(N/2 - 1);
+        UnsignedInt a = cache_[N/2 - 1];
+        a.add(cache_[N/2 + 1]);
+        a.multiply(cache_[N/2]);
+        cache_[N] = std::move(a);
+      }
+    }
+  }
+
+  std::unordered_map<int, UnsignedInt> cache_;
+  const UnsignedInt* result_ = nullptr;
+};
+
+std::string fastestFibonacci(int N)
+{
+  Fib f(N);
+  return skip_to_string ? "" : f.get().toDec();
+}
+
+class FibonacciIterator
+{
+ public:
+  std::string operator*() const
+  {
+    return fn.toDec();
+  }
+
+  FibonacciIterator& operator++()
+  {
+    prev.swap(fn);
+    fn.add(prev);
+    return *this;
+  }
+
+ private:
+  UnsignedInt fn = 1, prev = 0;
+};
 
 std::string linearFibonacci(int N)
 {
-  assert (N >= 0);
+  assert(N >= 0);
   // double start = now();
-  UnsignedInt n0(0);
-  UnsignedInt n1(1);
-  UnsignedInt* result = NULL;
-  if (N == 0)
+  FibonacciIterator iter;  // F(1)
+  for (int i = 1; i < N; ++i)
   {
-    result = &n0;
+    ++iter;
   }
-  else if (N == 1)
-  {
-    result = &n1;
-  }
-  else // (N >= 2)
-  {
-    for (int i = 2; i <= N; ++i)
-    {
-      n0.swap(n1);
-      n1.add(n0);
-    }
-    result = &n1;
-  }
-
-  assert(result != NULL);
   //printf("%f\n", now() - start);
-  return result->toDec();
+  return skip_to_string ? "" : (N == 0 ? "0" : *iter);
 };
 
 int main(int argc, char* argv[])
 {
-  /*
-  for (int i = 0; i < 100000; ++i)
-  {
-    std::string result = linearFibonacci(i);
-    if (fastFibonacci(i) != result || fasterFibonacci(i) != result)
-    {
-      printf("ERROR %d\n", i);
-    }
-  }
-  */
-
   if (argc > 1)
   {
     const int N = atoi(argv[1]);
@@ -172,6 +240,10 @@ int main(int argc, char* argv[])
     if (argc > 2)
     {
       if (argv[2][0] == 'F')
+      {
+        result = fastestFibonacci(N);
+      }
+      else if (argv[2][0] == 'f')
       {
         result = fasterFibonacci(N);
       }
@@ -188,7 +260,16 @@ int main(int argc, char* argv[])
   }
   else
   {
-    printf("Usage: %s number [fF]\n", argv[0]);
+    printf("Usage: %s number [fFx]\n", argv[0]);
+    FibonacciIterator iter;
+    for (int i = 1; i < 10000; ++i)
+    {
+      if (fastFibonacci(i) != *iter || fasterFibonacci(i) != *iter || fastestFibonacci(i) != *iter)
+      {
+        printf("ERROR %d\n", i);
+      }
+      ++iter;
+    }
   }
 }
 
