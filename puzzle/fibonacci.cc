@@ -2,9 +2,9 @@
 
 // Set skip_get_str = true, N = 1,000,000 measured on i7-7600U laptop
 //   linear :  2.60 s
-//   fast   : 19.09 ms
+//   fast   : 18.73 ms
 //   faster :  8.12 ms
-//   fastest:  3.73 ms
+//   fastest:  2.78 ms
 
 #include <unordered_map>
 #include <assert.h>
@@ -143,8 +143,8 @@ class Fib
     cache_[0] = 0;
     cache_[1] = 1;
     cache_[2] = 1;
-    /*
     cache_[3] = 2;
+    /*
     cache_[4] = 3;
     cache_[5] = 5;
     cache_[6] = 8;
@@ -168,10 +168,10 @@ class Fib
     auto it = cache_.find(N);
     if (it == cache_.end())
     {
-      calc(N/2);
-      calc(N/2 + 1);
       if (N & 1)
       {
+        calc(N/2);
+        calc(N/2 + 1);
         const mpz_class& a = cache_[N/2];
         const mpz_class& b = cache_[N/2 + 1];
         cache_[N] = a*a + b*b;
@@ -179,9 +179,12 @@ class Fib
       else
       {
         calc(N/2 - 1);
+        calc(N/2);
         const mpz_class& a = cache_[N/2 - 1];
-        const mpz_class& b = cache_[N/2 + 1];
-        cache_[N] = cache_[N/2] * (a + b);
+        const mpz_class& b = cache_[N/2];
+        cache_[N/2 + 1] = a + b;
+        const mpz_class& c = cache_[N/2 + 1];
+        cache_[N] = b * (a + c);
       }
     }
   }
@@ -202,26 +205,38 @@ int main(int argc, char* argv[])
   {
     const int N = atoi(argv[1]);
     std::string result;
-    if (argc > 2)
+    double start = now();
+    const int kRepeat = 100;
+    for (int i = 0; i < (skip_get_str ? kRepeat : 1); ++i)
     {
-      if (argv[2][0] == 'F')
+      if (argc > 2)
       {
-        result = fastestFibonacci(N);
-      }
-      else if (argv[2][0] == 'f')
-      {
-        result = fasterFibonacci(N);
+        if (argv[2][0] == 'F')
+        {
+          result = fastestFibonacci(N);
+        }
+        else if (argv[2][0] == 'f')
+        {
+          result = fasterFibonacci(N);
+        }
+        else
+        {
+          result = fastFibonacci(N);
+        }
       }
       else
       {
-        result = fastFibonacci(N);
+        result = linearFibonacci(N);
       }
+    }
+    if (skip_get_str)
+    {
+      printf("%.3f ms\n", (now() - start) * 1000.0 / kRepeat);
     }
     else
     {
-      result = linearFibonacci(N);
+      printf("%s\n", result.c_str());
     }
-    printf("%s\n", result.c_str());
   }
   else
   {
