@@ -1,0 +1,90 @@
+.PS
+boxht = 0.4
+
+N2: box "F(2)"
+box invis "+" wid 0.3
+N3: box "F(3)"
+box invis "=" wid 0.3
+N4: box "F(4)"
+
+N6: box "F(6)" at N2-(0, 1)
+box invis "+" wid 0.3
+N7: box "F(7)"
+box invis "=" wid 0.3
+N8: box "F(8)"
+arrow from N2.s to N6.n
+arrow from N3.s to N6.n
+arrow from N4.s to N6.n
+arrow from N3.s to N7.n
+arrow from N4.s to N7.n
+
+N14: box "F(14)" at N6-(0, 1)
+box invis "+" wid 0.3
+N15: box "F(15)"
+box invis "=" wid 0.3
+N16: box "F(16)"
+arrow from N6.s to N14.n
+arrow from N7.s to N14.n
+arrow from N8.s to N14.n
+arrow from N7.s to N15.n
+arrow from N8.s to N15.n
+
+N30: box "F(30)" at N14-(0, 1)
+box invis "+" wid 0.3
+N31: box "F(31)"
+box invis "=" wid 0.3
+N32: box "F(32)"
+arrow from N14.s to N30.n
+arrow from N15.s to N30.n
+arrow from N16.s to N30.n
+arrow from N15.s to N31.n
+arrow from N16.s to N31.n
+
+N61: box "F(61)" at N30-(0, 1)
+box invis "+" wid 0.3
+N62: box "F(62)"
+box invis "=" wid 0.3
+N63: box "F(63)"
+arrow from N30.s to N61.n
+arrow from N31.s to N61.n
+arrow from N30.s to N62.n
+arrow from N31.s to N62.n
+arrow from N32.s to N62.n
+
+N124: box "F(124)" at N61-(0, 1)
+box invis "+" wid 0.3
+N125: box "F(125)"
+box invis "=" wid 0.3
+N126: box "F(126)"
+arrow from N61.s to N124.n
+arrow from N62.s to N124.n
+arrow from N63.s to N124.n
+arrow from N62.s to N125.n
+arrow from N63.s to N125.n
+
+N249: box "F(249)" at N124-(0, 1)
+box invis "+" wid 0.3
+N250: box "F(250)"
+box invis "=" wid 0.3
+N251: box "F(251)"
+arrow from N124.s to N249.n
+arrow from N125.s to N249.n
+arrow from N124.s to N250.n
+arrow from N125.s to N250.n
+arrow from N126.s to N250.n
+
+N499: box "F(499)" at N249-(0, 1)
+box invis "+" wid 0.3
+N500: box "F(500)"
+box invis "=" wid 0.3
+N501: box "F(501)"
+arrow from N249.s to N499.n
+arrow from N250.s to N499.n
+arrow from N249.s to N500.n
+arrow from N250.s to N500.n
+arrow from N251.s to N500.n
+N1000: box "F(1000)" at N500-(0, 1)
+arrow from N499.s to N1000.n
+arrow from N500.s to N1000.n
+arrow from N501.s to N1000.n
+.PE
