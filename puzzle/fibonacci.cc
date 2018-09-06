@@ -199,6 +199,47 @@ std::string fastestFibonacci(int N)
   return skip_get_str ? "" : f.get().get_str();
 }
 
+std::string floatFibonacci(int N, int prec)
+{
+  // prec / N = log2(1+sqrt(5)) - 1 = 0.694242
+  mpf_class a(5, prec), b;
+  mpf_class s5 = sqrt(a);
+  assert(s5.get_prec() == prec);
+  a = (1 + s5) / 2;
+  b = (1 - s5) / 2;
+  mpf_pow_ui(a.get_mpf_t(), a.get_mpf_t(), N);
+  mpf_pow_ui(b.get_mpf_t(), b.get_mpf_t(), N);
+  mpf_class c = s5 / 5 * (a - b) + 0.5;
+  assert(c.get_prec() == prec);
+  mp_exp_t expo;
+  std::string str = c.get_str(expo);
+  return str.substr(0, expo);
+}
+
+int get_precision(int N, int prec, const std::string& expected)
+{
+  while (floatFibonacci(N, prec) != expected)
+  {
+    prec += 64;
+  }
+  return prec;
+}
+
+void find_precision()
+{
+  FibonacciIterator iter;
+  int prec = 64;
+  for (int i = 1; i <= 50000; ++i)
+  {
+    int newprec = get_precision(i, prec, *iter);
+    bool print = (i % 10000 == 0) || newprec != prec;
+    prec = newprec;
+    if (print)
+      printf("%d %d %.5f\n", i, prec, double(prec) / i);
+    ++iter;
+  }
+}
+
 int main(int argc, char* argv[])
 {
   if (argc > 1)
@@ -244,13 +285,18 @@ int main(int argc, char* argv[])
     FibonacciIterator iter;
     for (int i = 1; i < 10000; ++i)
     {
-      if (fastFibonacci(i) != *iter || fasterFibonacci(i) != *iter || fastestFibonacci(i) != *iter)
+      if (fastFibonacci(i) != *iter ||
+          fasterFibonacci(i) != *iter ||
+          fastestFibonacci(i) != *iter ||
+          floatFibonacci(i, 6976) != *iter)
       {
         printf("ERROR %d\n", i);
         break;
       }
       ++iter;
     }
+    // find_precision();
+    // floatFibonacci(1000000, 694272);
   }
 }
 
