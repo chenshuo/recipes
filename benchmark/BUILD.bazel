@@ -1,9 +1,12 @@
 
 cc_binary(
-    name = "bm_memory",
-    srcs = ["bm_memory.cc"],
+    name = "bm_containers",
+    srcs = ["bm_containers.cc"],
+    copts = ["-std=c++17"],
     deps = [
-        "@benchmark//:benchmark_main",
+        "@benchmark",
+        "@absl//absl/container:flat_hash_map",
+        "@absl//absl/container:node_hash_map",
     ],
 )
 
@@ -15,3 +18,10 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "bm_memory",
+    srcs = ["bm_memory.cc"],
+    deps = [
+        "@benchmark//:benchmark_main",
+    ],
+)

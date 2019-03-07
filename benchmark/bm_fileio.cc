@@ -102,6 +102,5 @@ int main(int argc, char* argv[])
   {
     printf("Usage: %s file_to_read\n", argv[0]);
   }
-  return 0;
 }
 
