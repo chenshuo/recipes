@@ -3,6 +3,14 @@ cc_binary(
     name = "bm_memory",
     srcs = ["bm_memory.cc"],
     deps = [
+        "@benchmark//:benchmark_main",
+    ],
+)
+
+cc_binary(
+    name = "bm_fileio",
+    srcs = ["bm_fileio.cc"],
+    deps = [
         "@benchmark",
     ],
 )
