@@ -1,0 +1,9 @@
+
+cc_binary(
+    name = "bm_memory",
+    srcs = ["bm_memory.cc"],
+    deps = [
+        "@benchmark",
+    ],
+)
+
