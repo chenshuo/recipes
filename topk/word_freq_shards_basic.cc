@@ -11,6 +11,8 @@ Limits: each shard must fit in memory.
 
 #include <assert.h>
 
+#include "absl/container/flat_hash_map.h"
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -22,7 +24,9 @@ Limits: each shard must fit in memory.
 #include <fcntl.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/times.h>
 #include <unistd.h>
 
 using std::string;
@@ -38,6 +42,51 @@ inline double now()
   gettimeofday(&tv, nullptr);
   return tv.tv_sec + tv.tv_usec / 1000000.0;
 }
+
+struct CpuTime
+{
+  double userSeconds = 0.0;
+  double systemSeconds = 0.0;
+
+  double total() const { return userSeconds + systemSeconds; }
+};
+
+const int g_clockTicks = static_cast<int>(::sysconf(_SC_CLK_TCK));
+
+CpuTime cpuTime()
+{
+  CpuTime t;
+  struct tms tms;
+  if (::times(&tms) >= 0)
+  {
+    const double hz = static_cast<double>(g_clockTicks);
+    t.userSeconds = static_cast<double>(tms.tms_utime) / hz;
+    t.systemSeconds = static_cast<double>(tms.tms_stime) / hz;
+  }
+  return t;
+}
+
+class Timer
+{
+ public:
+  Timer()
+    : start_(now()),
+      start_cpu_(cpuTime())
+  {
+  }
+
+  void report(int64_t bytes) const
+  {
+    CpuTime end_cpu(cpuTime());
+    double end = now();
+    printf("%.3f real  %.3f cpu  %.2f MiB/s  %ld bytes\n",
+           end - start_, end_cpu.total() - start_cpu_.total(),
+           bytes / (end - start_) / 1024 / 1024, bytes);
+  }
+ private:
+  const double start_ = 0;
+  const CpuTime start_cpu_;
+};
 
 class OutputFile // : boost::noncopyable
 {
@@ -130,9 +179,12 @@ class Sharder // : boost::noncopyable
 
   void finish()
   {
-    for (int i = 0; i < files_.size(); ++i)
+    int shard = 0;
+    for (const auto& file : files_)
     {
-      printf("shard %d: %ld bytes, %ld items\n", i, files_[i]->tell(), files_[i]->items());
+      printf("  shard %d: %ld bytes, %ld items\n", shard, file->tell(), file->items());
+      ++shard;
+      file->close();
     }
   }
 
@@ -141,10 +193,11 @@ class Sharder // : boost::noncopyable
   vector<unique_ptr<OutputFile>> files_;
 };
 
-void shard(int argc, char* argv[])
+int64_t shard_(int argc, char* argv[])
 {
   Sharder sharder;
-  double t = now();
+  Timer timer;
+  int64_t total = 0;
   for (int i = 1; i < argc; ++i)
   {
     std::cout << "  processing input file " << argv[i] << std::endl;
@@ -160,29 +213,34 @@ void shard(int argc, char* argv[])
         line[len-1] = '\0';
       sharder.output(line);
     }
-    size_t total = ftell(fp);
+    size_t len = ftell(fp);
     fclose(fp);
+    total += len;
     double sec = now() - t;
-    printf("%.3f sec %.2f MB/s\n", sec, total / sec / 1000 / 1000);
+    printf("%.3f sec %.2f MiB/s\n", sec, len / sec / 1024 / 1024);
   }
   sharder.finish();
-  std::cout << "shuffling done " << now() - t << " sec" << std::endl;
+  printf("sharding done ");
+  timer.report(total);
+  return total;
 }
 
 // ======= count_shards =======
 
-void count_shard(int shard, int fd)
+int64_t count_shard(int shard, int fd)
 {
   const int64_t len = lseek(fd, 0, SEEK_END);
   lseek(fd, 0, SEEK_SET);
   double t = now();
   printf("shard %d: file size %ld\n", shard, len);
+  {
   void* mapped = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
   assert(mapped != MAP_FAILED);
   const uint8_t* const start = static_cast<const uint8_t*>(mapped);
   const uint8_t* const end = start + len;
 
-  std::unordered_map<string_view, uint64_t> items;
+  // std::unordered_map<string_view, uint64_t> items;
+  absl::flat_hash_map<string_view, uint64_t> items;
   for (const uint8_t* p = start; p < end;)
   {
     string_view s((const char*)p+1, *p);
@@ -205,39 +263,50 @@ void count_shard(int shard, int fd)
   printf("  sort %.3f sec\n", now() - t);
 
   t = now();
-  char buf[256];
-  snprintf(buf, sizeof buf, "count-%05d-of-%05d", shard, kShards);
-  std::ofstream out(buf);
-  for (auto it = counts.rbegin(); it != counts.rend(); ++it)
   {
-    out << it->first << '\t' << it->second << '\n';
-  }
-  for (const auto& it : items)
-  {
-    if (it.second == 1)
+    char buf[256];
+    snprintf(buf, sizeof buf, "count-%05d-of-%05d", shard, kShards);
+    std::ofstream out(buf);
+    for (auto it = counts.rbegin(); it != counts.rend(); ++it)
     {
-      out << "1\t" << it.first << '\n';
+      out << it->first << '\t' << it->second << '\n';
+    }
+    for (const auto& it : items)
+    {
+      if (it.second == 1)
+      {
+        out << "1\t" << it.first << '\n';
+      }
     }
   }
   printf("  output %.3f sec\n", now() - t);
 
+  t = now();
   if (munmap(mapped, len))
     perror("munmap");
+  }
+  printf("  destruct %.3f sec\n", now() - t);
+  return len;
 }
 
 void count_shards()
 {
-  double t = now();
+  Timer timer;
+  int64_t total = 0;
   for (int shard = 0; shard < kShards; ++shard)
   {
     char buf[256];
     snprintf(buf, sizeof buf, "shard-%05d-of-%05d", shard, kShards);
     int fd = open(buf, O_RDONLY);
-    count_shard(shard, fd);
+    double t = now();
+    int64_t len = count_shard(shard, fd);
     ::close(fd);
     ::unlink(buf);
+    total += len;
+    printf("shard %d: %.2f MiB/s\n", shard, len / (now() - t) / 1024 / 1024);
   }
-  std::cout << "count done " << now() - t << " sec\n";
+  printf("count done ");
+  timer.report(total);
 }
 
 // ======= merge =======
@@ -289,14 +358,18 @@ class Source  // copyable
 
 void merge()
 {
+  Timer timer;
   vector<unique_ptr<std::ifstream>> inputs;
   vector<Source> keys;
 
-  double t = now();
+  int64_t total = 0;
   for (int i = 0; i < kShards; ++i)
   {
     char buf[256];
     snprintf(buf, sizeof buf, "count-%05d-of-%05d", i, kShards);
+    struct stat st;
+    ::stat(buf, &st);
+    total += st.st_size;
     inputs.emplace_back(new std::ifstream(buf));
     Source rec(inputs.back().get());
     if (rec.next())
@@ -306,6 +379,7 @@ void merge()
     ::unlink(buf);
   }
 
+  {
   std::ofstream out("output");
   std::make_heap(keys.begin(), keys.end());
   while (!keys.empty())
@@ -322,24 +396,25 @@ void merge()
       keys.pop_back();
     }
   }
-  std::cout << "merging done " << now() - t << " sec\n";
+  }
+  printf("merging done ");
+  timer.report(total);
 }
 
 int main(int argc, char* argv[])
 {
   /*
-  kShards = 9;
   int fd = open("shard-00000-of-00010", O_RDONLY);
   double t = now();
-  sort_shard(0, fd, 1074462684, 100030936);
-  printf("sort_shard %.3f sec\n", now() - t);
-  t = now();
-  count_shard(1, fd);
-  printf("count_shard %.3f sec\n", now() - t);
-  /*/
+  int64_t len = count_shard(0, fd);
+  double sec = now() - t;
+  printf("count_shard %.3f sec %.2f MB/s\n", sec, len / sec / 1e6);
+  */
 
-  shard(argc, argv);
+  Timer timer;
+  int64_t total = shard_(argc, argv);
   count_shards();
   merge();
-  //*/
+  printf("All done ");
+  timer.report(total);
 }

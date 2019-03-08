@@ -1,0 +1,8 @@
+cc_binary(
+    name = "word_freq_shards_basic",
+    srcs = ["word_freq_shards_basic.cc"],
+    copts = ["-std=c++17"],
+    deps = [
+        "@absl//absl/container:flat_hash_map",
+    ],
+)
