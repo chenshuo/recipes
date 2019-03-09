@@ -8,3 +8,10 @@ http_archive(
     strip_prefix = "abseil-cpp-master",
     urls = ["https://github.com/abseil/abseil-cpp/archive/master.zip"],
 )
+
+# muduo
+http_archive(
+    name = "muduo",
+    strip_prefix = "muduo-master",
+    urls = ["https://github.com/chenshuo/muduo/archive/master.zip"],
+)

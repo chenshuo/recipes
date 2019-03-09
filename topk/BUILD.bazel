@@ -4,5 +4,7 @@ cc_binary(
     copts = ["-std=c++17"],
     deps = [
         "@absl//absl/container:flat_hash_map",
+        "@absl//absl/strings:str_format",
+        "@muduo//muduo/base",
     ],
 )
