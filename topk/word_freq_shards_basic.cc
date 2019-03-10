@@ -38,8 +38,11 @@ using std::string_view;
 using std::vector;
 using std::unique_ptr;
 
+const int kBufferSize = 128 * 1024;
+
 int kShards = 10;
 bool verbose = false, keep = false;
+const char* shard_dir = ".";
 
 inline double now()
 {
@@ -84,7 +87,7 @@ class Timer
   {
     CpuTime end_cpu(cpuTime());
     double end = now();
-    return absl::StrFormat("%.3f real  %.3f cpu  %.2f MiB/s  %ld bytes",
+    return absl::StrFormat("%.2fs real  %.2fs cpu  %.2f MiB/s  %ld bytes",
                            end - start_, end_cpu.total() - start_cpu_.total(),
                            bytes / (end - start_) / 1024 / 1024, bytes);
   }
@@ -154,7 +157,7 @@ class OutputFile // : boost::noncopyable
 
  private:
   FILE* file_;
-  char buffer_[64 * 1024];
+  char buffer_[kBufferSize];
   size_t items_ = 0;
 
   OutputFile(const OutputFile&) = delete;
@@ -170,7 +173,7 @@ class Sharder // : boost::noncopyable
     for (int i = 0; i < kShards; ++i)
     {
       char name[256];
-      snprintf(name, sizeof name, "shard-%05d-of-%05d", i, kShards);
+      snprintf(name, sizeof name, "%s/shard-%05d-of-%05d", shard_dir, i, kShards);
       files_[i].reset(new OutputFile(name));
     }
     assert(files_.size() == static_cast<size_t>(kShards));
@@ -210,7 +213,7 @@ int64_t shard_(int argc, char* argv[])
     double t = now();
     char line[1024];
     FILE* fp = fopen(argv[i], "r");
-    char buffer[65536];
+    char buffer[kBufferSize];
     ::setbuffer(fp, buffer, sizeof buffer);
     while (fgets(line, sizeof line, fp))
     {
@@ -307,7 +310,7 @@ void count_shards()
   {
     Timer timer;
     char buf[256];
-    snprintf(buf, sizeof buf, "shard-%05d-of-%05d", shard, kShards);
+    snprintf(buf, sizeof buf, "%s/shard-%05d-of-%05d", shard_dir, shard, kShards);
     int fd = open(buf, O_RDONLY);
     if (!keep)
     ::unlink(buf);
@@ -382,16 +385,22 @@ int64_t merge(const char* output)
     char buf[256];
     snprintf(buf, sizeof buf, "count-%05d-of-%05d", i, kShards);
     struct stat st;
-    ::stat(buf, &st);
-    total += st.st_size;
-    inputs.emplace_back(new std::ifstream(buf));
-    Source rec(inputs.back().get());
-    if (rec.next())
+    if (::stat(buf, &st) == 0)
     {
-      keys.push_back(rec);
+      total += st.st_size;
+      inputs.emplace_back(new std::ifstream(buf));
+      Source rec(inputs.back().get());
+      if (rec.next())
+      {
+        keys.push_back(rec);
+      }
+      if (!keep)
+        ::unlink(buf);
     }
-    if (!keep)
-    ::unlink(buf);
+    else
+    {
+      perror("Unable to stat file:");
+    }
   }
   LOG_INFO << "merging " << inputs.size() << " files of " << total << " bytes in total";
 
@@ -428,15 +437,22 @@ int main(int argc, char* argv[])
   */
 
   int opt;
-  while ((opt = getopt(argc, argv, "ks:v")) != -1)
+  const char* output = "output";
+  while ((opt = getopt(argc, argv, "ko:s:t:v")) != -1)
   {
     switch (opt)
     {
       case 'k':
         keep = true;
         break;
+      case 'o':
+        output = optarg;
+        break;
       case 's':
         kShards = atoi(optarg);
+        break;
+      case 't':
+        shard_dir = optarg;
         break;
       case 'v':
         verbose = true;
@@ -445,8 +461,10 @@ int main(int argc, char* argv[])
   }
 
   Timer timer;
-  int64_t total = shard_(argc, argv);
+  LOG_INFO << argc - optind << " input files, " << kShards << " shards, output " << output <<" , temp " << shard_dir;
+  int64_t input = 0;
+  input = shard_(argc, argv);
   count_shards();
-  int64_t output = merge("/dev/null");
-  LOG_INFO << "All done " << timer.report(total) << " output " << output;
+  int64_t output_size = merge(output);
+  LOG_INFO << "All done " << timer.report(input) << " output " << output_size;
 }
