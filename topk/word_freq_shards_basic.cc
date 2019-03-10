@@ -16,8 +16,8 @@ Limits: each shard must fit in memory.
 #include "muduo/base/Logging.h"
 
 #include <algorithm>
-#include <fstream>
-#include <iostream>
+//#include <fstream>
+//#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -100,7 +100,7 @@ class OutputFile // : boost::noncopyable
 {
  public:
   explicit OutputFile(const string& filename)
-    : file_(::fopen(filename.c_str(), "w+"))
+    : file_(::fopen(filename.c_str(), "w"))
   {
     assert(file_);
     ::setbuffer(file_, buffer_, sizeof buffer_);
@@ -111,7 +111,12 @@ class OutputFile // : boost::noncopyable
     close();
   }
 
-  void append(string_view s)
+  void write(string_view s)
+  {
+    ::fwrite(s.data(), 1, s.size(), file_);
+  }
+
+  void appendRecord(string_view s)
   {
     assert(s.size() < 255);
     uint8_t len = s.size();
@@ -119,14 +124,6 @@ class OutputFile // : boost::noncopyable
     ::fwrite(s.data(), 1, len, file_);
     ++items_;
   }
-
-  /*
-  void append(uint64_t x)
-  {
-    // FIXME: htobe64(x);
-    ::fwrite(&x, 1, sizeof x, file_);
-  }
-  */
 
   void flush()
   {
@@ -164,6 +161,54 @@ class OutputFile // : boost::noncopyable
   void operator=(const OutputFile&) = delete;
 };
 
+class InputFile
+{
+ public:
+  explicit InputFile(const char* filename)
+    : file_(::fopen(filename, "r"))
+  {
+    assert(file_);
+    ::setbuffer(file_, buffer_, sizeof buffer_);
+  }
+
+  ~InputFile()
+  {
+    close();
+  }
+
+  void close()
+  {
+    if (file_)
+      ::fclose(file_);
+    file_ = nullptr;
+  }
+
+  bool getline(string* output)
+  {
+    char buf[1024] = "";
+    if (fgets(buf, sizeof buf, file_))
+    {
+      size_t len = strlen(buf);
+      if (len > 0 && buf[len-1] == '\n')
+      {
+        buf[len-1] = '\0';
+        len--;
+      }
+      output->assign(buf, len);
+      return true;
+    }
+    return false;
+  }
+
+
+ private:
+  FILE* file_;
+  char buffer_[32 * 1024 * 1024];
+
+  InputFile(const InputFile&) = delete;
+  void operator=(const InputFile&) = delete;
+};
+
 class Sharder // : boost::noncopyable
 {
  public:
@@ -182,7 +227,7 @@ class Sharder // : boost::noncopyable
   void output(string_view word)
   {
     size_t shard = hash(word) % files_.size();
-    files_[shard]->append(word);
+    files_[shard]->appendRecord(word);
   }
 
   void finish()
@@ -219,8 +264,11 @@ int64_t shard_(int argc, char* argv[])
     {
       size_t len = strlen(line);
       if (len > 0 && line[len-1] == '\n')
+      {
         line[len-1] = '\0';
-      sharder.output(line);
+        len--;
+      }
+      sharder.output(string_view(line, len));
     }
     size_t len = ftell(fp);
     fclose(fp);
@@ -257,7 +305,7 @@ int64_t count_shard(int shard, int fd, const char* output)
     p += 1 + *p;
     ++count;
   }
-  LOG_INFO << "counting " << count << " unique " << items.size();
+  LOG_INFO << "items " << count << " unique " << items.size();
   if (verbose)
   printf("  count %.3f sec %ld items\n", now() - t, items.size());
 
@@ -278,16 +326,27 @@ int64_t count_shard(int shard, int fd, const char* output)
 
   t = now();
   {
-    std::ofstream out(output);
+    OutputFile out(output);
     for (auto it = counts.rbegin(); it != counts.rend(); ++it)
     {
-      out << it->first << '\t' << it->second << '\n';
+      string s(it->second);
+      out.write(absl::StrFormat("%d\t%s\n", it->first, s));  // FIXME %s with string_view doesn't work in C++17
+      /*
+      char buf[1024];
+      snprintf(buf, sizeof buf, "%zd\t%s\n",
+      out.write(buf);
+      */
     }
+
     for (const auto& it : items)
     {
       if (it.second == 1)
       {
-        out << "1\t" << it.first << '\n';
+        string s(it.first);
+        // FIXME: bug of absl?
+        // out.write(absl::StrCat("1\t", s, "\n"));
+        out.write(absl::StrFormat("1\t%s\n", s));
+
       }
     }
   }
@@ -323,7 +382,7 @@ void count_shards()
     ::stat(buf, &st);
     LOG_INFO << "shard " << shard << " done " << timer.report(len) << " output " << st.st_size;
   }
-  LOG_INFO << "count done "<< timer.report(total);
+  LOG_INFO << "Counting done "<< timer.report(total);
 }
 
 // ======= merge =======
@@ -331,7 +390,7 @@ void count_shards()
 class Source  // copyable
 {
  public:
-  explicit Source(std::istream* in)
+  explicit Source(InputFile* in)
     : in_(in),
       count_(0),
       word_()
@@ -341,7 +400,7 @@ class Source  // copyable
   bool next()
   {
     string line;
-    if (getline(*in_, line))
+    if (in_->getline(&line))
     {
       size_t tab = line.find('\t');
       if (tab != string::npos)
@@ -362,13 +421,13 @@ class Source  // copyable
     return count_ < rhs.count_;
   }
 
-  void outputTo(std::ostream& out) const
+  void outputTo(OutputFile* out) const
   {
-    out << count_ << '\t' << word_ << '\n';
+    out->write(absl::StrFormat("%d\t%s\n", count_, word_));
   }
 
  private:
-  std::istream* in_;
+  InputFile* in_;  // not owned
   int64_t count_;
   string word_;
 };
@@ -376,7 +435,7 @@ class Source  // copyable
 int64_t merge(const char* output)
 {
   Timer timer;
-  vector<unique_ptr<std::ifstream>> inputs;
+  vector<unique_ptr<InputFile>> inputs;
   vector<Source> keys;
 
   int64_t total = 0;
@@ -388,7 +447,7 @@ int64_t merge(const char* output)
     if (::stat(buf, &st) == 0)
     {
       total += st.st_size;
-      inputs.emplace_back(new std::ifstream(buf));
+      inputs.push_back(std::make_unique<InputFile>(buf));
       Source rec(inputs.back().get());
       if (rec.next())
       {
@@ -405,12 +464,12 @@ int64_t merge(const char* output)
   LOG_INFO << "merging " << inputs.size() << " files of " << total << " bytes in total";
 
   {
-  std::ofstream out(output);
+  OutputFile out(output);
   std::make_heap(keys.begin(), keys.end());
   while (!keys.empty())
   {
     std::pop_heap(keys.begin(), keys.end());
-    keys.back().outputTo(out);
+    keys.back().outputTo(&out);
 
     if (keys.back().next())
     {
