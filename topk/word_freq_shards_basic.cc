@@ -284,10 +284,10 @@ int64_t shard_(int argc, char* argv[])
 
 // ======= count_shards =======
 
-int64_t count_shard(int shard, int fd, OutputFile* output)
+void count_shard(int shard, int fd, size_t len)
 {
-  const int64_t len = lseek(fd, 0, SEEK_END);
-  lseek(fd, 0, SEEK_SET);
+  Timer timer;
+
   double t = now();
   LOG_INFO << absl::StrFormat("counting shard %d: input file size %ld", shard, len);
   {
@@ -327,10 +327,14 @@ int64_t count_shard(int shard, int fd, OutputFile* output)
 
   t = now();
   {
+    char buf[256];
+    snprintf(buf, sizeof buf, "count-%05d-of-%05d", shard, kShards);
+    OutputFile output(buf);
+
     for (auto it = counts.rbegin(); it != counts.rend(); ++it)
     {
       string s(it->second);
-      output->write(absl::StrFormat("%d\t%s\n", it->first, s));  // FIXME %s with string_view doesn't work in C++17
+      output.write(absl::StrFormat("%d\t%s\n", it->first, s));  // FIXME %s with string_view doesn't work in C++17
       /*
       char buf[1024];
       snprintf(buf, sizeof buf, "%zd\t%s\n",
@@ -345,19 +349,18 @@ int64_t count_shard(int shard, int fd, OutputFile* output)
         string s(it.first);
         // FIXME: bug of absl?
         // out.write(absl::StrCat("1\t", s, "\n"));
-        output->write(absl::StrFormat("1\t%s\n", s));
+        output.write(absl::StrFormat("1\t%s\n", s));
       }
     }
   }
   //if (verbose)
   //printf("  output %.3f sec %lu\n", now() - t, st.st_size);
 
-  t = now();
   if (munmap(mapped, len))
     perror("munmap");
   }
-  // printf("  destruct %.3f sec\n", now() - t);
-  return len;
+  ::close(fd);
+  LOG_INFO << "shard " << shard << " done " << timer.report(len);
 }
 
 void count_shards()
@@ -366,28 +369,28 @@ void count_shards()
   int64_t total = 0;
   muduo::ThreadPool threadPool;
   threadPool.setMaxQueueSize(10);
-  threadPool.start(1);
+  threadPool.start(4);
   for (int shard = 0; shard < kShards; ++shard)
   {
-    Timer timer;
     char buf[256];
     snprintf(buf, sizeof buf, "%s/shard-%05d-of-%05d", shard_dir, shard, kShards);
     int fd = open(buf, O_RDONLY);
+    assert(fd >= 0);
     if (!keep)
-    ::unlink(buf);
+      ::unlink(buf);
 
-    snprintf(buf, sizeof buf, "count-%05d-of-%05d", shard, kShards);
-    std::shared_ptr<OutputFile> output(new OutputFile(buf));
-    int64_t len = count_shard(shard, fd, output.get());
-    ::close(fd);
-    total += len;
-    threadPool.run([x = std::move(output)]{});
-    LOG_INFO << "shard " << shard << " done " << timer.report(len);
+    struct stat st;
+    if (::fstat(fd, &st) == 0)
+    {
+      size_t len = st.st_size;
+      total += len;
+      threadPool.run([shard, fd, len]{ count_shard(shard, fd, len); });
+    }
   }
   while (threadPool.queueSize() > 0)
   {
-    LOG_INFO << "Waiting for ThreadPool";
-    muduo::CurrentThread::sleepUsec(100*1000);
+    LOG_INFO << "Waiting for ThreadPool " << threadPool.queueSize();
+    muduo::CurrentThread::sleepUsec(1000*1000);
   }
   threadPool.stop();
   LOG_INFO << "Counting done "<< timer.report(total);
