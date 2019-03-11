@@ -14,6 +14,7 @@ Limits: each shard must fit in memory.
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_format.h"
 #include "muduo/base/Logging.h"
+#include "muduo/base/ThreadPool.h"
 
 #include <algorithm>
 //#include <fstream>
@@ -283,7 +284,7 @@ int64_t shard_(int argc, char* argv[])
 
 // ======= count_shards =======
 
-int64_t count_shard(int shard, int fd, const char* output)
+int64_t count_shard(int shard, int fd, OutputFile* output)
 {
   const int64_t len = lseek(fd, 0, SEEK_END);
   lseek(fd, 0, SEEK_SET);
@@ -326,11 +327,10 @@ int64_t count_shard(int shard, int fd, const char* output)
 
   t = now();
   {
-    OutputFile out(output);
     for (auto it = counts.rbegin(); it != counts.rend(); ++it)
     {
       string s(it->second);
-      out.write(absl::StrFormat("%d\t%s\n", it->first, s));  // FIXME %s with string_view doesn't work in C++17
+      output->write(absl::StrFormat("%d\t%s\n", it->first, s));  // FIXME %s with string_view doesn't work in C++17
       /*
       char buf[1024];
       snprintf(buf, sizeof buf, "%zd\t%s\n",
@@ -345,8 +345,7 @@ int64_t count_shard(int shard, int fd, const char* output)
         string s(it.first);
         // FIXME: bug of absl?
         // out.write(absl::StrCat("1\t", s, "\n"));
-        out.write(absl::StrFormat("1\t%s\n", s));
-
+        output->write(absl::StrFormat("1\t%s\n", s));
       }
     }
   }
@@ -365,6 +364,9 @@ void count_shards()
 {
   Timer timer;
   int64_t total = 0;
+  muduo::ThreadPool threadPool;
+  threadPool.setMaxQueueSize(10);
+  threadPool.start(1);
   for (int shard = 0; shard < kShards; ++shard)
   {
     Timer timer;
@@ -375,13 +377,19 @@ void count_shards()
     ::unlink(buf);
 
     snprintf(buf, sizeof buf, "count-%05d-of-%05d", shard, kShards);
-    int64_t len = count_shard(shard, fd, buf);
+    std::shared_ptr<OutputFile> output(new OutputFile(buf));
+    int64_t len = count_shard(shard, fd, output.get());
     ::close(fd);
     total += len;
-    struct stat st;
-    ::stat(buf, &st);
-    LOG_INFO << "shard " << shard << " done " << timer.report(len) << " output " << st.st_size;
+    threadPool.run([x = std::move(output)]{});
+    LOG_INFO << "shard " << shard << " done " << timer.report(len);
   }
+  while (threadPool.queueSize() > 0)
+  {
+    LOG_INFO << "Waiting for ThreadPool";
+    muduo::CurrentThread::sleepUsec(100*1000);
+  }
+  threadPool.stop();
   LOG_INFO << "Counting done "<< timer.report(total);
 }
 
@@ -481,7 +489,7 @@ int64_t merge(const char* output)
     }
   }
   }
-  LOG_INFO << "merging done " << timer.report(total);
+  LOG_INFO << "Merging done " << timer.report(total);
   return total;
 }
 
@@ -520,7 +528,8 @@ int main(int argc, char* argv[])
   }
 
   Timer timer;
-  LOG_INFO << argc - optind << " input files, " << kShards << " shards, output " << output <<" , temp " << shard_dir;
+  LOG_INFO << argc - optind << " input files, " << kShards << " shards, "
+      << "output " << output <<" , temp " << shard_dir;
   int64_t input = 0;
   input = shard_(argc, argv);
   count_shards();
