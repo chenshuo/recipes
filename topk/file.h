@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <memory>
 #include <string>
+#include "absl/strings/string_view.h"
 #include "muduo/base/Logging.h"  // CHECK_NOTNULL
 
 // Wrappers FILE* from stdio.
@@ -90,12 +91,12 @@ class OutputFile : public File
   {
   }
 
-  void write(std::string_view s)
+  void write(absl::string_view s)
   {
     ::fwrite(s.data(), 1, s.size(), file_);
   }
 
-  void appendRecord(std::string_view s)
+  void appendRecord(absl::string_view s)
   {
     assert(s.size() < 255);
     uint8_t len = s.size();

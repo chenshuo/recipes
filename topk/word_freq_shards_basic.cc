@@ -15,6 +15,7 @@ Limits: each shard must fit in memory.
 #include "timer.h"
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/hash/hash.h"
 #include "absl/strings/str_format.h"
 #include "muduo/base/BoundedBlockingQueue.h"
 #include "muduo/base/Logging.h"
@@ -34,8 +35,8 @@ Limits: each shard must fit in memory.
 #include <sys/stat.h>
 #include <unistd.h>
 
+using absl::string_view;
 using std::string;
-using std::string_view;
 using std::vector;
 using std::unique_ptr;
 
@@ -78,7 +79,7 @@ class Sharder // : boost::noncopyable
   }
 
  private:
-  std::hash<string_view> hash;
+  absl::Hash<string_view> hash;
   vector<unique_ptr<OutputFile>> files_;
 };
 
@@ -140,7 +141,7 @@ void count_shard(int shard, int fd, size_t len)
   for (const auto& it : items)
   {
     if (it.second > 1)
-      counts.push_back(make_pair(it.second, it.first));
+      counts.push_back(std::make_pair(it.second, it.first));
   }
   if (g_verbose)
   printf("  select %.3f sec %ld\n", Timer::now() - t, counts.size());
