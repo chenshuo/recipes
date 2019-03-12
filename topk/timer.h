@@ -19,9 +19,11 @@ class Timer
   {
     muduo::ProcessInfo::CpuTime end_cpu(muduo::ProcessInfo::cpuTime());
     double seconds = now() - start_;
-    return absl::StrFormat("%.2fs real  %.2fs cpu  %.2f MiB/s  %ld bytes",
+    char buf[64];
+    snprintf(buf, sizeof buf, "%'zd", bytes);
+    return absl::StrFormat("%.2fs real  %.2fs cpu  %6.2f MiB/s  %s bytes",
                            seconds, end_cpu.total() - start_cpu_.total(),
-                           bytes / seconds / 1024 / 1024, bytes);
+                           bytes / seconds / 1024 / 1024, buf);
   }
 
   static double now()

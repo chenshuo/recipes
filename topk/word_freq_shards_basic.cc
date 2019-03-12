@@ -371,6 +371,7 @@ int main(int argc, char* argv[])
   double sec = Timer::now() - t;
   printf("count_shard %.3f sec %.2f MB/s\n", sec, len / sec / 1e6);
   */
+  setlocale(LC_NUMERIC, "");
 
   int opt;
   int count_only = 0;
