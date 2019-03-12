@@ -11,14 +11,16 @@ Limits: each shard must fit in memory.
 
 #include <assert.h>
 
+#include "file.h"
+#include "timer.h"
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_format.h"
+#include "muduo/base/BoundedBlockingQueue.h"
 #include "muduo/base/Logging.h"
 #include "muduo/base/ThreadPool.h"
 
 #include <algorithm>
-//#include <fstream>
-//#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -30,8 +32,6 @@ Limits: each shard must fit in memory.
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/times.h>
 #include <unistd.h>
 
 using std::string;
@@ -39,176 +39,10 @@ using std::string_view;
 using std::vector;
 using std::unique_ptr;
 
-const int kBufferSize = 128 * 1024;
-
-int kShards = 10;
-bool verbose = false, keep = false;
+int kShards = 10, kThreads = 4;
+bool g_verbose = false, g_keep = false;
 const char* shard_dir = ".";
-
-inline double now()
-{
-  struct timeval tv = { 0, 0 };
-  gettimeofday(&tv, nullptr);
-  return tv.tv_sec + tv.tv_usec / 1000000.0;
-}
-
-struct CpuTime
-{
-  double userSeconds = 0.0;
-  double systemSeconds = 0.0;
-
-  double total() const { return userSeconds + systemSeconds; }
-};
-
-const int g_clockTicks = static_cast<int>(::sysconf(_SC_CLK_TCK));
-
-CpuTime cpuTime()
-{
-  CpuTime t;
-  struct tms tms;
-  if (::times(&tms) >= 0)
-  {
-    const double hz = static_cast<double>(g_clockTicks);
-    t.userSeconds = static_cast<double>(tms.tms_utime) / hz;
-    t.systemSeconds = static_cast<double>(tms.tms_stime) / hz;
-  }
-  return t;
-}
-
-class Timer
-{
- public:
-  Timer()
-    : start_(now()),
-      start_cpu_(cpuTime())
-  {
-  }
-
-  string report(int64_t bytes) const
-  {
-    CpuTime end_cpu(cpuTime());
-    double end = now();
-    return absl::StrFormat("%.2fs real  %.2fs cpu  %.2f MiB/s  %ld bytes",
-                           end - start_, end_cpu.total() - start_cpu_.total(),
-                           bytes / (end - start_) / 1024 / 1024, bytes);
-  }
- private:
-  const double start_ = 0;
-  const CpuTime start_cpu_;
-};
-
-class OutputFile // : boost::noncopyable
-{
- public:
-  explicit OutputFile(const string& filename)
-    : file_(::fopen(filename.c_str(), "w"))
-  {
-    assert(file_);
-    ::setbuffer(file_, buffer_, sizeof buffer_);
-  }
-
-  ~OutputFile()
-  {
-    close();
-  }
-
-  void write(string_view s)
-  {
-    ::fwrite(s.data(), 1, s.size(), file_);
-  }
-
-  void appendRecord(string_view s)
-  {
-    assert(s.size() < 255);
-    uint8_t len = s.size();
-    ::fwrite(&len, 1, sizeof len, file_);
-    ::fwrite(s.data(), 1, len, file_);
-    ++items_;
-  }
-
-  void flush()
-  {
-    ::fflush(file_);
-  }
-
-  void close()
-  {
-    if (file_)
-      ::fclose(file_);
-    file_ = nullptr;
-  }
-
-  int64_t tell()
-  {
-    return ::ftell(file_);
-  }
-
-  int fd()
-  {
-    return ::fileno(file_);
-  }
-
-  size_t items()
-  {
-    return items_;
-  }
-
- private:
-  FILE* file_;
-  char buffer_[kBufferSize];
-  size_t items_ = 0;
-
-  OutputFile(const OutputFile&) = delete;
-  void operator=(const OutputFile&) = delete;
-};
-
-class InputFile
-{
- public:
-  explicit InputFile(const char* filename)
-    : file_(::fopen(filename, "r"))
-  {
-    assert(file_);
-    ::setbuffer(file_, buffer_, sizeof buffer_);
-  }
-
-  ~InputFile()
-  {
-    close();
-  }
-
-  void close()
-  {
-    if (file_)
-      ::fclose(file_);
-    file_ = nullptr;
-  }
-
-  bool getline(string* output)
-  {
-    char buf[1024] = "";
-    if (fgets(buf, sizeof buf, file_))
-    {
-      size_t len = strlen(buf);
-      if (len > 0 && buf[len-1] == '\n')
-      {
-        buf[len-1] = '\0';
-        len--;
-      }
-      output->assign(buf, len);
-      return true;
-    }
-    return false;
-  }
-
-
- private:
-  FILE* file_;
-  char buffer_[32 * 1024 * 1024];
-
-  InputFile(const InputFile&) = delete;
-  void operator=(const InputFile&) = delete;
-};
+const char* g_output = "output";
 
 class Sharder // : boost::noncopyable
 {
@@ -236,7 +70,7 @@ class Sharder // : boost::noncopyable
     int shard = 0;
     for (const auto& file : files_)
     {
-      // if (verbose)
+      // if (g_verbose)
       printf("  shard %d: %ld bytes, %ld items\n", shard, file->tell(), file->items());
       ++shard;
       file->close();
@@ -256,25 +90,16 @@ int64_t shard_(int argc, char* argv[])
   for (int i = optind; i < argc; ++i)
   {
     LOG_INFO << "Processing input file " << argv[i];
-    double t = now();
-    char line[1024];
-    FILE* fp = fopen(argv[i], "r");
-    char buffer[kBufferSize];
-    ::setbuffer(fp, buffer, sizeof buffer);
-    while (fgets(line, sizeof line, fp))
+    double t = Timer::now();
+    string line;
+    InputFile input(argv[i]);
+    while (input.getline(&line))
     {
-      size_t len = strlen(line);
-      if (len > 0 && line[len-1] == '\n')
-      {
-        line[len-1] = '\0';
-        len--;
-      }
-      sharder.output(string_view(line, len));
+      sharder.output(line);
     }
-    size_t len = ftell(fp);
-    fclose(fp);
+    size_t len = input.tell();
     total += len;
-    double sec = now() - t;
+    double sec = Timer::now() - t;
     LOG_INFO << "Done file " << argv[i] << absl::StrFormat(" %.3f sec %.2f MiB/s", sec, len / sec / 1024 / 1024);
   }
   sharder.finish();
@@ -288,7 +113,7 @@ void count_shard(int shard, int fd, size_t len)
 {
   Timer timer;
 
-  double t = now();
+  double t = Timer::now();
   LOG_INFO << absl::StrFormat("counting shard %d: input file size %ld", shard, len);
   {
   void* mapped = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
@@ -307,25 +132,25 @@ void count_shard(int shard, int fd, size_t len)
     ++count;
   }
   LOG_INFO << "items " << count << " unique " << items.size();
-  if (verbose)
-  printf("  count %.3f sec %ld items\n", now() - t, items.size());
+  if (g_verbose)
+  printf("  count %.3f sec %ld items\n", Timer::now() - t, items.size());
 
-  t = now();
+  t = Timer::now();
   vector<std::pair<size_t, string_view>> counts;
   for (const auto& it : items)
   {
     if (it.second > 1)
       counts.push_back(make_pair(it.second, it.first));
   }
-  if (verbose)
-  printf("  select %.3f sec %ld\n", now() - t, counts.size());
+  if (g_verbose)
+  printf("  select %.3f sec %ld\n", Timer::now() - t, counts.size());
 
-  t = now();
+  t = Timer::now();
   std::sort(counts.begin(), counts.end());
-  if (verbose)
-  printf("  sort %.3f sec\n", now() - t);
+  if (g_verbose)
+  printf("  sort %.3f sec\n", Timer::now() - t);
 
-  t = now();
+  t = Timer::now();
   {
     char buf[256];
     snprintf(buf, sizeof buf, "count-%05d-of-%05d", shard, kShards);
@@ -353,8 +178,8 @@ void count_shard(int shard, int fd, size_t len)
       }
     }
   }
-  //if (verbose)
-  //printf("  output %.3f sec %lu\n", now() - t, st.st_size);
+  //if (g_verbose)
+  //printf("  output %.3f sec %lu\n", Timer::now() - t, st.st_size);
 
   if (munmap(mapped, len))
     perror("munmap");
@@ -363,20 +188,22 @@ void count_shard(int shard, int fd, size_t len)
   LOG_INFO << "shard " << shard << " done " << timer.report(len);
 }
 
-void count_shards()
+void count_shards(int shards)
 {
+  assert(shards <= kShards);
   Timer timer;
   int64_t total = 0;
   muduo::ThreadPool threadPool;
-  threadPool.setMaxQueueSize(10);
-  threadPool.start(4);
-  for (int shard = 0; shard < kShards; ++shard)
+  threadPool.setMaxQueueSize(2*kThreads);
+  threadPool.start(kThreads);
+
+  for (int shard = 0; shard < shards; ++shard)
   {
     char buf[256];
     snprintf(buf, sizeof buf, "%s/shard-%05d-of-%05d", shard_dir, shard, kShards);
     int fd = open(buf, O_RDONLY);
     assert(fd >= 0);
-    if (!keep)
+    if (!g_keep)
       ::unlink(buf);
 
     struct stat st;
@@ -389,7 +216,7 @@ void count_shards()
   }
   while (threadPool.queueSize() > 0)
   {
-    LOG_INFO << "Waiting for ThreadPool " << threadPool.queueSize();
+    LOG_DEBUG << "waiting for ThreadPool " << threadPool.queueSize();
     muduo::CurrentThread::sleepUsec(1000*1000);
   }
   threadPool.stop();
@@ -434,7 +261,15 @@ class Source  // copyable
 
   void outputTo(OutputFile* out) const
   {
+    //char buf[1024];
+    //snprintf(buf, sizeof buf, "%ld\t%s\n", count_, word_.c_str());
+    //out->write(buf);
     out->write(absl::StrFormat("%d\t%s\n", count_, word_));
+  }
+
+  std::pair<int64_t, string> item()
+  {
+    return make_pair(count_, std::move(word_));
   }
 
  private:
@@ -443,7 +278,7 @@ class Source  // copyable
   string word_;
 };
 
-int64_t merge(const char* output)
+int64_t merge()
 {
   Timer timer;
   vector<unique_ptr<InputFile>> inputs;
@@ -458,13 +293,14 @@ int64_t merge(const char* output)
     if (::stat(buf, &st) == 0)
     {
       total += st.st_size;
-      inputs.push_back(std::make_unique<InputFile>(buf));
+      // TODO: select buffer size based on kShards.
+      inputs.push_back(std::make_unique<InputFile>(buf, 32 * 1024 * 1024));
       Source rec(inputs.back().get());
       if (rec.next())
       {
         keys.push_back(rec);
       }
-      if (!keep)
+      if (!g_keep)
         ::unlink(buf);
     }
     else
@@ -475,12 +311,36 @@ int64_t merge(const char* output)
   LOG_INFO << "merging " << inputs.size() << " files of " << total << " bytes in total";
 
   {
-  OutputFile out(output);
+  OutputFile out(g_output);
+  /*
+  muduo::BoundedBlockingQueue<vector<std::pair<int64_t, string>>> queue(1024);
+  muduo::Thread thr([&queue] {
+    OutputFile out(g_output);
+    while (true) {
+      auto vec = queue.take();
+      if (vec.size() == 0)
+        break;
+      for (const auto& x : vec)
+        out.write(absl::StrFormat("%d\t%s\n", x.first, x.second));
+    }
+  });
+  thr.start();
+
+  vector<std::pair<int64_t, string>> batch;
+  */
   std::make_heap(keys.begin(), keys.end());
   while (!keys.empty())
   {
     std::pop_heap(keys.begin(), keys.end());
     keys.back().outputTo(&out);
+    /*
+    batch.push_back(std::move(keys.back().item()));
+    if (batch.size() >= 10*1024*1024)
+    {
+      queue.put(std::move(batch));
+      batch.clear();
+    }
+    */
 
     if (keys.back().next())
     {
@@ -491,6 +351,12 @@ int64_t merge(const char* output)
       keys.pop_back();
     }
   }
+  /*
+  queue.put(batch);
+  batch.clear();
+  queue.put(batch);
+  thr.join();
+  */
   }
   LOG_INFO << "Merging done " << timer.report(total);
   return total;
@@ -500,42 +366,72 @@ int main(int argc, char* argv[])
 {
   /*
   int fd = open("shard-00000-of-00010", O_RDONLY);
-  double t = now();
+  double t = Timer::now();
   int64_t len = count_shard(0, fd);
-  double sec = now() - t;
+  double sec = Timer::now() - t;
   printf("count_shard %.3f sec %.2f MB/s\n", sec, len / sec / 1e6);
   */
 
   int opt;
-  const char* output = "output";
-  while ((opt = getopt(argc, argv, "ko:s:t:v")) != -1)
+  int count_only = 0;
+  bool merge_only = false;
+  while ((opt = getopt(argc, argv, "c:kmo:p:s:t:v")) != -1)
   {
     switch (opt)
     {
+      case 'c':
+        count_only = atoi(optarg);
+        break;
       case 'k':
-        keep = true;
+        g_keep = true;
+        break;
+      case 'm':
+        merge_only = true;
         break;
       case 'o':
-        output = optarg;
+        g_output = optarg;
+        break;
+      case 'p':  // Path for temp shard files
+        shard_dir = optarg;
         break;
       case 's':
         kShards = atoi(optarg);
         break;
       case 't':
-        shard_dir = optarg;
+        kThreads = atoi(optarg);
         break;
       case 'v':
-        verbose = true;
+        g_verbose = true;
         break;
     }
   }
 
-  Timer timer;
-  LOG_INFO << argc - optind << " input files, " << kShards << " shards, "
-      << "output " << output <<" , temp " << shard_dir;
-  int64_t input = 0;
-  input = shard_(argc, argv);
-  count_shards();
-  int64_t output_size = merge(output);
-  LOG_INFO << "All done " << timer.report(input) << " output " << output_size;
+  if (count_only > 0 || merge_only)
+  {
+    g_keep = true;
+    g_verbose = true;
+    count_only = std::min(count_only, kShards);
+
+    if (count_only > 0)
+    {
+      count_shards(count_only);
+    }
+
+    if (merge_only)
+    {
+      merge();
+    }
+  }
+  else
+  {
+    // Run all three steps
+    Timer timer;
+    LOG_INFO << argc - optind << " input files, " << kShards << " shards, "
+             << "output " << g_output <<" , temp " << shard_dir;
+    int64_t input = 0;
+    input = shard_(argc, argv);
+    count_shards(kShards);
+    int64_t output_size = merge();
+    LOG_INFO << "All done " << timer.report(input) << " output " << output_size;
+  }
 }

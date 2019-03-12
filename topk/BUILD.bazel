@@ -3,8 +3,17 @@ cc_binary(
     srcs = ["word_freq_shards_basic.cc"],
     copts = ["-std=c++17"],
     deps = [
+        ":common",
         "@absl//absl/container:flat_hash_map",
         "@absl//absl/strings:str_format",
         "@muduo//muduo/base",
+    ],
+)
+
+cc_library(
+    name = "common",
+    hdrs = [
+        "file.h",
+        "timer.h",
     ],
 )
