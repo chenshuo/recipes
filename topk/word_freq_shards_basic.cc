@@ -151,6 +151,7 @@ void count_shard(int shard, int fd, size_t len)
   printf("  sort %.3f sec\n", Timer::now() - t);
 
   t = Timer::now();
+  int64_t out_len = 0;
   {
     char buf[256];
     snprintf(buf, sizeof buf, "count-%05d-of-%05d", shard, kShards);
@@ -158,28 +159,20 @@ void count_shard(int shard, int fd, size_t len)
 
     for (auto it = counts.rbegin(); it != counts.rend(); ++it)
     {
-      string s(it->second);
-      output.write(absl::StrFormat("%d\t%s\n", it->first, s));  // FIXME %s with string_view doesn't work in C++17
-      /*
-      char buf[1024];
-      snprintf(buf, sizeof buf, "%zd\t%s\n",
-      out.write(buf);
-      */
+      output.write(absl::StrFormat("%d\t%s\n", it->first, it->second));
     }
 
     for (const auto& it : items)
     {
       if (it.second == 1)
       {
-        string s(it.first);
-        // FIXME: bug of absl?
-        // out.write(absl::StrCat("1\t", s, "\n"));
-        output.write(absl::StrFormat("1\t%s\n", s));
+        output.write(absl::StrFormat("1\t%s\n", it.first));
       }
     }
+    out_len = output.tell();
   }
-  //if (g_verbose)
-  //printf("  output %.3f sec %lu\n", Timer::now() - t, st.st_size);
+  if (g_verbose)
+  printf("  output %.3f sec %lu\n", Timer::now() - t, out_len);
 
   if (munmap(mapped, len))
     perror("munmap");

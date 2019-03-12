@@ -3,13 +3,13 @@
 #include <stdio.h>
 #include <memory>
 #include <string>
-#include "muduo/base/Logging.h"
+#include "muduo/base/Logging.h"  // CHECK_NOTNULL
 
 // Wrappers FILE* from stdio.
 class File
 {
  public:
-  int64_t tell()
+  int64_t tell() const
   {
     return ::ftell(file_);
   }
@@ -22,15 +22,21 @@ class File
     buffer_.reset();
   }
 
- protected:
+  const std::string& filename() const
+  {
+    return filename_;
+  }
+
   // https://github.com/coreutils/coreutils/blob/master/src/ioblksize.h
   /* As of May 2014, 128KiB is determined to be the minimium
    * blksize to best minimize system call overhead.
    */
   static const int kBufferSize = 1024 * 1024;
 
+ protected:
   File(const std::string& filename, const char* mode, int bufsize=kBufferSize)
-    : file_(CHECK_NOTNULL(::fopen(filename.c_str(), mode))),
+    : filename_(filename),
+      file_(CHECK_NOTNULL(::fopen(filename.c_str(), mode))),
       buffer_(CHECK_NOTNULL(new char[bufsize]))
   {
     ::setbuffer(file_, buffer_.get(), bufsize);
@@ -42,6 +48,7 @@ class File
   }
 
  protected:
+  std::string filename_;
   FILE* file_ = nullptr;
 
  private:
