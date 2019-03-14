@@ -1,6 +1,7 @@
 cc_binary(
     name = "word_freq_shards_basic",
     srcs = ["word_freq_shards_basic.cc"],
+    # linkopts = ["-ltcmalloc_and_profiler"],
     deps = [
         ":common",
         "@absl//absl/container:flat_hash_map",
