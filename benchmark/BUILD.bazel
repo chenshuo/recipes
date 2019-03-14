@@ -1,12 +1,11 @@
-
 cc_binary(
     name = "bm_containers",
     srcs = ["bm_containers.cc"],
     copts = ["-std=c++17"],
     deps = [
-        "@benchmark",
         "@absl//absl/container:flat_hash_map",
         "@absl//absl/container:node_hash_map",
+        "@benchmark",
     ],
 )
 
@@ -23,5 +22,20 @@ cc_binary(
     srcs = ["bm_memory.cc"],
     deps = [
         "@benchmark//:benchmark_main",
+    ],
+)
+
+cc_library(
+    name = "format",
+    srcs = ["format.cc"],
+    hdrs = ["format.h"],
+)
+
+cc_test(
+    name = "format_test",
+    srcs = ["format_test.cc"],
+    deps = [
+        ":format",
+        "@gtest//:gtest_main",
     ],
 )
