@@ -8,7 +8,7 @@ int main(int argc, char* argv[])
   setlocale(LC_NUMERIC, "");
 
   bool sequential = false;
-  int buffer_size = File::kBufferSize;
+  int buffer_size = kBufferSize;
   int opt;
   while ((opt = getopt(argc, argv, "b:s")) != -1)
   {
@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
       }
       if (!toRemove.empty())
       {
-        for (const auto* f : toRemove)
+        for (auto* f : toRemove)
         {
           total += f->tell();
           LOG_DEBUG << "Done " << f->filename();

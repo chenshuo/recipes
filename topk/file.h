@@ -1,10 +1,13 @@
 #pragma once
 
 #include <stdio.h>
+#include <fstream>
 #include <memory>
 #include <string>
 #include "absl/strings/string_view.h"
 #include "muduo/base/Logging.h"  // CHECK_NOTNULL
+
+const int kBufferSize = 1024 * 1024;
 
 // Wrappers FILE* from stdio.
 class File
@@ -32,7 +35,6 @@ class File
   /* As of May 2014, 128KiB is determined to be the minimium
    * blksize to best minimize system call overhead.
    */
-  static const int kBufferSize = 1024 * 1024;
 
  protected:
   File(const std::string& filename, const char* mode, int bufsize=kBufferSize)
@@ -69,7 +71,7 @@ class InputFile : public File
 
   bool getline(std::string* output)
   {
-    char buf[1024] = "";
+    char buf[1024];  // ="" will slow down by 50%!!!
     if (::fgets(buf, sizeof buf, file_))
     {
       *output = buf;
@@ -81,6 +83,31 @@ class InputFile : public File
     }
     return false;
   }
+};
+
+class InputFile2
+{
+ public:
+  explicit InputFile2(const char* filename, int bufsize=kBufferSize)
+    : filename_(filename),
+      in_(filename)
+  {
+    // FIXME: bufsize
+  }
+
+  bool getline(std::string* output)
+  {
+    return static_cast<bool>(std::getline(in_, *output));
+  }
+
+  const std::string& filename() const
+  {
+    return filename_;
+  }
+
+ private:
+  std::string filename_;
+  std::ifstream in_;
 };
 
 class OutputFile : public File

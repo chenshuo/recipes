@@ -39,6 +39,10 @@ static void BM_read(benchmark::State& state)
 }
 BENCHMARK(BM_read)->RangeMultiplier(2)->Range(1024, 1024 * 1024)->UseRealTime()->Unit(benchmark::kMillisecond);
 
+static bool getline(FILE*)
+{
+}
+
 static void BM_fgets(benchmark::State& state)
 {
   int64_t len = 0;
