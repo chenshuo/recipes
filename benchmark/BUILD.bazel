@@ -34,8 +34,19 @@ cc_library(
 cc_test(
     name = "format_test",
     srcs = ["format_test.cc"],
+    copts = ["-std=c++14"],
     deps = [
         ":format",
         "@gtest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "format_bench",
+    srcs = ["format_bench.cc"],
+    linkstatic = 1,
+    deps = [
+        ":format",
+        "@benchmark//:benchmark_main",
     ],
 )

@@ -37,18 +37,34 @@ static void BM_read(benchmark::State& state)
   state.SetBytesProcessed(len);
   ::free(buffer);
 }
-BENCHMARK(BM_read)->RangeMultiplier(2)->Range(1024, 1024 * 1024)->UseRealTime()->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_read)->RangeMultiplier(2)->Range(512, 8 * 1024 * 1024)->UseRealTime()->Unit(benchmark::kMillisecond);
 
-static bool getline(FILE*)
+
+struct GetLine
 {
-}
+  bool operator()(FILE* fp) const
+  {
+    char line[1024];
+    return ::fgets(line, sizeof line, fp);
+  }
+};
 
+struct GetLineAssign
+{
+  bool operator()(FILE* fp) const
+  {
+    char line[1024] = "";  // same as bzero(line, 1024)
+    return ::fgets(line, sizeof line, fp);
+  }
+};
+
+template<typename FUNC>
 static void BM_fgets(benchmark::State& state)
 {
   int64_t len = 0;
   int64_t lines = 0;
-  char line[1024];
   char buffer[128 * 1024];
+  FUNC func;
   for (auto _ : state)
   {
     FILE* fp = ::fopen(g_filename, "r");
@@ -58,7 +74,7 @@ static void BM_fgets(benchmark::State& state)
       break;
     }
     ::setbuffer(fp, buffer, sizeof buffer);
-    while (::fgets(line, sizeof line, fp))
+    while (func(fp))
     {
       lines++;
     }
@@ -68,7 +84,8 @@ static void BM_fgets(benchmark::State& state)
   state.SetBytesProcessed(len);
   state.SetItemsProcessed(lines);
 }
-BENCHMARK(BM_fgets)->UseRealTime()->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_fgets, GetLine)->UseRealTime()->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_fgets, GetLineAssign)->UseRealTime()->Unit(benchmark::kMillisecond);
 
 static void BM_getline(benchmark::State& state)
 {
@@ -85,7 +102,7 @@ static void BM_getline(benchmark::State& state)
     std::string line;
     while (getline(in, line))
     {
-      len += line.size();
+      len += line.size()+1;
       lines++;
     }
   }

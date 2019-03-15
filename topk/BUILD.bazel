@@ -8,6 +8,16 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "word_freq_sort_basic",
+    srcs = ["word_freq_sort_basic.cc"],
+    # linkopts = ["-lprofiler"],
+    deps = [
+        ":common",
+        "@muduo//muduo/base",
+    ],
+)
+
 cc_library(
     name = "common",
     hdrs = [
