@@ -85,6 +85,7 @@ class InputFile : public File
   }
 };
 
+/*
 class InputFile2
 {
  public:
@@ -109,6 +110,7 @@ class InputFile2
   std::string filename_;
   std::ifstream in_;
 };
+*/
 
 class OutputFile : public File
 {
@@ -121,6 +123,13 @@ class OutputFile : public File
   void write(absl::string_view s)
   {
     ::fwrite(s.data(), 1, s.size(), file_);
+  }
+
+  void writeWord(int64_t count, absl::string_view word)
+  {
+    ::fprintf(file_, "%ld\t", count);
+    ::fwrite(word.data(), 1, word.size(), file_);
+    ::fwrite("\n", 1, 1, file_);
   }
 
   void appendRecord(absl::string_view s)

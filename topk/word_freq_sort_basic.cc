@@ -7,6 +7,9 @@
    3. read all count files, do merging and output
 */
 
+#include "file.h"
+#include "input.h"
+#include "merge.h"
 #include "timer.h"
 
 #include "muduo/base/Logging.h"
@@ -45,25 +48,29 @@ inline double now()
   return tv.tv_sec + tv.tv_usec / 1000000.0;
 }
 
-int sort_segments(int count, int fd)
+int64_t sort_segments(int* count, int fd)
 {
   Timer timer;
   const int64_t file_size = lseek(fd, 0, SEEK_END);
   lseek(fd, 0, SEEK_SET);
-  printf("  file size %ld\n", file_size);
+  if (g_verbose)
+    printf("  file size %ld\n", file_size);
   int64_t offset = 0;
   while (offset < file_size)
   {
     double t = now();
     const int64_t len = std::min(file_size - offset, 1024 * 1000 * 1000L);
-    printf("    segment %d reading range: offset %ld len %ld", count, offset, len);
-    char* const buf = (char*)malloc(len);
-    const ssize_t nr = ::pread(fd, buf, len, offset);
+    if (g_verbose)
+      printf("    reading segment %d: offset %ld len %ld", *count, offset, len);
+    std::unique_ptr<char[]> buf(new char[len]);
+    const ssize_t nr = ::pread(fd, buf.get(), len, offset);
     double sec = now() - t;
+    if (g_verbose)
     printf(" %.3f sec %.3f MB/s\n", sec, nr / sec / 1000 / 1000);
 
+    // TODO: move to another thread
     t = now();
-    const char* const start = buf;
+    const char* const start = buf.get();
     const char* const end = start + nr;
     vector<string_view> items;
     const char* p = start;
@@ -82,18 +89,21 @@ int sort_segments(int count, int fd)
       }
     }
     offset += p - start;
+    if (g_verbose)
     printf("    parse %.3f sec %ld items %ld bytes\n", now() - t, items.size(), p - start);
 
     t = now();
     std::sort(items.begin(), items.end());
+    if (g_verbose)
     printf("    sort %.3f sec\n", now() - t);
 
     t = now();
     char name[256];
-    snprintf(name, sizeof name, "%s/segment-%05d", segment_dir, count);
-    ++count;
+    snprintf(name, sizeof name, "%s/segment-%05d", segment_dir, *count);
+    ++*count;
     int unique = 0;
     {
+    // TODO: replace with OutputFile
     std::ofstream out(name);
     string_view curr;
     int cnt = 0;
@@ -118,34 +128,35 @@ int sort_segments(int count, int fd)
       ++unique;
     }
     }
+    if (g_verbose)
     printf("    unique %.3f sec %d\n", now() - t, unique);
-
-    free(buf);
+    LOG_INFO << "  wrote " << name;
   }
-  LOG_INFO << "done file " << timer.report(file_size);
-  return count;
+  LOG_INFO << "  file done " << timer.report(file_size);
+  return file_size;
 }
 
-int input(int argc, char* argv[])
+int input(int argc, char* argv[], int64_t* total_in = nullptr)
 {
   int count = 0;
-  double t = now();
+  int64_t total = 0;
+  Timer timer;
   for (int i = optind; i < argc; ++i)
   {
-    std::cout << "processing input file " << argv[i] << std::endl;
+    LOG_INFO << "Reading input file " << argv[i];
 
     int fd = open(argv[i], O_RDONLY);
     if (fd >= 0)
     {
-      double t = now();
-      count = sort_segments(count, fd);
-      printf("  sort segments %.3f sec\n", now() - t);
+      total += sort_segments(&count, fd);
       ::close(fd);
     }
     else
       perror("open");
   }
-  std::cout << "reading done " << count << " segments " << now() - t << " sec" << std::endl;
+  LOG_INFO << "Reading done " << count << " segments " << timer.report(total);
+  if (total_in)
+    *total_in = total;
   return count;
 }
 
@@ -154,28 +165,22 @@ int input(int argc, char* argv[])
 class Segment  // copyable
 {
  public:
-  string word;
-  int64_t count = 0;
+  string_view word;
 
-  explicit Segment(std::istream* in)
+  explicit Segment(SegmentInput* in)
     : in_(in)
   {
   }
 
   bool next()
   {
-    string line;
-    if (getline(*in_, line))
+    if (in_->next())
     {
-      size_t tab = line.find('\t');
-      if (tab != string::npos)
-      {
-        word = line.substr(0, tab);
-        count = strtol(line.c_str() + tab, NULL, 10);
-        return true;
-      }
+      word = in_->current_word();
+      return true;
     }
-    return false;
+    else
+      return false;
   }
 
   bool operator<(const Segment& rhs) const
@@ -183,37 +188,111 @@ class Segment  // copyable
     return word > rhs.word;
   }
 
+  int64_t count() const { return in_->current_count(); }
+
  private:
-  std::istream* in_;
+  SegmentInput* in_;
 };
 
-void output(int i, std::vector<pair<string, int64_t>>* counts)
+class CountOutput
 {
-  double t = now();
+ public:
+  CountOutput();
 
-  std::sort(counts->begin(), counts->end(), [](const auto& lhs, const auto& rhs) {
-    return lhs.second > rhs.second;
-  });
-  std::cout << "  sorting " << now() - t << " sec" << std::endl;
-
-  t = now();
-  char buf[256];
-  snprintf(buf, sizeof buf, "count-%05d", i);
-  std::ofstream out(buf);
-  for (const auto& it : *counts)
+  void add(string_view word, int64_t count)
   {
-    out << it.second << '\t' << it.first << '\n';
+    if (block_->add(word, count))
+    {
+    }
+    else
+    {
+      // TODO: Move to another thread.
+      block_->output(merge_count_);
+      ++merge_count_;
+      block_.reset(new Block);
+      if (!block_->add(word, count))
+      {
+        abort();
+      }
+    }
   }
-  std::cout << "  writing " << buf << " " << now() - t << " sec" << std::endl;
+
+  int finish()
+  {
+    block_->output(merge_count_);
+    ++merge_count_;
+    return merge_count_;
+  }
+
+ private:
+  struct Count
+  {
+    int64_t count = 0;
+    int32_t offset = 0, len = 0;
+  };
+
+  struct Block
+  {
+    std::unique_ptr<char[]> data { new char[kSize] };
+    vector<Count> counts;
+    int start = 0;
+    static const int kSize = 512 * 1000 * 1000;
+
+
+    bool add(string_view word, int64_t count)
+    {
+      if (static_cast<size_t>(kSize - start) >= word.size())
+      {
+        memcpy(data.get() + start, word.data(), word.size());
+        Count c;
+        c.count = count;
+        c.offset = start;
+        c.len = word.size();
+        counts.push_back(c);
+        start += word.size();
+        return true;
+      }
+      else
+        return false;
+    }
+
+    void output(int n)
+    {
+      Timer t;
+      char buf[256];
+      snprintf(buf, sizeof buf, "count-%05d", n);
+      LOG_INFO << "  writing " << buf << " of " << counts.size() << " words";
+      std::sort(counts.begin(), counts.end(), [](const auto& lhs, const auto& rhs) {
+        return lhs.count > rhs.count;
+      });
+      int64_t file_size = 0;
+      {
+      OutputFile out(buf);
+
+      for (const auto& c : counts)
+      {
+        out.writeWord(c.count, string_view(data.get() + c.offset, c.len));
+      }
+      file_size = out.tell();
+      }
+      LOG_DEBUG << "  done " << t.report(file_size);
+    }
+  };
+
+  std::unique_ptr<Block> block_;
+  int merge_count_ = 0;
+};
+
+CountOutput::CountOutput()
+  : block_(new Block)
+{
 }
 
 int combine(int count)
 {
   Timer timer;
-  std::vector<std::unique_ptr<std::ifstream>> inputs;
+  std::vector<std::unique_ptr<SegmentInput>> inputs;
   std::vector<Segment> keys;
-
-  double t = now();
 
   int64_t total = 0;
   for (int i = 0; i < count; ++i)
@@ -224,7 +303,7 @@ int combine(int count)
     if (::stat(buf, &st) == 0)
     {
       total += st.st_size;
-      inputs.emplace_back(new std::ifstream(buf));
+      inputs.emplace_back(new SegmentInput(buf));
       Segment rec(inputs.back().get());
       if (rec.next())
       {
@@ -241,37 +320,33 @@ int combine(int count)
   LOG_INFO << "Combining " << count << " files " << total << " bytes";
 
   // std::cout << keys.size() << '\n';
-  int m = 0;
   string last = "Chen Shuo";
-  // std::unordered_map<string, int64_t> counts;
-  vector<pair<string, int64_t>> counts;
-  std::make_heap(keys.begin(), keys.end());
+  int64_t last_count = 0, total_count = 0;
   int64_t lines_in = 0, lines_out = 0;
+  CountOutput out;
+  std::make_heap(keys.begin(), keys.end());
 
-  double tt = now();
   while (!keys.empty())
   {
     std::pop_heap(keys.begin(), keys.end());
     lines_in++;
+    total_count += keys.back().count();
 
     if (keys.back().word != last)
     {
+      if (last_count > 0)
+      {
+        assert(last > keys.back().word);
+        lines_out++;
+        out.add(last, last_count);
+      }
+
       last = keys.back().word;
-      if (counts.size() > kMaxSize)
-      {
-        LOG_INFO << "    split " << now() - tt << " sec";
-        output(m++, &counts);
-        tt = now();
-        counts.clear();
-        // LOG_INFO << "cleared " << lines_in << " " << lines_out;
-      }
-      lines_out++;
-      counts.push_back(make_pair(keys.back().word, keys.back().count));
+      last_count = keys.back().count();
     }
     else
     {
-      assert(counts.back().first == last);
-      counts.back().second += keys.back().count;
+      last_count += keys.back().count();
     }
 
     if (keys.back().next())
@@ -284,98 +359,16 @@ int combine(int count)
     }
   }
 
-  if (!counts.empty())
+  if (last_count > 0)
   {
-    std::cout << "    split " << now() - tt << " sec" << std::endl;
-    output(m++, &counts);
+    lines_out++;
+    out.add(last, last_count);
   }
-  std::cout << "combining done " << m << " count files " << now() - t << " sec" << std::endl;
-  LOG_INFO << timer.report(total);
+  int m = out.finish();
+
+  LOG_INFO << "total count " << total_count << ", lines in " << lines_in << " out " << lines_out;
+  LOG_INFO << "Combine done " << timer.report(total);
   return m;
-}
-
-// ======= merge  =======
-
-class Source  // copyable
-{
- public:
-  explicit Source(std::istream* in)
-    : in_(in)
-  {
-  }
-
-  bool next()
-  {
-    string line;
-    if (getline(*in_, line))
-    {
-      size_t tab = line.find('\t');
-      if (tab != string::npos)
-      {
-        count_ = strtol(line.c_str(), NULL, 10);
-        if (count_ > 0)
-        {
-          word_ = line.substr(tab+1);
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  bool operator<(const Source& rhs) const
-  {
-    return count_ < rhs.count_;
-  }
-
-  void outputTo(std::ostream& out) const
-  {
-    out << count_ << '\t' << word_ << '\n';
-  }
-
- private:
-  std::istream* in_;
-  int64_t count_ = 0;
-  string word_;
-};
-
-void merge(int m)
-{
-  std::vector<std::unique_ptr<std::ifstream>> inputs;
-  std::vector<Source> keys;
-
-  double t = now();
-  for (int i = 0; i < m; ++i)
-  {
-    char buf[256];
-    snprintf(buf, sizeof buf, "count-%05d", i);
-    inputs.emplace_back(new std::ifstream(buf));
-    Source rec(inputs.back().get());
-    if (rec.next())
-    {
-      keys.push_back(rec);
-    }
-    if (!g_keep)
-      ::unlink(buf);
-  }
-
-  std::ofstream out(g_output);
-  std::make_heap(keys.begin(), keys.end());
-  while (!keys.empty())
-  {
-    std::pop_heap(keys.begin(), keys.end());
-    keys.back().outputTo(out);
-
-    if (keys.back().next())
-    {
-      std::push_heap(keys.begin(), keys.end());
-    }
-    else
-    {
-      keys.pop_back();
-    }
-  }
-  std::cout << "merging done " << now() - t << " sec\n";
 }
 
 int main(int argc, char* argv[])
@@ -419,10 +412,12 @@ int main(int argc, char* argv[])
     if (sort_only)
     {
       int count = input(argc, argv);
+      LOG_INFO << "wrote " << count << " segments";
     }
     if (count_only)
     {
       int m = combine(count_only);
+      LOG_INFO << "wrote " << m << " counts";
     }
     if (merge_only)
     {
@@ -431,8 +426,11 @@ int main(int argc, char* argv[])
   }
   else
   {
-    int count = input(argc, argv);
+    int64_t total = 0;
+    Timer timer;
+    int count = input(argc, argv, &total);
     int m = combine(count);
     merge(m);
+    LOG_INFO << "All done " << timer.report(total);
   }
 }

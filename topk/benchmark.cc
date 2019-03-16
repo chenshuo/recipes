@@ -1,4 +1,5 @@
 #include "file.h"
+#include "input.h"
 #include "timer.h"
 
 #include "absl/container/flat_hash_set.h"
@@ -7,15 +8,19 @@ int main(int argc, char* argv[])
 {
   setlocale(LC_NUMERIC, "");
 
+  bool combine = false;
   bool sequential = false;
   int buffer_size = kBufferSize;
   int opt;
-  while ((opt = getopt(argc, argv, "b:s")) != -1)
+  while ((opt = getopt(argc, argv, "b:cs")) != -1)
   {
     switch (opt)
     {
       case 'b':
         buffer_size = atoi(optarg);
+        break;
+      case 'c':
+        combine = true;
         break;
       case 's':
         sequential = true;
@@ -23,14 +28,47 @@ int main(int argc, char* argv[])
     }
   }
 
-  std::vector<std::unique_ptr<InputFile>> files;
-  files.reserve(argc - optind);
-  LOG_INFO << "Reading " << argc - optind << " files "
+  LOG_INFO << "Reading " << argc - optind << (combine ? " segment " : "") << " files "
       << (sequential ? "sequentially" : "randomly")
       << ", buffer size " << buffer_size;
   Timer timer;
   int64_t total = 0;
   int64_t lines = 0;
+  int64_t count = 0;
+
+  if (combine)
+  {
+  std::vector<std::unique_ptr<SegmentInput>> inputs;
+  inputs.reserve(argc - optind);
+  for (int i = optind; i < argc; ++i)
+  {
+    inputs.emplace_back(new SegmentInput(argv[i], buffer_size));
+  }
+
+  if (sequential)
+  {
+    for (const auto& input : inputs)
+    {
+      Timer t;
+      //std::string line;
+      while (input->next())
+      {
+        count += input->current_count();
+        ++lines;
+      }
+      int64_t len = input->tell();
+      LOG_INFO << "Done " << input->filename() << " " << t.report(len);
+      total += len;
+    }
+  }
+  else
+  {
+  }
+  }
+  else
+  {
+  std::vector<std::unique_ptr<InputFile>> files;
+  files.reserve(argc - optind);
   for (int i = optind; i < argc; ++i)
   {
     files.emplace_back(new InputFile(argv[i], buffer_size));
@@ -85,7 +123,9 @@ int main(int argc, char* argv[])
       }
     }
   }
+  }
 
   LOG_INFO << "All done " << timer.report(total) << " "
-      << muduo::Fmt("%'ld", lines) << " lines";
+      << muduo::Fmt("%'ld", lines) << " lines "
+      << muduo::Fmt("%'ld", count) << " count";
 }

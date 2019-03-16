@@ -22,6 +22,8 @@ cc_library(
     name = "common",
     hdrs = [
         "file.h",
+        "input.h",
+        "merge.h",
         "timer.h",
     ],
     deps = [
@@ -33,6 +35,7 @@ cc_library(
 cc_test(
     name = "benchmark",
     srcs = ["benchmark.cc"],
+    # linkopts = ["-ltcmalloc_and_profiler"],
     deps = [
         ":common",
         "@absl//absl/container:flat_hash_set",
