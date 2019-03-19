@@ -1,4 +1,14 @@
 cc_binary(
+    name = "bm_compress",
+    srcs = ["bm_compress.cc"],
+    deps = [
+        "@benchmark//:benchmark_main",
+        "@zlib",
+        "@zstd",
+    ],
+)
+
+cc_binary(
     name = "bm_containers",
     srcs = ["bm_containers.cc"],
     copts = ["-std=c++17"],
