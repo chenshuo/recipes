@@ -23,6 +23,21 @@ http_archive(
     urls = ["https://github.com/google/benchmark/archive/master.zip"],
 )
 
+# Google Brotli
+http_archive(
+    name = "brotli",
+    strip_prefix = "brotli-master",
+    urls = ["https://github.com/google/brotli/archive/master.zip"],
+)
+
+# LZ4
+http_archive(
+    name = "lz4",
+    build_file = "lz4.BUILD",
+    strip_prefix = "lz4-master",
+    urls = ["https://github.com/lz4/lz4/archive/master.zip"],
+)
+
 # Zlib
 http_archive(
     name = "zlib",

@@ -1,10 +1,14 @@
 cc_binary(
     name = "bm_compress",
     srcs = ["bm_compress.cc"],
+    copts = ["-std=c++17"],
+    linkopts = ["-lsnappy"],
     deps = [
         "@benchmark//:benchmark_main",
+        "@lz4",
         "@zlib",
         "@zstd",
+        "@brotli//:brotlienc",
     ],
 )
 
