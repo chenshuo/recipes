@@ -54,7 +54,7 @@ static void compress(const std::string& input, benchmark::State& state)
   // printf("%zd %zd %.5f\n", input.size(), output_len, double(output_len) / input.size());
   std::unique_ptr<char[]> output(new char[output_len]);
 
-  size_t compressed_len = output_len;
+  size_t compressed_len = 0;
   for (auto _ : state)
   {
     if (c == Brotli)
@@ -67,10 +67,29 @@ static void compress(const std::string& input, benchmark::State& state)
     else if (c == Huff0)
     {
       std::string_view in(input);
+      compressed_len = 0;
       while (!in.empty())
       {
         size_t src = std::min<size_t>(in.size(), HUF_BLOCKSIZE_MAX);
-        compressed_len += HUF_compress(output.get(), output_len, in.data(), src);
+        output_len = HUF_compressBound(src);
+        //printf("%zd %zd\n", src, output_len);
+        size_t compressed = HUF_compress(output.get(), output_len, in.data(), src);
+        if (compressed == 0)
+        {
+          // not compressible
+          compressed_len += output_len;
+        }
+        else if (HUF_isError(compressed))
+        {
+          printf("%s\n", HUF_getErrorName(compressed));
+          state.SetLabel(HUF_getErrorName(compressed));
+          return;
+          break;
+        }
+        else
+        {
+          compressed_len += compressed;
+        }
         in.remove_prefix(src);
       }
     }
@@ -80,7 +99,7 @@ static void compress(const std::string& input, benchmark::State& state)
     }
     else if (c == LZ4)
     {
-      compressed_len = LZ4_compress_default(input.c_str(), output.get(), input.size(), compressed_len);
+      compressed_len = LZ4_compress_default(input.c_str(), output.get(), input.size(), output_len);
     }
     else if (c == Zlib)
     {
@@ -158,17 +177,71 @@ std::string getIncompressible()
   return result;
 }
 
+std::string getIncompressibleZstd()
+{
+  printf("Generating incompressible data for Zstd...");
+  fflush(stdout);
+  std::set<unsigned char> avails[256*256];
+  std::set<unsigned char> all;
+  for (int i = 0; i < 256; ++i)
+    all.insert(i);
+  for (auto& x : avails)
+    x = all;
+  std::string data;
+  data.reserve(256*256*256);
+  data.push_back('\0');
+  data.push_back('\1');
+  bool popped = false;
+
+  while (true)
+  {
+    assert(data.size() >= 2);
+    unsigned char prev = data[data.size()-2];
+    unsigned char curr = data.back();
+
+    unsigned key = prev * 256 + curr;
+    assert(key < 256*256);
+    auto& avail = avails[key];
+    
+    if (avail.empty())
+    {
+      if (popped)
+        break;
+      popped = true;
+      data.pop_back();
+      continue;
+    }
+    unsigned char next = data.back() + 1;
+    auto it = avail.lower_bound(next);
+    if (it != avail.end())
+    {
+      // next avail
+      next = *it;
+    }
+    else
+    {
+      // wrap to front
+      next = *avail.begin();
+    }
+    size_t c = avail.erase(next);
+    assert(c == 1);
+    data.push_back(next);
+  }
+  printf(" done %zd\n", data.size());
+  return data;
+}
+
+std::string incompressible;
+
 template<Compress c>
 static void BM_lowest(benchmark::State& state)
 {
-  std::string input = getIncompressible();
+  if (incompressible.empty())
+    incompressible = getIncompressibleZstd();
+  std::string input = incompressible;
   // printf("incompressible %zd\n", input.size());
-  if (c == Zlib)
-  {
-    while (input.size() < 50*1024*1024)
-      input += input;
-  }
-  // TODO: how to generate longer incompressible for Zstd?
+  while (input.size() < 100*1024*1024)
+    input += input;
 
   compress<c>(input, state);
 }
@@ -196,7 +269,7 @@ static void BM_file(benchmark::State& state)
 
   compress<c>(input, state);
 }
-// BENCHMARK_TEMPLATE(BM_file, Huff0)->Arg(0)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_file, Huff0)->Arg(0)->Unit(benchmark::kMillisecond);
 BENCHMARK_TEMPLATE(BM_file, Snappy)->Arg(0)->Unit(benchmark::kMillisecond);
 BENCHMARK_TEMPLATE(BM_file, LZ4)->Arg(0)->Unit(benchmark::kMillisecond);
 BENCHMARK_TEMPLATE(BM_file, Zlib)->DenseRange(1, 7)->Unit(benchmark::kMillisecond);

@@ -87,7 +87,7 @@ std::string formatSI(size_t s)
  [0, 1023]
  [1.00Ki, 9.99Ki]
  [10.0Ki, 99.9Ki]
- [ 100Ki,  999Ki]  // but 1000Ki < 1.0Mi
+ [ 100Ki, 1023Ki]
  [1.00Mi, 9.99Mi]
 */
 std::string formatIEC(size_t s)
