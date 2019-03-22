@@ -16,6 +16,7 @@ enum Compress
   Brotli,
   Huff0,  // only for input size <= 128KiB
   LZ4,
+  None,   // memcpy
   Snappy,
   Zlib,
   Zstd,   // Zstd is much faster on Haswell with BMI2 instructions.
@@ -34,6 +35,10 @@ static void compress(const std::string& input, benchmark::State& state)
   else if (c == Huff0)
   {
     output_len = HUF_compressBound(std::min<size_t>(input.size(), HUF_BLOCKSIZE_MAX));
+  }
+  else if (c == None)
+  {
+    output_len = input.size();
   }
   else if (c == Snappy)
   {
@@ -93,13 +98,18 @@ static void compress(const std::string& input, benchmark::State& state)
         in.remove_prefix(src);
       }
     }
-    else if (c == Snappy)
-    {
-      snappy::RawCompress(input.c_str(), input.size(), output.get(), &compressed_len);
-    }
     else if (c == LZ4)
     {
       compressed_len = LZ4_compress_default(input.c_str(), output.get(), input.size(), output_len);
+    }
+    else if (c == None)
+    {
+      memcpy(output.get(), input.c_str(), input.size());
+      compressed_len = output_len;
+    }
+    else if (c == Snappy)
+    {
+      snappy::RawCompress(input.c_str(), input.size(), output.get(), &compressed_len);
     }
     else if (c == Zlib)
     {
@@ -143,8 +153,12 @@ static void BM_highest(benchmark::State& state)
 
   compress<c>(input, state);
 }
+BENCHMARK_TEMPLATE(BM_highest, None)->Arg(0)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_highest, Snappy)->Arg(0)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_highest, LZ4)->Arg(0)->Unit(benchmark::kMillisecond);
 BENCHMARK_TEMPLATE(BM_highest, Zlib)->Arg(1)->Unit(benchmark::kMillisecond);
-BENCHMARK_TEMPLATE(BM_highest, Zstd)->Arg(ZSTD_CLEVEL_DEFAULT)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_highest, Brotli)->DenseRange(0, 7)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_highest, Zstd)->DenseRange(1, 9)->Unit(benchmark::kMillisecond);
 
 
 // zlib's max window size is 32768, and minimal match length is 3,
@@ -245,8 +259,11 @@ static void BM_lowest(benchmark::State& state)
 
   compress<c>(input, state);
 }
+BENCHMARK_TEMPLATE(BM_lowest, Snappy)->Arg(0)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_lowest, LZ4)->Arg(0)->Unit(benchmark::kMillisecond);
 BENCHMARK_TEMPLATE(BM_lowest, Zlib)->Arg(1)->Unit(benchmark::kMillisecond);
-BENCHMARK_TEMPLATE(BM_lowest, Zstd)->Arg(ZSTD_CLEVEL_DEFAULT)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_lowest, Brotli)->DenseRange(0, 7)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_lowest, Zstd)->DenseRange(1, 9)->Unit(benchmark::kMillisecond);
 
 const char* g_file = "input";
 
