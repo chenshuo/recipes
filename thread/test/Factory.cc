@@ -47,6 +47,7 @@ class StockFactory : boost::noncopyable
     if (!pStock)
     {
       pStock.reset(new Stock(key));
+      stocks_[key] =  pStock;
     }
     return pStock;
   }
@@ -75,6 +76,7 @@ class StockFactory : boost::noncopyable
     {
       pStock.reset(new Stock(key));
       wkStock = pStock;
+      stocks_[key] =  wkStock;
     }
     return pStock;
   }
@@ -104,6 +106,7 @@ class StockFactory : boost::noncopyable
       pStock.reset(new Stock(key),
                    boost::bind(&StockFactory::deleteStock, this, _1));
       wkStock = pStock;
+      stocks_[key] =  wkStock;
     }
     return pStock;
   }
@@ -147,6 +150,7 @@ class StockFactory : public boost::enable_shared_from_this<StockFactory>,
                                shared_from_this(),
                                _1));
       wkStock = pStock;
+      stocks_[key] =  wkStock;
     }
     return pStock;
   }
@@ -186,6 +190,7 @@ class StockFactory : public boost::enable_shared_from_this<StockFactory>,
                                boost::weak_ptr<StockFactory>(shared_from_this()),
                                _1));
       wkStock = pStock;
+      stocks_[key] =  wkStock;
     }
     return pStock;
   }
