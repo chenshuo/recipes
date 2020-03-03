@@ -20,7 +20,8 @@ $(LIB): $(LIB_OBJS)
 
 $(BINS): $(LIB)
 
-bin/ttcp: LDFLAGS += -lboost_program_options
+bin/ttcp:
+	g++ $(CXXFLAGS) $(LDFLAGS) $(LDFLAGS) $(LIB_OBJS) $(LIB) bin/ttcp.cc -lboost_program_options -o bin/ttcp
 
 clean:
 	rm -f $(LIB_OBJS) $(LIB) $(BINS)
