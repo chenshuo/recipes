@@ -213,8 +213,7 @@ class StockFactory : public boost::enable_shared_from_this<StockFactory>,
     {
       muduo::MutexLockGuard lock(mutex_);
       auto it = stocks_.find(stock->key());
-      assert(it != stocks_.end());
-      if (it->second.expired())
+      if (it != stocks_.end() && it->second.expired())
       {
         stocks_.erase(stock->key());
       }
