@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
 {
   if (argc < 3)
   {
-    printf("Usage:\n  %s hostname port\n  %s -l port\n", argv[0], argv[0]);
+    printf("Usage:\n  %s hostname port\n  %s -l port [-6]\n", argv[0], argv[0]);
     return 0;
   }
 
@@ -55,13 +55,16 @@ int main(int argc, char* argv[])
   int port = atoi(argv[2]);
   if (strcmp(argv[1], "-l") == 0)
   {
-    Acceptor acceptor((InetAddress(port)));
+    const bool ipv6 = (argc > 3 && strcmp(argv[3], "-6") == 0);
+    Acceptor acceptor((InetAddress(port, ipv6)));
     printf("Accepting... Ctrl-C to exit\n");
     int count = 0;
     while (true)
     {
       TcpStreamPtr tcpStream = acceptor.accept();
-      printf("accepted no. %d client\n", ++count);
+      printf("accepted no. %d client: %s <- %s\n", ++count,
+             tcpStream->getLocalAddr().toIpPort().c_str(),
+             tcpStream->getPeerAddr().toIpPort().c_str());
 
       std::thread thr(discard, std::move(tcpStream));
       thr.detach();
@@ -69,9 +72,9 @@ int main(int argc, char* argv[])
   }
   else
   {
-    InetAddress addr(port);
+    InetAddress addr;
     const char* hostname = argv[1];
-    if (InetAddress::resolve(hostname, &addr))
+    if (InetAddress::resolve(hostname, port, &addr))
     {
       TcpStreamPtr stream(TcpStream::connect(addr));
       if (stream)

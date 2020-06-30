@@ -93,7 +93,7 @@ TcpStreamPtr TcpStream::connect(const InetAddress& serverAddr, const InetAddress
 TcpStreamPtr TcpStream::connectInternal(const InetAddress& serverAddr, const InetAddress* localAddr)
 {
   TcpStreamPtr stream;
-  Socket sock(Socket::createTCP());
+  Socket sock(Socket::createTCP(serverAddr.family()));
   if (localAddr)
   {
     sock.bindOrDie(*localAddr);

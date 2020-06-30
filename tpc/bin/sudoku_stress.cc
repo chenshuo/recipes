@@ -94,8 +94,9 @@ int main(int argc, char* argv[])
     return 0;
   }
 
-  InetAddress addr(9981);
-  if (!InetAddress::resolve(argv[1], &addr))
+  const uint16_t port = 9981;
+  InetAddress addr;
+  if (!InetAddress::resolve(argv[1], port, &addr))
   {
     printf("Unable to resolve %s\n", argv[1]);
     return 0;

@@ -2,6 +2,9 @@
 #include "Socket.h"
 #include <string.h>
 
+// RFC6093: On the Implementation of the TCP Urgent Mechanism, 2011/01.
+// Which recommends against the use of urgent mechanism.
+
 int main(int argc, char* argv[])
 {
   if (argc < 3)
@@ -11,11 +14,11 @@ int main(int argc, char* argv[])
   }
 
   int port = atoi(argv[2]);
-  InetAddress addr(port);
+  InetAddress addr;
   const char* hostname = argv[1];
-  if (InetAddress::resolve(hostname, &addr))
+  if (InetAddress::resolve(hostname, port, &addr))
   {
-    Socket sock(Socket::createTCP());
+    Socket sock(Socket::createTCP(addr.family()));
     if (sock.connect(addr) == 0)
     {
       const char* buf = "hello";

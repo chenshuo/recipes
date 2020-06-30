@@ -74,7 +74,8 @@ int main(int argc, char* argv[])
   int port = atoi(argv[2]);
   if (strcmp(argv[1], "-l") == 0)
   {
-    Acceptor acceptor((InetAddress(port)));
+    InetAddress listenAddr(port);
+    Acceptor acceptor(listenAddr);
     printf("Accepting... Ctrl-C to exit\n");
     int count = 0;
     while (true)
@@ -88,9 +89,9 @@ int main(int argc, char* argv[])
   }
   else
   {
-    InetAddress addr(port);
+    InetAddress addr;
     const char* hostname = argv[1];
-    if (InetAddress::resolve(hostname, &addr))
+    if (InetAddress::resolve(hostname, port, &addr))
     {
       TcpStreamPtr stream(TcpStream::connect(addr));
       if (stream)

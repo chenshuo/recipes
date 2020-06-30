@@ -91,8 +91,8 @@ bool parseCommandLine(int argc, char* argv[], Options* opt)
 
 void transmit(const Options& opt)
 {
-  InetAddress addr(opt.port);
-  if (!InetAddress::resolve(opt.host.c_str(), &addr))
+  InetAddress addr;
+  if (!InetAddress::resolve(opt.host.c_str(), opt.port, &addr))
   {
     printf("Unable to resolve %s\n", opt.host.c_str());
     return;

@@ -1,5 +1,5 @@
 
-CXXFLAGS = -std=c++11 -pthread -O2 -iquote include/ -I../
+CXXFLAGS = -Wall -std=c++11 -pthread -O2 -g -iquote include/ -I../
 LDFLAGS = -L lib/ -ltpc
 
 LIB_HEADERS := $(wildcard include/*.h) ../datetime/Timestamp.h ../thread/Atomic.h
@@ -20,7 +20,7 @@ $(LIB): $(LIB_OBJS)
 
 $(BINS): $(LIB)
 
-bin/ttcp: LDFLAGS += -lboost_program_options
+bin/ttcp: LDLIBS += -lboost_program_options
 
 clean:
 	rm -f $(LIB_OBJS) $(LIB) $(BINS)

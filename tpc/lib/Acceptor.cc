@@ -1,12 +1,13 @@
 #include "Acceptor.h"
 
+#include "InetAddress.h"
 #include "TcpStream.h"
 
 #include <stdio.h>
 #include <sys/socket.h>
 
 Acceptor::Acceptor(const InetAddress& listenAddr)
-  : listenSock_(Socket::createTCP())
+  : listenSock_(Socket::createTCP(listenAddr.family()))
 {
   listenSock_.setReuseAddr(true);
   listenSock_.bindOrDie(listenAddr);

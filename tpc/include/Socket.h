@@ -2,6 +2,7 @@
 #include "Common.h"
 
 #include <utility>  // swap
+#include <netinet/in.h>
 
 class InetAddress;
 
@@ -48,8 +49,8 @@ class Socket : noncopyable
   int write(const void* buf, int len);
 
   // factory methods
-  static Socket createTCP();
-  static Socket createUDP();
+  static Socket createTCP(sa_family_t family);  // AF_INET or AF_INET6
+  static Socket createUDP(sa_family_t family);  // AF_INET or AF_INET6
 
  private:
   int sockfd_;

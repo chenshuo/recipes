@@ -55,8 +55,9 @@ int main(int argc, char* argv[])
   const char* hostname = argv[optind];
   int len = atoi(argv[optind+1]);
 
-  InetAddress addr(3210);
-  if (!InetAddress::resolve(hostname, &addr))
+  const uint16_t port = 3210;
+  InetAddress addr;
+  if (!InetAddress::resolve(hostname, port, &addr))
   {
     printf("Unable to resolve %s\n", argv[1]);
     return 0;

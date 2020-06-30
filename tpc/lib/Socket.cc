@@ -2,28 +2,10 @@
 #include "InetAddress.h"
 
 #include <assert.h>
-#include <strings.h>  // bzero
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
-
-namespace
-{
-
-typedef struct sockaddr SA;
-
-const SA* sockaddr_cast(const struct sockaddr_in* addr)
-{
-  return static_cast<const SA*>(implicit_cast<const void*>(addr));
-}
-
-SA* sockaddr_cast(struct sockaddr_in* addr)
-{
-  return static_cast<SA*>(implicit_cast<void*>(addr));
-}
-
-}
 
 Socket::Socket(int sockfd)
   : sockfd_(sockfd)
@@ -42,8 +24,7 @@ Socket::~Socket()
 
 void Socket::bindOrDie(const InetAddress& addr)
 {
-  const struct sockaddr_in& saddr = addr.getSockAddrInet();
-  int ret = ::bind(sockfd_, sockaddr_cast(&saddr), sizeof saddr);
+  int ret = ::bind(sockfd_, addr.get_sockaddr(), addr.length());
   if (ret)
   {
     perror("Socket::bindOrDie");
@@ -63,8 +44,7 @@ void Socket::listenOrDie()
 
 int Socket::connect(const InetAddress& addr)
 {
-  const struct sockaddr_in& saddr = addr.getSockAddrInet();
-  return ::connect(sockfd_, sockaddr_cast(&saddr), sizeof saddr);
+  return ::connect(sockfd_, addr.get_sockaddr(), addr.length());
 }
 
 void Socket::shutdownWrite()
@@ -97,10 +77,9 @@ void Socket::setTcpNoDelay(bool on)
 
 InetAddress Socket::getLocalAddr() const
 {
-  struct sockaddr_in localaddr;
-  bzero(&localaddr, sizeof localaddr);
-  socklen_t addrlen = static_cast<socklen_t>(sizeof localaddr);
-  if (::getsockname(sockfd_, sockaddr_cast(&localaddr), &addrlen) < 0)
+  struct sockaddr localaddr;
+  socklen_t addrlen = sizeof localaddr;
+  if (::getsockname(sockfd_, &localaddr, &addrlen) < 0)
   {
     perror("Socket::getLocalAddr");
   }
@@ -109,10 +88,9 @@ InetAddress Socket::getLocalAddr() const
 
 InetAddress Socket::getPeerAddr() const
 {
-  struct sockaddr_in peeraddr;
-  bzero(&peeraddr, sizeof peeraddr);
-  socklen_t addrlen = static_cast<socklen_t>(sizeof peeraddr);
-  if (::getpeername(sockfd_, sockaddr_cast(&peeraddr), &addrlen) < 0)
+  struct sockaddr peeraddr;
+  socklen_t addrlen = sizeof peeraddr;
+  if (::getpeername(sockfd_, &peeraddr, &addrlen) < 0)
   {
     perror("Socket::getPeerAddr");
   }
@@ -131,16 +109,16 @@ int Socket::write(const void* buf, int len)
   return ::write(sockfd_, buf, len);
 }
 
-Socket Socket::createTCP()
+Socket Socket::createTCP(sa_family_t family)
 {
-  int sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP);
+  int sockfd = ::socket(family, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP);
   assert(sockfd >= 0);
   return Socket(sockfd);
 }
 
-Socket Socket::createUDP()
+Socket Socket::createUDP(sa_family_t family)
 {
-  int sockfd = ::socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_UDP);
+  int sockfd = ::socket(family, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_UDP);
   assert(sockfd >= 0);
   return Socket(sockfd);
 }

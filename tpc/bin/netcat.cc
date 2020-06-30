@@ -86,9 +86,9 @@ int main(int argc, const char* argv[])
   }
   else
   {
-    InetAddress addr(port);
+    InetAddress addr;
     const char* hostname = argv[1];
-    if (InetAddress::resolve(hostname, &addr))
+    if (InetAddress::resolve(hostname, port, &addr))
     {
       TcpStreamPtr stream(TcpStream::connect(addr));
       if (stream)

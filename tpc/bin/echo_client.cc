@@ -12,8 +12,9 @@ int main(int argc, const char* argv[])
 
   const int len = atoi(argv[2]);
 
-  InetAddress addr(3007);
-  if (!InetAddress::resolve(argv[1], &addr))
+  uint16_t port = 3007;
+  InetAddress addr;
+  if (!InetAddress::resolve(argv[1], port, &addr))
   {
     printf("Unable to resolve %s\n", argv[1]);
     return 0;

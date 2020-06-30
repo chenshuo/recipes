@@ -27,7 +27,7 @@ int64_t now()
 
 void runServer()
 {
-  Socket sock(Socket::createUDP());
+  Socket sock(Socket::createUDP(/*ipv6=*/true));
   sock.bindOrDie(InetAddress(g_port));
 
   while (true)
@@ -64,13 +64,14 @@ void runServer()
 
 void runClient(const char* server_hostname)
 {
-  Socket sock(Socket::createUDP());
-  InetAddress serverAddr(g_port);
-  if (!InetAddress::resolve(server_hostname, &serverAddr))
+  InetAddress serverAddr;
+  if (!InetAddress::resolve(server_hostname, g_port, &serverAddr))
   {
     printf("Unable to resolve %s\n", server_hostname);
     return;
   }
+
+  Socket sock(Socket::createUDP(serverAddr.family()));
 
   if (sock.connect(serverAddr) != 0)
   {

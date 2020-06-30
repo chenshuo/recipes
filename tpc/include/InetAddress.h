@@ -9,47 +9,49 @@
 class InetAddress : copyable
 {
  public:
-  // InetAddress()
+  // Invalid address
+  InetAddress() { addr_.sin_family = AF_UNSPEC; }
+  // for connecting
   InetAddress(StringArg ip, uint16_t port);
-  explicit InetAddress(StringArg ipPort);  // "1.2.3.4:5678"
-  explicit InetAddress(uint16_t port, bool loopbackOnly = false);  // for listening
-
-  explicit InetAddress(const struct sockaddr_in& saddr)
-    : saddr_(saddr)
-  { }
+  // for listening
+  explicit InetAddress(uint16_t port, bool ipv6 = false);
+  // interface with Sockets API
+  explicit InetAddress(const struct sockaddr& saddr);
 
   // default copy/assignment are Okay
+
+  sa_family_t family() const { return addr_.sin_family; }
+  uint16_t port() const { return ntohs(addr_.sin_port); }
+  void setPort(uint16_t port) { addr_.sin_port = htons(port); }
 
   std::string toIp() const;
   std::string toIpPort() const;
 
-  const struct sockaddr_in& getSockAddrInet() const { return saddr_; }
-  void setSockAddrInet(const struct sockaddr_in& saddr) { saddr_ = saddr; }
-
-  void setPort(uint16_t port) { saddr_.sin_port = htons(port); }
-
-  uint32_t ipNetEndian() const { return saddr_.sin_addr.s_addr; }
-  uint16_t portNetEndian() const { return saddr_.sin_port; }
-
-  uint32_t ipHostEndian() const { return ntohl(saddr_.sin_addr.s_addr); }
-  uint16_t portHostEndian() const { return ntohs(saddr_.sin_port); }
-
-  // resolve hostname to IP address, not changing port or sin_family
-  // return true on success.
-  // thread safe
-  static bool resolve(StringArg hostname, InetAddress*);
-  static std::vector<InetAddress> resolveAll(StringArg hostname, uint16_t port = 0);
-
-  bool operator==(const InetAddress& rhs) const
+  // Interface with Sockets API
+  const struct sockaddr* get_sockaddr() const
   {
-    return saddr_.sin_family == rhs.saddr_.sin_family
-        && ipNetEndian() == rhs.ipNetEndian()
-        && portNetEndian() == rhs.portNetEndian();
+    return reinterpret_cast<const struct sockaddr*>(&addr6_);
   }
 
- private:
-  static bool resolveSlow(const char* hostname, InetAddress*);
+  socklen_t length() const
+  {
+    // TODO: switch (family())
+    return sizeof addr6_;
+  }
 
-  struct sockaddr_in saddr_;
+  bool operator==(const InetAddress& rhs) const;
+
+  // Resolves hostname to IP address.
+  // Returns true on success.
+  // Thread safe.
+  static bool resolve(StringArg hostname, uint16_t port, InetAddress*);
+  static std::vector<InetAddress> resolveAll(StringArg hostname, uint16_t port = 0);
+
+ private:
+  union
+  {
+    struct sockaddr_in addr_;
+    struct sockaddr_in6 addr6_;
+  };
 };
 

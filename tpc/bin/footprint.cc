@@ -41,13 +41,14 @@ int main(int argc, char* argv[])
   Acceptor acceptor(listenAddr);
   snapshot("acceptor created");
 
+  InetAddress serverAddr("127.0.0.1", 2222);
+
   std::vector<Socket> clients;
   for (int i = 0; i < N; ++i)
-    clients.push_back(Socket::createTCP());
+    clients.push_back(Socket::createTCP(serverAddr.family()));
   snapshot("clients created");
 
   std::vector<Socket> servers;
-  InetAddress serverAddr("127.0.0.1", 2222);
   for (int i = 0; i < N; ++i)
   {
     if (clients[i].connect(serverAddr))

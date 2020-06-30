@@ -1,10 +1,9 @@
 #pragma once
 #include "Common.h"
+#include "InetAddress.h"
 #include "Socket.h"
 
 #include <memory>
-
-class InetAddress;
 
 class TcpStream;
 typedef std::unique_ptr<TcpStream> TcpStreamPtr;
@@ -29,6 +28,9 @@ class TcpStream : noncopyable
   int sendSome(const void* buf, int len); // send len or less bytes
 
   // thread safe
+  InetAddress getLocalAddr() const { return sock_.getLocalAddr(); }
+  InetAddress getPeerAddr() const { return sock_.getPeerAddr(); }
+
   void setTcpNoDelay(bool on);
   void shutdownWrite();
 
