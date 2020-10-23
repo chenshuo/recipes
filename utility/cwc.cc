@@ -93,6 +93,7 @@ Encoding detectEncoding(const string& content)
             return kGBK;
           }
         } else {
+          // FIXME: 4-byte UTF-8, x & 0xF8 == 0xF0
           return kGBK;
         }
       } else {
@@ -139,6 +140,9 @@ int countChineseCharsUtf8(const string& content)
       i += 2;
     } else if ((c & 0xf0) == 0xe0) {
       i += 3;
+      ++cnt;
+    } else if ((c & 0xf8) == 0xf0) {
+      i += 4;
       ++cnt;
     } else {
       abort();
