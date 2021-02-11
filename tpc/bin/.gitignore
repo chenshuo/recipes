@@ -1,0 +1,16 @@
+chargen
+discard
+echo
+echo_client
+footprint
+netcat
+nodelay
+nodelay_server
+perf.data
+roundtrip_tcp
+roundtrip_udp
+sender
+sendoob
+sudoku_stress
+ttcp
+
