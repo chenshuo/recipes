@@ -77,24 +77,26 @@ void Socket::setTcpNoDelay(bool on)
 
 InetAddress Socket::getLocalAddr() const
 {
-  struct sockaddr localaddr;
+  struct sockaddr_storage localaddr;
   socklen_t addrlen = sizeof localaddr;
-  if (::getsockname(sockfd_, &localaddr, &addrlen) < 0)
+  struct sockaddr* addr = reinterpret_cast<struct sockaddr*>(&localaddr);
+  if (::getsockname(sockfd_, addr, &addrlen) < 0)
   {
     perror("Socket::getLocalAddr");
   }
-  return InetAddress(localaddr);
+  return InetAddress(*addr);
 }
 
 InetAddress Socket::getPeerAddr() const
 {
-  struct sockaddr peeraddr;
+  struct sockaddr_storage peeraddr;
   socklen_t addrlen = sizeof peeraddr;
-  if (::getpeername(sockfd_, &peeraddr, &addrlen) < 0)
+  struct sockaddr* addr = reinterpret_cast<struct sockaddr*>(&peeraddr);
+  if (::getpeername(sockfd_, addr, &addrlen) < 0)
   {
     perror("Socket::getPeerAddr");
   }
-  return InetAddress(peeraddr);
+  return InetAddress(*addr);
 }
 
 int Socket::recv(void* buf, int len)

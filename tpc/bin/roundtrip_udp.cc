@@ -25,23 +25,25 @@ int64_t now()
   return tv.tv_sec * int64_t(1000000) + tv.tv_usec;
 }
 
-void runServer()
+void runServer(bool ipv6)
 {
-  Socket sock(Socket::createUDP(/*ipv6=*/true));
-  sock.bindOrDie(InetAddress(g_port));
+  Socket sock(Socket::createUDP(ipv6 ? AF_INET6 : AF_INET));
+  sock.bindOrDie(InetAddress(g_port, ipv6));
 
   while (true)
   {
     Message message = { 0, 0 };
 
-    struct sockaddr peerAddr;
+    struct sockaddr_storage peerAddr;
     bzero(&peerAddr, sizeof peerAddr);
     socklen_t addrLen = sizeof peerAddr;
-    ssize_t nr = ::recvfrom(sock.fd(), &message, sizeof message, 0, &peerAddr, &addrLen);
+    struct sockaddr* addr = reinterpret_cast<struct sockaddr*>(&peerAddr);
+
+    ssize_t nr = ::recvfrom(sock.fd(), &message, sizeof message, 0, addr, &addrLen);
     if (nr == sizeof message)
     {
       message.response = now();
-      ssize_t nw = ::sendto(sock.fd(), &message, sizeof message, 0, &peerAddr, addrLen);
+      ssize_t nw = ::sendto(sock.fd(), &message, sizeof message, 0, addr, addrLen);
       if (nw < 0)
       {
         perror("send Message");
@@ -106,7 +108,7 @@ void runClient(const char* server_hostname)
     {
       int64_t back = now();
       int64_t mine = (back + message.request) / 2;
-      printf("now %jd round trip %jd clock error %jd\n",
+      printf("now %jd, round trip time %jd us, clock error %jd us\n",
              back, back - message.request, message.response - mine);
     }
     else if (nr < 0)
@@ -124,13 +126,14 @@ int main(int argc, const char* argv[])
 {
   if (argc < 2)
   {
-    printf("Usage:\nServer: %s -s\nClient: %s server_hostname\n", argv[0], argv[0]);
+    printf("Usage:\nServer: %s -s [-6]\nClient: %s server_hostname\n", argv[0], argv[0]);
     return 0;
   }
 
   if (strcmp(argv[1], "-s") == 0)
   {
-    runServer();
+    bool ipv6 = argc > 2 ? strcmp(argv[2], "-6") == 0 : false;
+    runServer(ipv6);
   }
   else
   {
