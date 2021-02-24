@@ -8,11 +8,20 @@
 // a thread-per-connection current echo server
 int main(int argc, char* argv[])
 {
-  InetAddress listenAddr(3007);
+  bool nodelay = false;
+  bool ipv6 = false;
+  for (int i = 1; i < argc; ++i) {
+    if (strcmp(argv[i], "-6") == 0)
+      ipv6 = true;
+    if (strcmp(argv[i], "-D") == 0)
+      nodelay = true;
+  }
+  InetAddress listenAddr(3007, ipv6);
   Acceptor acceptor(listenAddr);
+  printf("Listen on port 3007\n");
   printf("Accepting... Ctrl-C to exit\n");
   int count = 0;
-  bool nodelay = argc > 1 && strcmp(argv[1], "-D") == 0;
+
   while (true)
   {
     TcpStreamPtr tcpStream = acceptor.accept();
