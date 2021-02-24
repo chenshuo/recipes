@@ -91,6 +91,10 @@ std::string InetAddress::toIpPort() const
 {
   char buf[32] = "";
   snprintf(buf, sizeof buf, ":%u", port());
+
+  if (family() == AF_INET6)
+    return "[" + toIp() + "]" + buf;
+
   return toIp() + buf;
 }
 
