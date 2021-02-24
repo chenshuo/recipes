@@ -45,8 +45,8 @@ class Socket : noncopyable
   InetAddress getLocalAddr() const;
   InetAddress getPeerAddr() const;
 
-  int read(void* buf, int len);
-  int write(const void* buf, int len);
+  int recv(void* buf, int len);
+  int send(const void* buf, int len);
 
   // factory methods
   static Socket createTCP(sa_family_t family);  // AF_INET or AF_INET6

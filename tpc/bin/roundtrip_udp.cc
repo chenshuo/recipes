@@ -84,7 +84,7 @@ void runClient(const char* server_hostname)
     {
       Message message = { 0, 0 };
       message.request = now();
-      int nw = sock.write(&message, sizeof message);
+      int nw = sock.send(&message, sizeof message);
       if (nw < 0)
       {
         perror("send Message");
@@ -101,7 +101,7 @@ void runClient(const char* server_hostname)
   while (true)
   {
     Message message = { 0, 0 };
-    int nr = sock.read(&message, sizeof message);
+    int nr = sock.recv(&message, sizeof message);
     if (nr == sizeof message)
     {
       int64_t back = now();
@@ -111,7 +111,7 @@ void runClient(const char* server_hostname)
     }
     else if (nr < 0)
     {
-      perror("send Message");
+      perror("recv Message");
     }
     else
     {

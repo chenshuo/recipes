@@ -97,16 +97,14 @@ InetAddress Socket::getPeerAddr() const
   return InetAddress(peeraddr);
 }
 
-int Socket::read(void* buf, int len)
+int Socket::recv(void* buf, int len)
 {
-  // FIXME: EINTR
-  return ::read(sockfd_, buf, len);
+  return TEMP_FAILURE_RETRY(::recv(sockfd_, buf, len, 0));
 }
 
-int Socket::write(const void* buf, int len)
+int Socket::send(const void* buf, int len)
 {
-  // FIXME: EINTR
-  return ::write(sockfd_, buf, len);
+  return TEMP_FAILURE_RETRY(::send(sockfd_, buf, len, 0));
 }
 
 Socket Socket::createTCP(sa_family_t family)
