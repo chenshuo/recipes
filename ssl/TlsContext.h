@@ -66,6 +66,16 @@ class TlsContext : noncopyable
     return ret;
   }
 
+  int read(void* buf, int len)
+  {
+    return tls_read(context_, buf, len);
+  }
+
+  int write(const void* buf, int len)
+  {
+    return tls_write(context_, buf, len);
+  }
+
  private:
   explicit TlsContext(struct tls* context) : context_(context) {}
 
