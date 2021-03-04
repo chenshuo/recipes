@@ -32,6 +32,14 @@ cc_binary(
 )
 
 cc_binary(
+    name = "bm_ipc",
+    srcs = ["bm_ipc.cc"],
+    deps = [
+        "@benchmark//:benchmark_main",
+    ],
+)
+
+cc_binary(
     name = "bm_memory",
     srcs = ["bm_memory.cc"],
     deps = [
