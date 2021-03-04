@@ -39,6 +39,7 @@ struct tls* client()
   struct tls_config* cfg = tls_config_new();
   assert(cfg != NULL);
 
+  // symlink to libressl/tests/ca.pem
   tls_config_set_ca_file(cfg, "ca.pem");
   // tls_config_insecure_noverifycert(cfg);
   // tls_config_insecure_noverifyname(cfg);
@@ -82,7 +83,7 @@ struct tls* server()
 
 Timer tclient, tserver;
 
-void handshake(struct tls* cctx, struct tls* sctx)
+bool handshake(struct tls* cctx, struct tls* sctx)
 {
   int client_done = false, server_done = false;
   while (!(client_done && server_done))
@@ -96,7 +97,10 @@ void handshake(struct tls* cctx, struct tls* sctx)
       if (ret == 0)
         client_done = true;
       else if (ret == -1)
+      {
+        printf("client handshake failed: %s\n", tls_error(cctx));
         break;
+      }
     }
 
     if (!server_done)
@@ -108,9 +112,13 @@ void handshake(struct tls* cctx, struct tls* sctx)
       if (ret == 0)
         server_done = true;
       else if (ret == -1)
+      {
+        printf("server handshake failed: %s\n", tls_error(sctx));
         break;
+      }
     }
   }
+  return client_done && server_done;
 }
 
 void throughput(int block_size, struct tls* cctx, struct tls* sctx)
@@ -154,12 +162,13 @@ int main(int argc, char* argv[])
   struct tls* cctx = client();
   struct tls* sctx = server();
 
-  const int N = 500;
+  const int N = 1000;
   Timer all, client, server;
   all.start();
   for (int i = 0; i < N; ++i)
   {
-    handshake(cctx, sctx);
+    if (!handshake(cctx, sctx))
+      return -1;
 
     if (i == 0)
       printf("cipher %s\n", tls_conn_cipher(cctx));
@@ -168,7 +177,7 @@ int main(int argc, char* argv[])
   printf("%f secs, %f handshakes/sec\n", all.seconds(), N / all.seconds());
   printf("client %f secs, server %f secs\n", tclient.seconds(), tserver.seconds());
 
-  for (int i = 1; i <= 1024 * 16; i *= 2)
+  for (int i = 1024 * 16; i >= 1; i /= 4)
   {
     throughput(i, cctx, sctx);
   }

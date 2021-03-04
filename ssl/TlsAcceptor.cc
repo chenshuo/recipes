@@ -7,7 +7,7 @@
 
 TlsAcceptor::TlsAcceptor(TlsConfig* config, const InetAddress& listenAddr)
   : context_(TlsContext::kServer, config),
-    listenSock_(Socket::createTCP())
+    listenSock_(Socket::createTCP(AF_INET))
 {
   listenSock_.setReuseAddr(true);
   listenSock_.bindOrDie(listenAddr);

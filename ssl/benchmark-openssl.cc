@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
 
 
   double start2 = now();
-  const int M = 300;
+  const int M = 1000;
   char buf[1024] = { 0 };
   for (int i = 0; i < M*1024; ++i)
   {

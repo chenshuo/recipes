@@ -27,10 +27,12 @@ namespace
 {
 __thread pid_t t_cachedTid = 0;
 
+#if !__GLIBC_PREREQ(2,30)
 pid_t gettid()
 {
   return static_cast<pid_t>(::syscall(SYS_gettid));
 }
+#endif
 
 void afterFork()
 {

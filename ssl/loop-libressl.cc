@@ -87,7 +87,7 @@ bool handshake(struct tls* cctx, struct tls* sctx)
         server_done = true;
       else if (ret == -1)
       {
-        printf("server handshake failed: %s\n", tls_error(cctx));
+        printf("server handshake failed: %s\n", tls_error(sctx));
         break;
       }
     }
@@ -200,6 +200,8 @@ int main(int argc, char* argv[])
 
   if (handshake(cctx, sctx))
     printf("cipher %s\n", tls_conn_cipher(cctx));
+  else
+    return -1;
 
   setBlockingIO(fds[0]);
   setBlockingIO(fds[1]);
@@ -219,7 +221,7 @@ int main(int argc, char* argv[])
   printf("server %f secs, %f handshakes/sec\n", t.seconds(), N / t.seconds());
   }
 
-  for (int i = 1; i <= 1024 * 16; i *= 2)
+  for (int i = 1024 * 16; i >= 1; i /= 4)
   {
     send(i, sctx);
   }
