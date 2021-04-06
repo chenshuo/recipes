@@ -21,10 +21,12 @@ InetAddress::InetAddress(StringArg ip, uint16_t port)
   if (strchr(ip.c_str(), ':') == NULL)
   {
     result = ::inet_pton(AF_INET, ip.c_str(), &addr_.sin_addr);
+    addr_.sin_family = AF_INET;
   }
   else
   {
     result = ::inet_pton(AF_INET6, ip.c_str(), &addr6_.sin6_addr);
+    addr6_.sin6_family = AF_INET6;
   }
 
   assert(result == 1 && "Invalid IP format");

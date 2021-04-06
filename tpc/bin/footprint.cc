@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "Acceptor.h"
 #include "InetAddress.h"
@@ -20,9 +22,9 @@ void dump(const char* filename)
   }
 }
 
-void snapshot(const char* name)
+void snapshot(const char* name, int N)
 {
-  printf("===== %s =====\n", name);
+  printf("===== %d %s =====\n", N, name);
   dump("/proc/meminfo");
   dump("/proc/slabinfo");
 }
@@ -31,26 +33,34 @@ int main(int argc, char* argv[])
 {
   const int N = argc > 1 ? atoi(argv[1]) : 1000;
 
-  {
-    char buf[32];
-    snprintf(buf, sizeof buf, "start N=%d", N);
-    snapshot(buf);
-  }
+  snapshot("started", N);
 
   InetAddress listenAddr(2222);
   Acceptor acceptor(listenAddr);
-  snapshot("acceptor created");
+  snapshot("acceptor created", 1);
 
   InetAddress serverAddr("127.0.0.1", 2222);
 
   std::vector<Socket> clients;
+  clients.reserve(N);
   for (int i = 0; i < N; ++i)
     clients.push_back(Socket::createTCP(serverAddr.family()));
-  snapshot("clients created");
+  snapshot("clients created", N);
 
   std::vector<Socket> servers;
+  servers.reserve(N);
   for (int i = 0; i < N; ++i)
   {
+    char buf[64];
+    int clientIP = i / 16384;
+    snprintf(buf, sizeof buf, "127.1.%d.%d", clientIP / 128, clientIP % 128);
+    InetAddress localAddr(buf, 0);
+    clients[i].bindOrDie(localAddr);
+    if (i % 10000 == 0) {
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      fprintf(stderr, "%ld.%06ld Client %d bind to %s\n", tv.tv_sec, tv.tv_usec, i, buf);
+    }
     if (clients[i].connect(serverAddr))
     {
       perror("connect");
@@ -58,13 +68,13 @@ int main(int argc, char* argv[])
     }
     servers.push_back(acceptor.acceptSocketOrDie());
   }
-  snapshot("clients connected");
+  snapshot("clients connected", N);
 
   // TODO: epoll
 
   servers.clear();
-  snapshot("servers disconnected");
+  snapshot("servers disconnected", N);
 
   clients.clear();
-  snapshot("clients disconnected");
+  snapshot("clients disconnected", N);
 }
