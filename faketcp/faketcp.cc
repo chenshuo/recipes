@@ -55,7 +55,7 @@ done:
   return err;
 }
 
-int tun_alloc(char dev[IFNAMSIZ])
+int tun_alloc(char dev[IFNAMSIZ], bool offload)
 {
   struct ifreq ifr;
   int fd, err;
@@ -80,6 +80,16 @@ int tun_alloc(char dev[IFNAMSIZ])
     close(fd);
     return err;
   }
+
+  if (offload) {
+    const uint32_t offload_flags =
+        TUN_F_CSUM | TUN_F_TSO4 | TUN_F_TSO6 | TUN_F_TSO_ECN;
+    if (ioctl(fd, TUNSETOFFLOAD, offload_flags) != 0) {
+      perror("TUNSETOFFLOAD");
+      return -1;
+    }
+  }
+
   strcpy(dev, ifr.ifr_name);
   if ((err = sethostaddr(dev)) < 0)
     return err;

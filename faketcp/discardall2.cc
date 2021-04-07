@@ -52,7 +52,7 @@ void tcp_input(int fd, const void* input, const void* payload, int tot_len)
       } out;
     };
 
-    assert(sizeof(out) == sizeof(struct iphdr) + sizeof(struct tcphdr));
+    static_assert(sizeof(out) == sizeof(struct iphdr) + sizeof(struct tcphdr), "");
     int output_len = sizeof(out);
     bzero(&out, output_len + 4);
     memcpy(output, input, sizeof(struct iphdr));
@@ -154,7 +154,7 @@ int main()
   {
     union
     {
-      unsigned char buf[ETH_FRAME_LEN];
+      unsigned char buf[IP_MAXPACKET];
       struct iphdr iphdr;
     };
 
@@ -167,9 +167,13 @@ int main()
       close(fd);
       exit(1);
     }
+    else if (nread == sizeof(buf))
+    {
+      printf("possible message truncated.\n");
+    }
     printf("read %d bytes from tunnel interface %s.\n", nread, ifname);
 
-    const int iphdr_len = iphdr.ihl*4;
+    const int iphdr_len = iphdr.ihl*4;  // FIXME: check nread >= sizeof iphdr before accessing iphdr.ihl.
     if (nread >= iphdr_size
         && iphdr.version == 4
         && iphdr_len >= iphdr_size
@@ -187,7 +191,7 @@ int main()
         tcp_input(fd, buf, payload, nread);
       }
     }
-    else
+    else if (iphdr.version == 4)
     {
       printf("bad packet\n");
       for (int i = 0; i < nread; ++i)
