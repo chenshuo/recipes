@@ -52,9 +52,10 @@ int main(int argc, char* argv[])
   for (int i = 0; i < N; ++i)
   {
     char buf[64];
-    int clientIP = i / 16384;
+    const int ports_per_ip = 16384;
+    int clientIP = i / ports_per_ip;
     snprintf(buf, sizeof buf, "127.1.%d.%d", clientIP / 128, clientIP % 128);
-    InetAddress localAddr(buf, 0);
+    InetAddress localAddr(buf, 10000 + i % ports_per_ip);
     clients[i].bindOrDie(localAddr);
     if (i % 10000 == 0) {
       struct timeval tv;
