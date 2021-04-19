@@ -101,12 +101,20 @@ InetAddress Socket::getPeerAddr() const
 
 int Socket::recv(void* buf, int len)
 {
+#ifdef TEMP_FAILURE_RETRY
   return TEMP_FAILURE_RETRY(::recv(sockfd_, buf, len, 0));
+#else
+  return ::recv(sockfd_, buf, len, 0);
+#endif
 }
 
 int Socket::send(const void* buf, int len)
 {
+#ifdef TEMP_FAILURE_RETRY
   return TEMP_FAILURE_RETRY(::send(sockfd_, buf, len, 0));
+#else
+  return ::send(sockfd_, buf, len, 0);
+#endif
 }
 
 Socket Socket::createTCP(sa_family_t family)

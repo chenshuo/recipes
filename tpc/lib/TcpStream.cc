@@ -32,7 +32,11 @@ TcpStream::TcpStream(Socket&& sock)
 
 int TcpStream::receiveAll(void* buf, int len)
 {
+#ifdef TEMP_FAILURE_RETRY
   return TEMP_FAILURE_RETRY(::recv(sock_.fd(), buf, len, MSG_WAITALL));
+#else
+  return ::recv(sock_.fd(), buf, len, MSG_WAITALL);
+#endif
 }
 
 int TcpStream::receiveSome(void* buf, int len)

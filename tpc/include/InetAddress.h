@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <netinet/in.h>
+#include <sys/socket.h>
 
 class InetAddress : copyable
 {
@@ -35,8 +36,7 @@ class InetAddress : copyable
 
   socklen_t length() const
   {
-    // TODO: switch (family())
-    return sizeof addr6_;
+    return family() == AF_INET6 ? sizeof addr6_ : sizeof addr_;
   }
 
   bool operator==(const InetAddress& rhs) const;

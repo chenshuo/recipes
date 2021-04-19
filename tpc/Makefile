@@ -1,6 +1,6 @@
 
-CXXFLAGS = -Wall -std=c++11 -pthread -O2 -g -iquote include/ -I../
-LDFLAGS = -L lib/ -ltpc
+CXXFLAGS = -Wall -std=c++11 -pthread -O2 -g -iquote include/ -I../ -I/usr/local/include
+LDFLAGS = -L lib/ -L/usr/local/lib -ltpc
 
 LIB_HEADERS := $(wildcard include/*.h) ../datetime/Timestamp.h ../thread/Atomic.h
 LIB_SRCS := $(wildcard lib/*.cc) ../datetime/Timestamp.cc
