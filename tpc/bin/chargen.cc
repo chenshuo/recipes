@@ -66,6 +66,8 @@ int main(int argc, char* argv[])
   if (argc < 3)
   {
     printf("Usage:\n  %s hostname port\n  %s -l port\n", argv[0], argv[0]);
+    std::string message = getMessage();
+    printf("message size = %zd\n", message.size());
     return 0;
   }
 

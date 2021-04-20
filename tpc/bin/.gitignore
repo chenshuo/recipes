@@ -12,5 +12,6 @@ roundtrip_udp
 sender
 sendoob
 sudoku_stress
+tcpperf
 ttcp
 

@@ -34,6 +34,8 @@ class TcpStream : noncopyable
   void setTcpNoDelay(bool on);
   void shutdownWrite();
 
+  int fd() { return sock_.fd(); }
+
  private:
   static TcpStreamPtr connectInternal(const InetAddress& serverAddr, const InetAddress* localAddr);
   Socket sock_;
