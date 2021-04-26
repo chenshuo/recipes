@@ -29,13 +29,13 @@ class BandwidthReporter
     last_bytes_ = total_bytes;
   }
 
-  void reportAll(double now, int64_t total_bytes) const
+  void reportAll(double now, int64_t total_bytes)
   {
     report(now, total_bytes, total_bytes, now);
   }
 
  private:
-  void report(double now, int64_t total_bytes, int64_t bytes, double elapsed) const
+  void report(double now, int64_t total_bytes, int64_t bytes, double elapsed)
   {
     printf("%6.3f  %.3fM  %.3fM/s ", now, total_bytes / 1e6,
            elapsed > 0 ? bytes / 1e6 / elapsed : 0.0);
@@ -45,7 +45,7 @@ class BandwidthReporter
       printReceiver();
   }
 
-  void printSender() const
+  void printSender()
   {
     int sndbuf = 0;
     socklen_t optlen = sizeof sndbuf;
@@ -59,10 +59,28 @@ class BandwidthReporter
 
     // bytes_in_flight = tcpi.tcpi_bytes_sent - tcpi.tcpi_bytes_acked;
     // tcpi.tcpi_notsent_bytes;
+    int snd_cwnd = tcpi.tcpi_snd_cwnd;
+    int ssthresh = tcpi.tcpi_snd_ssthresh;
+#ifdef __linux
+    snd_cwnd *= tcpi.tcpi_snd_mss;  // Linux's cwnd is # of mss.
+    if (ssthresh < INT32_MAX)
+      ssthresh *= tcpi.tcpi_snd_mss;
+#endif
 
-    printf(" sndbuf=%.1fK snd_wnd=%.1fK rtt=%d/%d\n",
-           sndbuf / 1024.0, tcpi.tcpi_snd_wnd / 1024.0,
-           tcpi.tcpi_rtt, tcpi.tcpi_rttvar);
+#ifdef __linux
+    int retrans = tcpi.tcpi_total_retrans;
+#elif __FreeBSD__
+    int retrans = tcpi.tcpi_snd_rexmitpack;
+#endif
+
+    printf(" sndbuf=%.1fK snd_cwnd=%.1fK ssthresh=%.1fK snd_wnd=%.1fK rtt=%d/%d",
+           sndbuf / 1024.0, snd_cwnd / 1024.0, ssthresh / 1024.0,
+           tcpi.tcpi_snd_wnd / 1024.0, tcpi.tcpi_rtt, tcpi.tcpi_rttvar);
+    if (retrans - last_retrans_ > 0) {
+      printf(" retrans=%d", retrans - last_retrans_);
+    }
+    printf("\n");
+    last_retrans_ = retrans;
   }
 
   void printReceiver() const
@@ -79,6 +97,7 @@ class BandwidthReporter
   const bool sender_ = false;
   double last_time_ = 0;
   int64_t last_bytes_ = 0;
+  int last_retrans_ = 0;
 };
 
 void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double duration)
@@ -138,7 +157,9 @@ void runServer(int port)
   while (true) {
     printf("Accepting on port %d ... Ctrl-C to exit\n", port);
     TcpStreamPtr stream = acceptor.accept();
-    printf("accepted no. %d client\n", ++count);
+    ++count;
+    printf("accepted no. %d client from %s\n", count,
+           stream->getPeerAddr().toIpPort().c_str());
 
     const Timestamp start = Timestamp::now();
     int seconds = 1;
@@ -177,7 +198,7 @@ int main(int argc, char* argv[])
   int64_t bytes_limit = 10 * kGigaBytes;
   double duration = 10;
 
-  while ((opt = getopt(argc, argv, "sc:")) != -1) {
+  while ((opt = getopt(argc, argv, "sc:t:")) != -1) {
     switch (opt) {
       case 's':
         server = true;
@@ -185,6 +206,9 @@ int main(int argc, char* argv[])
       case 'c':
         client = true;
         serverAddr = InetAddress(optarg, port);
+        break;
+      case 't':
+        duration = strtod(optarg, NULL);
         break;
       default:
         fprintf(stderr, "Usage: %s FIXME\n", argv[0]);
