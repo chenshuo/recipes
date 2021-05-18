@@ -24,21 +24,24 @@ class BandwidthReporter
 
   void reportDelta(double now, int64_t total_bytes)
   {
-    report(now, total_bytes, total_bytes - last_bytes_, now - last_time_);
+    report(now, total_bytes - last_bytes_, now - last_time_);
     last_time_ = now;
     last_bytes_ = total_bytes;
   }
 
-  void reportAll(double now, int64_t total_bytes)
+  void reportAll(double now, int64_t total_bytes, int64_t syscalls)
   {
-    report(now, total_bytes, total_bytes, now);
+    printf("Transferred %.3fMB %.3fMiB in %.3fs, %lld syscalls, %.1f Bytes/syscall\n",
+           total_bytes / 1e6, total_bytes / (1024.0 * 1024), now, (long long)syscalls,
+           total_bytes * 1.0 / syscalls);
+    report(now, total_bytes, now);
   }
 
  private:
-  void report(double now, int64_t total_bytes, int64_t bytes, double elapsed)
+  void report(double now, int64_t bytes, double elapsed)
   {
-    printf("%6.3f  %.3fM  %.3fM/s ", now, total_bytes / 1e6,
-           elapsed > 0 ? bytes / 1e6 / elapsed : 0.0);
+    double mbps = elapsed > 0 ? bytes / 1e6 / elapsed : 0.0;
+    printf("%6.3f  %6.2fMB/s  %6.1fMbits/s ", now, mbps, mbps*8);
     if (sender_)
       printSender();
     else
@@ -108,21 +111,31 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
     perror("");
     return;
   }
+  char cong[64] = "";
+  socklen_t optlen = sizeof cong;
+  if (::getsockopt(stream->fd(), IPPROTO_TCP, TCP_CONGESTION, cong, &optlen) < 0)
+      perror("getsockopt(TCP_CONGESTION)");
+  printf("Connected %s -> %s, congestion control: %s\n",
+         stream->getLocalAddr().toIpPort().c_str(),
+         stream->getPeerAddr().toIpPort().c_str(), cong);
 
   const Timestamp start = Timestamp::now();
   const int block_size = 64 * 1024;
   std::string message(block_size, 'S');
   int seconds = 1;
   int64_t total_bytes = 0;
+  int64_t syscalls = 0;
   double elapsed = 0;
   BandwidthReporter rpt(stream->fd(), true);
-  rpt.reportAll(0, 0);
+  rpt.reportDelta(0, 0);
 
   while (total_bytes < bytes_limit) {
-    int nw = stream->sendAll(message.data(), message.size());
+    int bytes = std::min<int64_t>(message.size(), bytes_limit - total_bytes);
+    int nw = stream->sendSome(message.data(), bytes);
     if (nw <= 0)
       break;
     total_bytes += nw;
+    syscalls++;
     elapsed = timeDifference(Timestamp::now(), start);
 
     if (elapsed >= duration)
@@ -146,7 +159,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
     printf("nr = %d\n", nr);
   Timestamp end = Timestamp::now();
   elapsed = timeDifference(end, start);
-  rpt.reportAll(elapsed, total_bytes);
+  rpt.reportAll(elapsed, total_bytes, syscalls);
 }
 
 void runServer(int port)
@@ -158,15 +171,17 @@ void runServer(int port)
     printf("Accepting on port %d ... Ctrl-C to exit\n", port);
     TcpStreamPtr stream = acceptor.accept();
     ++count;
-    printf("accepted no. %d client from %s\n", count,
+    printf("accepted no. %d client %s <- %s\n", count,
+           stream->getLocalAddr().toIpPort().c_str(),
            stream->getPeerAddr().toIpPort().c_str());
 
     const Timestamp start = Timestamp::now();
     int seconds = 1;
     int64_t bytes = 0;
+    int64_t syscalls = 0;
     double elapsed = 0;
     BandwidthReporter rpt(stream->fd(), false);
-    rpt.reportAll(elapsed, bytes);
+    rpt.reportDelta(elapsed, bytes);
 
     char buf[65536];
     while (true) {
@@ -174,6 +189,7 @@ void runServer(int port)
       if (nr <= 0)
         break;
       bytes += nr;
+      syscalls++;
 
       elapsed = timeDifference(Timestamp::now(), start);
       if (elapsed >= seconds) {
@@ -183,8 +199,32 @@ void runServer(int port)
       }
     }
     elapsed = timeDifference(Timestamp::now(), start);
-    rpt.reportAll(elapsed, bytes);
+    rpt.reportAll(elapsed, bytes, syscalls);
     printf("Client no. %d done\n", count);
+  }
+}
+
+int64_t parseBytes(const char* arg)
+{
+  char* end = NULL;
+  int64_t bytes = strtoll(arg, &end, 10);
+  switch (*end) {
+    case '\0':
+      return bytes;
+    case 'k':
+      return bytes * 1000;
+    case 'K':
+      return bytes * 1024;
+    case 'm':
+      return bytes * 1000 * 1000;
+    case 'M':
+      return bytes * 1024 * 1024;
+    case 'g':
+      return bytes * 1000 * 1000 * 1000;
+    case 'G':
+      return bytes * 1024 * 1024 * 1024;
+    default:
+      return 0;
   }
 }
 
@@ -192,23 +232,29 @@ int main(int argc, char* argv[])
 {
   int opt;
   bool client = false, server = false;
-  InetAddress serverAddr;
-  const int port = 2009;
+  std::string serverAddr;
+  int port = 2009;
   const int64_t kGigaBytes = 1024 * 1024 * 1024;
   int64_t bytes_limit = 10 * kGigaBytes;
   double duration = 10;
 
-  while ((opt = getopt(argc, argv, "sc:t:")) != -1) {
+  while ((opt = getopt(argc, argv, "sc:t:b:p:")) != -1) {
     switch (opt) {
       case 's':
         server = true;
         break;
       case 'c':
         client = true;
-        serverAddr = InetAddress(optarg, port);
+        serverAddr = optarg;
         break;
       case 't':
         duration = strtod(optarg, NULL);
+        break;
+      case 'b':
+        bytes_limit = parseBytes(optarg);
+        break;
+      case 'p':
+        port = strtol(optarg, NULL, 10);
         break;
       default:
         fprintf(stderr, "Usage: %s FIXME\n", argv[0]);
@@ -217,7 +263,7 @@ int main(int argc, char* argv[])
   }
 
   if (client)
-    runClient(serverAddr, bytes_limit, duration);
+    runClient(InetAddress(serverAddr, port), bytes_limit, duration);
   else if (server)
     runServer(port);
 }

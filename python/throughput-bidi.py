@@ -4,10 +4,10 @@
 
 import socket, sys, time
 
-def report(total_bytes : int, elapsed_seconds : float):
+def report(total_bytes : int, elapsed_seconds : float, syscalls : int):
     mbps = total_bytes / 1e6 / elapsed_seconds
-    print('Transferred %.3fMB in %.3fs, throughput %.3fMB/s %.3fMbits/s' %
-            (total_bytes / 1e6, elapsed_seconds, mbps, mbps * 8))
+    print('Transferred %.3fMB in %.3fs, throughput %.3fMB/s %.3fMbits/s, %d syscalls %.1f Bytes/syscall' %
+            (total_bytes / 1e6, elapsed_seconds, mbps, mbps * 8, syscalls, total_bytes / syscalls))
 
 
 def print_buf(sock):
@@ -28,17 +28,19 @@ def run_sender(sock):
     print('Sending... %s -> %s' % format_address(sock))
     print_buf(sock)
     start = time.time()
+    total = 0
     count = 0
     while True:
-        sock.sendall(buf)
+        total += sock.send(buf)
         count += 1
         if time.time() - start > 10:
             break
-    total = len(buf) * count
     print_buf(sock)
+    sent = time.time()
     sock.shutdown(socket.SHUT_WR)
     sock.recv(4096)
-    report(total, time.time() - start)
+    print('waited %.1fms' % ((time.time() - sent) * 1e3))
+    report(total, time.time() - start, count)
 
 
 def run_receiver(sock):
@@ -46,14 +48,16 @@ def run_receiver(sock):
     print_buf(sock)
     start = time.time()
     total = 0
+    count = 0
     while True:
         data = sock.recv(65536)
         if not data:
             break
         total += len(data)
+        count += 1
     print_buf(sock)
     sock.close()
-    report(total, time.time() - start)
+    report(total, time.time() - start, count)
 
 
 if __name__ == '__main__':
