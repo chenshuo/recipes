@@ -51,6 +51,33 @@ bs=2097152 count=   2048  2.041s  996.766us/record  2103.957MB/s
 bs=4194304 count=   1024  2.441s 2383.790us/record  1759.511MB/s
 bs=8388608 count=    512  2.690s 5253.455us/record  1596.779MB/s
 
+Raspberry Pi 4 running Raspbian GNU/Linux 10 armv7, kernel 5.10
+$ python3 bench_dd.py
+bs=      1 count=1048576  1.067s    1.018us/record     0.982MB/s
+bs=      2 count= 524288  0.529s    1.009us/record     1.982MB/s
+bs=      4 count= 524288  0.540s    1.030us/record     3.885MB/s
+bs=      8 count= 524288  0.537s    1.025us/record     7.805MB/s
+bs=     16 count= 524288  0.533s    1.016us/record    15.741MB/s
+bs=     32 count= 524288  0.537s    1.023us/record    31.265MB/s
+bs=     64 count= 524288  1.527s    2.913us/record    21.972MB/s
+bs=    128 count= 262144  0.758s    2.892us/record    44.258MB/s
+bs=    256 count= 262144  0.760s    2.899us/record    88.300MB/s
+bs=    512 count= 262144  0.768s    2.930us/record   174.728MB/s
+bs=   1024 count= 262144  0.795s    3.034us/record   337.543MB/s
+bs=   2048 count= 262144  0.817s    3.117us/record   657.138MB/s
+bs=   4096 count= 262144  0.886s    3.378us/record  1212.454MB/s
+bs=   8192 count= 262144  1.406s    5.365us/record  1527.034MB/s
+bs=  16384 count= 131072  1.294s    9.875us/record  1659.057MB/s
+bs=  32768 count=  65536  1.245s   19.003us/record  1724.402MB/s
+bs=  65536 count=  32768  1.227s   37.450us/record  1749.962MB/s
+bs= 131072 count=  16384  1.264s   77.148us/record  1698.972MB/s
+bs= 262144 count=   8192  1.257s  153.500us/record  1707.781MB/s
+bs= 524288 count=   4096  1.303s  318.062us/record  1648.385MB/s
+bs=1048576 count=   2048  1.503s  733.804us/record  1428.960MB/s
+bs=2097152 count=   1024  1.839s 1796.094us/record  1167.618MB/s
+bs=4194304 count=    512  1.833s 3580.527us/record  1171.421MB/s
+bs=8388608 count=    256  1.860s 7266.406us/record  1154.437MB/s
+
 Raspberry Pi 4 running Ubuntu server 21.04 arm64, kernel 5.11
 $ ./bench_dd.py
 bs=      1 count=1048576  5.409s    5.159us/record     0.194MB/s
@@ -78,7 +105,9 @@ bs=2097152 count=   1024  1.543s 1507.129us/record  1391.488MB/s
 bs=4194304 count=    512  1.650s 3223.105us/record  1301.324MB/s
 bs=8388608 count=    256  1.583s 6185.391us/record  1356.197MB/s
 
-Raspberry Pi 3 running Raspbian GNU/Linux 10, kernel 5.10
+================================================================
+
+Raspberry Pi 3 running Raspbian GNU/Linux 10 armv7, kernel 5.10
 $ ./bench_dd.py
 bs=      1 count=1048576  1.507s    1.437us/record     0.696MB/s
 bs=      2 count= 524288  0.753s    1.437us/record     1.392MB/s
@@ -105,7 +134,63 @@ bs=2097152 count=   2048  2.197s 1072.520us/record  1955.351MB/s
 bs=4194304 count=   1024  2.454s 2396.406us/record  1750.247MB/s
 bs=8388608 count=    512  2.584s 5046.152us/record  1662.377MB/s
 
-Raspberry Pi 2 running Raspbian GNU/Linux 10, kernel 5.10
+Raspberry Pi 3 running Ubuntu server 21.04 arm64, kernel 5.11
+$ ./bench_dd.py
+bs=      1 count=1048576 10.017s    9.553us/record     0.105MB/s
+bs=      2 count= 524288  5.021s    9.577us/record     0.209MB/s
+bs=      4 count= 262144  2.505s    9.554us/record     0.419MB/s
+bs=      8 count= 131072  1.251s    9.546us/record     0.838MB/s
+bs=     16 count=  65536  0.631s    9.623us/record     1.663MB/s
+bs=     32 count=  65536  0.629s    9.605us/record     3.332MB/s
+bs=     64 count=  65536  0.630s    9.606us/record     6.663MB/s
+bs=    128 count=  65536  0.636s    9.700us/record    13.195MB/s
+bs=    256 count=  65536  0.634s    9.667us/record    26.481MB/s
+bs=    512 count=  65536  0.635s    9.687us/record    52.854MB/s
+bs=   1024 count=  65536  0.645s    9.840us/record   104.064MB/s
+bs=   2048 count=  65536  0.655s   10.002us/record   204.760MB/s
+bs=   4096 count=  65536  0.688s   10.498us/record   390.177MB/s
+bs=   8192 count=  65536  0.903s   13.782us/record   594.390MB/s
+bs=  16384 count=  65536  1.343s   20.487us/record   799.712MB/s
+bs=  32768 count=  32768  1.105s   33.717us/record   971.844MB/s
+bs=  65536 count=  16384  0.987s   60.240us/record  1087.909MB/s
+bs= 131072 count=  16384  1.854s  113.177us/record  1158.110MB/s
+bs= 262144 count=   8192  1.801s  219.850us/record  1192.377MB/s
+bs= 524288 count=   4096  1.796s  438.547us/record  1195.511MB/s
+bs=1048576 count=   2048  1.972s  963.125us/record  1088.723MB/s
+bs=2097152 count=   1024  2.151s 2100.605us/record   998.356MB/s
+bs=4194304 count=    512  2.253s 4400.293us/record   953.187MB/s
+bs=8388608 count=    256  2.306s 9005.898us/record   931.457MB/s
+
+Raspberry Pi 3 running Debian 11 arm64, kernel 5.10
+$ ./bench_dd.py
+bs=      1 count=1048576  2.171s    2.070us/record     0.483MB/s
+bs=      2 count= 524288  1.069s    2.039us/record     0.981MB/s
+bs=      4 count= 262144  0.543s    2.071us/record     1.931MB/s
+bs=      8 count= 262144  0.539s    2.058us/record     3.888MB/s
+bs=     16 count= 262144  0.543s    2.070us/record     7.730MB/s
+bs=     32 count= 262144  0.543s    2.072us/record    15.443MB/s
+bs=     64 count= 262144  0.544s    2.077us/record    30.817MB/s
+bs=    128 count= 262144  0.552s    2.105us/record    60.802MB/s
+bs=    256 count= 262144  0.557s    2.126us/record   120.423MB/s
+bs=    512 count= 262144  0.572s    2.184us/record   234.471MB/s
+bs=   1024 count= 262144  0.599s    2.286us/record   447.998MB/s
+bs=   2048 count= 262144  0.656s    2.501us/record   818.834MB/s
+bs=   4096 count= 262144  0.767s    2.926us/record  1399.933MB/s
+bs=   8192 count= 262144  1.018s    3.883us/record  2109.512MB/s
+bs=  16384 count= 131072  0.757s    5.776us/record  2836.329MB/s
+bs=  32768 count= 131072  1.252s    9.549us/record  3431.527MB/s
+bs=  65536 count=  65536  1.116s   17.026us/record  3849.261MB/s
+bs= 131072 count=  32768  1.052s   32.093us/record  4084.183MB/s
+bs= 262144 count=  16384  1.045s   63.790us/record  4109.505MB/s
+bs= 524288 count=   8192  1.092s  133.292us/record  3933.372MB/s
+bs=1048576 count=   4096  2.321s  566.655us/record  1850.465MB/s
+bs=2097152 count=   2048  2.984s 1457.168us/record  1439.197MB/s
+bs=4194304 count=   1024  3.431s 3350.625us/record  1251.798MB/s
+bs=8388608 count=    512  3.456s 6750.234us/record  1242.714MB/s
+
+================================================================
+
+Raspberry Pi 2 running Raspbian GNU/Linux 10 armv7, kernel 5.10
 $ ./bench_dd.py
 bs=      1 count=1048576  2.294s    2.188us/record     0.457MB/s
 bs=      2 count= 524288  1.155s    2.203us/record     0.908MB/s

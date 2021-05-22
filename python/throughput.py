@@ -4,10 +4,10 @@
 
 import socket, sys, time
 
-def report(total_bytes : int, elapsed_seconds : float):
+def report(name : str, total_bytes : int, elapsed_seconds : float):
     mbps = total_bytes / 1e6 / elapsed_seconds
-    print('Transferred %.3fMB in %.3fs, throughput %.3fMB/s %.3fMbits/s' %
-            (total_bytes / 1e6, elapsed_seconds, mbps, mbps * 8))
+    print('%s transferred %.3fMB in %.3fs, throughput %.3fMB/s %.3fMbits/s' %
+            (name, total_bytes / 1e6, elapsed_seconds, mbps, mbps * 8))
 
 
 def run_server(port : int):
@@ -21,7 +21,7 @@ def run_server(port : int):
         if not data:
             break
         total += len(data)
-    report(total, time.time() - start)
+    report('Receiver', total, time.time() - start)
 
 
 # This client has flaws.
@@ -33,7 +33,7 @@ def run_client(server : str, port : int):
     for i in range(n):
         sock.sendall(buf)
     total = len(buf) * n
-    report(total, time.time() - start)
+    report('Sender', total, time.time() - start)
 
 
 if __name__ == '__main__':
@@ -43,3 +43,20 @@ if __name__ == '__main__':
         run_server(port=2009)
     else:
         run_client(sys.argv[1], port=2009)
+
+self_result="""
+Raspberry Pi 4 running FreeBSD 13-RELEASE:
+Receiver transferred 1073.742MB in 4.497s, throughput 238.789MB/s 1910.311Mbits/s
+
+Raspberry Pi 4 running Raspbian GNU/Linux 10, kernel 5.10
+Receiver transferred 1073.742MB in 1.783s, throughput 602.052MB/s 4816.417Mbits/s
+
+Raspberry Pi 4 running Ubuntu server 21.04 arm64, kernel 5.11
+Receiver transferred 1073.742MB in 1.540s, throughput 697.363MB/s 5578.907Mbits/s
+
+Raspberry Pi 3 running Raspbian GNU/Linux 10, kernel 5.10
+Receiver transferred 1073.742MB in 1.938s, throughput 554.156MB/s 4433.249Mbits/s
+
+Raspberry Pi 2 running Raspbian GNU/Linux 10, kernel 5.10
+Receiver transferred 1073.742MB in 3.696s, throughput 290.500MB/s 2323.996Mbits/s
+"""
