@@ -78,6 +78,33 @@ bs=2097152 count=   1024  1.839s 1796.094us/record  1167.618MB/s
 bs=4194304 count=    512  1.833s 3580.527us/record  1171.421MB/s
 bs=8388608 count=    256  1.860s 7266.406us/record  1154.437MB/s
 
+Raspberry Pi 4 running Debian 11 arm64, kernel 5.10
+$ ./bench_dd.py
+bs=      1 count=1048576  1.464s    1.396us/record     0.716MB/s
+bs=      2 count= 524288  0.729s    1.390us/record     1.439MB/s
+bs=      4 count= 524288  0.735s    1.402us/record     2.852MB/s
+bs=      8 count= 524288  0.740s    1.411us/record     5.670MB/s
+bs=     16 count= 524288  0.746s    1.423us/record    11.246MB/s
+bs=     32 count= 524288  0.737s    1.407us/record    22.750MB/s
+bs=     64 count= 524288  0.738s    1.408us/record    45.465MB/s
+bs=    128 count= 524288  0.745s    1.421us/record    90.060MB/s
+bs=    256 count= 524288  0.752s    1.434us/record   178.504MB/s
+bs=    512 count= 524288  0.780s    1.488us/record   344.122MB/s
+bs=   1024 count= 524288  0.831s    1.585us/record   645.859MB/s
+bs=   2048 count= 524288  0.914s    1.742us/record  1175.405MB/s
+bs=   4096 count= 524288  1.096s    2.090us/record  1960.027MB/s
+bs=   8192 count= 262144  0.750s    2.861us/record  2863.609MB/s
+bs=  16384 count= 262144  1.125s    4.290us/record  3819.446MB/s
+bs=  32768 count= 131072  1.001s    7.638us/record  4289.905MB/s
+bs=  65536 count=  65536  0.975s   14.882us/record  4403.740MB/s
+bs= 131072 count=  65536  1.834s   27.978us/record  4684.865MB/s
+bs= 262144 count=  32768  2.088s   63.717us/record  4114.190MB/s
+bs= 524288 count=  16384  2.347s  143.225us/record  3660.587MB/s
+bs=1048576 count=   8192  3.553s  433.748us/record  2417.480MB/s
+bs=2097152 count=   4096  5.754s 1404.768us/record  1492.881MB/s
+bs=4194304 count=   2048  6.109s 2982.832us/record  1406.148MB/s
+bs=8388608 count=   1024  6.307s 6159.189us/record  1361.966MB/s
+
 Raspberry Pi 4 running Ubuntu server 21.04 arm64, kernel 5.11
 $ ./bench_dd.py
 bs=      1 count=1048576  5.409s    5.159us/record     0.194MB/s
@@ -251,4 +278,60 @@ bs=1048576 count=   2048  1.428s  697.305us/record  1503.756MB/s
 bs=2097152 count=   1024  1.430s 1396.846us/record  1501.348MB/s
 bs=4194304 count=    512  1.442s 2815.664us/record  1489.632MB/s
 bs=8388608 count=    256  1.444s 5642.461us/record  1486.693MB/s
+
+================================================================
+
+HP e8300, CPU i7-3770
+
+freebsd13% ./bench_dd.py
+bs=      1 count=1048576  0.728s    0.694us/record     1.440MB/s
+bs=      2 count=1048576  0.573s    0.547us/record     3.658MB/s
+bs=      4 count=1048576  0.565s    0.539us/record     7.418MB/s
+bs=      8 count=1048576  0.575s    0.548us/record    14.595MB/s
+bs=     16 count=1048576  0.572s    0.546us/record    29.329MB/s
+bs=     32 count=1048576  0.574s    0.548us/record    58.435MB/s
+bs=     64 count=1048576  0.573s    0.546us/record   117.174MB/s
+bs=    128 count=1048576  0.568s    0.542us/record   236.122MB/s
+bs=    256 count=1048576  0.577s    0.550us/record   465.528MB/s
+bs=    512 count=1048576  0.585s    0.558us/record   917.797MB/s
+bs=   1024 count=1048576  0.591s    0.564us/record  1815.495MB/s
+bs=   2048 count=1048576  0.610s    0.582us/record  3517.599MB/s
+bs=   4096 count=1048576  0.648s    0.618us/record  6624.642MB/s
+bs=   8192 count=1048576  0.716s    0.683us/record 12000.920MB/s
+bs=  16384 count=1048576  0.886s    0.845us/record 19391.838MB/s
+bs=  32768 count=1048576  1.414s    1.349us/record 24291.204MB/s
+bs=  65536 count= 524288  1.167s    2.226us/record 29446.678MB/s
+bs= 131072 count= 262144  1.049s    4.001us/record 32757.097MB/s
+bs= 262144 count= 131072  0.996s    7.597us/record 34507.742MB/s
+bs= 524288 count= 131072  1.938s   14.784us/record 35462.791MB/s
+bs=1048576 count=  65536  1.954s   29.814us/record 35170.740MB/s
+bs=2097152 count=  32768  1.978s   60.353us/record 34748.329MB/s
+bs=4194304 count=  16384  2.007s  122.520us/record 34233.639MB/s
+bs=8388608 count=   8192  2.103s  256.698us/record 32678.930MB/s
+
+debian11$ ./bench_dd.py
+bs=      1 count=1048576  0.558s    0.532us/record     1.880MB/s
+bs=      2 count=1048576  0.550s    0.524us/record     3.814MB/s
+bs=      4 count=1048576  0.551s    0.526us/record     7.611MB/s
+bs=      8 count=1048576  0.550s    0.525us/record    15.252MB/s
+bs=     16 count=1048576  0.550s    0.524us/record    30.509MB/s
+bs=     32 count=1048576  0.550s    0.524us/record    61.048MB/s
+bs=     64 count=1048576  0.553s    0.527us/record   121.398MB/s
+bs=    128 count=1048576  0.556s    0.530us/record   241.471MB/s
+bs=    256 count=1048576  0.565s    0.538us/record   475.482MB/s
+bs=    512 count=1048576  0.583s    0.556us/record   921.523MB/s
+bs=   1024 count=1048576  0.608s    0.580us/record  1764.989MB/s
+bs=   2048 count=1048576  0.640s    0.611us/record  3353.923MB/s
+bs=   4096 count=1048576  0.701s    0.669us/record  6126.015MB/s
+bs=   8192 count=1048576  0.870s    0.830us/record  9870.674MB/s
+bs=  16384 count=1048576  1.191s    1.136us/record 14427.529MB/s
+bs=  32768 count= 524288  1.004s    1.915us/record 17109.038MB/s
+bs=  65536 count= 262144  0.822s    3.135us/record 20902.551MB/s
+bs= 131072 count= 262144  1.496s    5.705us/record 22973.575MB/s
+bs= 262144 count= 131072  1.468s   11.200us/record 23406.614MB/s
+bs= 524288 count=  65536  1.519s   23.171us/record 22626.825MB/s
+bs=1048576 count=  32768  1.495s   45.614us/record 22988.023MB/s
+bs=2097152 count=  16384  1.487s   90.750us/record 23109.237MB/s
+bs=4194304 count=   8192  1.474s  179.918us/record 23312.281MB/s
+bs=8388608 count=   4096  1.588s  387.625us/record 21641.067MB/s
 """
