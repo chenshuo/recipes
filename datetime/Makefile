@@ -1,4 +1,4 @@
-CXXFLAGS=-g -Wall -O0
+CXXFLAGS=-g -Wall -O0 -I /usr/local/include
 
 PNG_DPI=300
 TEXES=$(wildcard *.tex)
@@ -26,7 +26,7 @@ doc: $(TEX_PNGS) $(PIC_PNGS)
 $(PIC_PNGS): PNG_DPI=144
 
 $(BINARIES):
-	g++ $(CXXFLAGS) $(filter %.cc,$^) -o $@
+	$(CXX) $(CXXFLAGS) $(filter %.cc,$^) -o $@
 
 date_test: Date.h Date.cc Date_test.cc
 

@@ -10,16 +10,21 @@
 #include <boost/weak_ptr.hpp>
 
 #include <unistd.h>
-#include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+
+#if __FreeBSD__
+#include <pthread_np.h>
+#else
+#include <sys/prctl.h>
 #include <linux/unistd.h>
+#endif
 
 namespace muduo
 {
 namespace CurrentThread
 {
-  __thread const char* t_threadName = "unknown";
+  __thread const char* t_threadName = "unnamedThread";
 }
 }
 
@@ -27,11 +32,18 @@ namespace
 {
 __thread pid_t t_cachedTid = 0;
 
+#if __FreeBSD__
+pid_t gettid()
+{
+  return pthread_getthreadid_np();
+}
+#else
 #if !__GLIBC_PREREQ(2,30)
 pid_t gettid()
 {
   return static_cast<pid_t>(::syscall(SYS_gettid));
 }
+#endif
 #endif
 
 void afterFork()
@@ -79,8 +91,14 @@ struct ThreadData
       ptid.reset();
     }
 
-    muduo::CurrentThread::t_threadName = name_.empty() ? "muduoThread" : name_.c_str();
+    if (!name_.empty())
+      muduo::CurrentThread::t_threadName =  name_.c_str();
+#if __FreeBSD__
+    // setname_np() costs as much as creating a thread on FreeBSD 13.
+    pthread_setname_np(pthread_self(), muduo::CurrentThread::t_threadName);
+#else
     ::prctl(PR_SET_NAME, muduo::CurrentThread::t_threadName);
+#endif
     func_(); // FIXME: surround with try-catch, see muduo
     muduo::CurrentThread::t_threadName = "finished";
   }

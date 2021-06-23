@@ -1,4 +1,4 @@
-CXXFLAGS=-g -Wall -rdynamic -march=native
+CXXFLAGS=-g -Wall -I /usr/local/include
 CXXFLAGS+=-O2
 
 HEADERS=$(wildcard *.h)
@@ -12,6 +12,7 @@ TESTS= atomic_unittest \
        singleton_threadlocal_test \
        threadlocal_test \
        threadlocalsingleton_test \
+       thread_bench \
        thread_test \
        threadpool_test \
        exit_deadlock \
@@ -29,7 +30,7 @@ all: $(TESTS)
 $(TESTS): $(HEADERS)
 
 $(TESTS):
-	g++ $(CXXFLAGS) -o $@ $(filter %.cc,$^) $(LDFLAGS) -lpthread
+	$(CXX) $(CXXFLAGS) -o $@ $(filter %.cc,$^) $(LDFLAGS) -lpthread
 
 atomic_unittest: test/Atomic_unittest.cc
 
@@ -60,6 +61,7 @@ singleton_test: CXXFLAGS += -ftemplate-depth-1000
 singleton_threadlocal_test: test/SingletonThreadLocal_test.cc Thread.cc
 
 thread_test: test/Thread_test.cc Thread.cc
+thread_bench: test/Thread_bench.cc Thread.cc ../datetime/Timestamp.cc
 
 threadlocal_test: test/ThreadLocal_test.cc Thread.cc
 
