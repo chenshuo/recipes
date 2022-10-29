@@ -47,11 +47,14 @@ void ThreadPool::start(int numThreads)
 
 void ThreadPool::stop()
 {
+  printf("starting to stop the pool.\n");
   running_ = false;
   cond_.notifyAll();
   for_each(threads_.begin(),
            threads_.end(),
            boost::bind(&muduo::Thread::join, _1));
+  threads_.clear();
+  printf("stop the pool successfully.\n");
 }
 
 void ThreadPool::run(const Task& task)
