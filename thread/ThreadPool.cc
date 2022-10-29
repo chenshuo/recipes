@@ -120,3 +120,33 @@ void ThreadPool::runInThread()
   }
 }
 
+
+
+// // bind cores
+// const int targetCore = bindcores_[i];
+// cpu_set_t cpuset;
+// CPU_ZERO(&cpuset);
+// CPU_SET(targetCore, &cpuset);
+// int ret = pthread_setaffinity_np(thread_[i], sizeof(cpu_set_t), &cpuset); // or std::thread::native_handle()
+//                                                                           // or pthread_self()
+// if (ret != 0)
+// {
+//     printf("[ThreadPool] thread %zu bind core %d  failed\n", i, targetCore);
+// }
+// else
+// {
+//     printf("[ThreadPool] thread %zu bind core %d  success\n", i, targetCore);
+// }
+
+// // 线程优先级
+// sched_param sp;
+// sp.sched_priority = sched_get_priority_max(SCHED_FIFO);
+// ret = pthread_setschedparam(thread_[i], SCHED_FIFO, &sp);
+// if (ret != 0)
+// {
+//     printf("[ThreadPool] thread %zu set  priority %d  failed\n", i, sp.sched_priority);
+// }
+// else
+// {
+//     printf("[ThreadPool] thread %zu set  priority %d  success\n", i, sp.sched_priority);
+// }
