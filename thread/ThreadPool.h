@@ -38,18 +38,21 @@ class ThreadPool : boost::noncopyable
   template<typename Func, typename... Args>
   inline auto run_future(Func&& func, Args&&... args) -> std::future<typename std::result_of<Func(Args...)>::type>
   {
-      if (threads_.empty()) {
-        func(args...);
+    if (threads_.empty()) {
+      func(args...);
+    }
+    using ret_type = typename std::result_of<Func(Args...)>::type;
+    auto task = std::make_shared<std::packaged_task<ret_type()>>(std::bind(std::forward<Func>(func), std::forward<Args>(args)...));
+    auto ret = task->get_future();
+    do {
+      MutexLockGuard lock(mutex_);
+      if (!running_) {
+        throw std::runtime_error("enqueue on stopped ThreadPool");
       }
-      using ret_type = typename std::result_of<Func(Args...)>::type;
-      auto task = std::make_shared<std::packaged_task<ret_type()>>(std::bind(std::forward<Func>(func), std::forward<Args>(args)...));
-      auto ret = task->get_future();
-      do {
-          MutexLockGuard lock(mutex_);
-          queue_.push_back([task]() { (*task)(); });
-          cond_.notify();
-      } while (0);
-      return std::move(ret);
+      queue_.push_back([task]() { (*task)(); });
+    } while (0);
+    cond_.notify();
+    return std::move(ret);
   }
 
  private:

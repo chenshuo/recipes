@@ -48,7 +48,10 @@ void ThreadPool::start(int numThreads)
 void ThreadPool::stop()
 {
   printf("starting to stop the pool.\n");
-  running_ = false;
+  {
+    MutexLockGuard lock(mutex_);
+    running_ = false;
+  }
   cond_.notifyAll();
   for_each(threads_.begin(),
            threads_.end(),
@@ -62,13 +65,13 @@ void ThreadPool::run(const Task& task)
   if (threads_.empty())
   {
     task();
+    return;
   }
-  else
   {
     MutexLockGuard lock(mutex_);
     queue_.push_back(task);
-    cond_.notify();
   }
+  cond_.notify();
 }
 
 ThreadPool::Task ThreadPool::take()
