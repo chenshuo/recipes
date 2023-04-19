@@ -12,6 +12,13 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
+#include <inttypes.h>
+
+
 using muduo::Timestamp;
 
 class BandwidthReporter
@@ -31,17 +38,75 @@ class BandwidthReporter
 
   void reportAll(double now, int64_t total_bytes, int64_t syscalls)
   {
-    printf("Transferred %.3fMB %.3fMiB in %.3fs, %lld syscalls, %.1f Bytes/syscall\n",
-           total_bytes / 1e6, total_bytes / (1024.0 * 1024), now, (long long)syscalls,
+    printf("Transferred %sBytes in %.3fs, %lld syscalls, %.1f Bytes/syscall\n",
+           formatSI(total_bytes).c_str(), now, (long long)syscalls,
            total_bytes * 1.0 / syscalls);
-    report(now, total_bytes, now);
   }
 
  private:
+
+  static std::string formatSI(double bps)
+  {
+    char buf[64];
+
+    if (bps <= 9990)
+      snprintf(buf, sizeof buf, "%.2fk", bps/1e3);
+    else if (bps <= 99.9e3)
+      snprintf(buf, sizeof buf, "%.1fk", bps/1e3);
+    else if (bps <= 9999e3)
+      snprintf(buf, sizeof buf, "%.0fk", bps/1e3);
+
+    else if (bps <= 99.9e6)
+      snprintf(buf, sizeof buf, "%.1fM", bps/1e6);
+    else if (bps <= 9999e6)
+      snprintf(buf, sizeof buf, "%.0fM", bps/1e6);
+
+    else if (bps <= 99.9e9)
+      snprintf(buf, sizeof buf, "%.1fG", bps/1e9);
+    else if (bps <= 9999e9)
+      snprintf(buf, sizeof buf, "%.0fG", bps/1e9);
+    else
+      snprintf(buf, sizeof buf, "%gT", bps/1e12);
+
+    return buf;
+  }
+
+  static std::string formatIEC(int64_t s)
+  {
+    double n = static_cast<double>(s);
+    char buf[64];
+    const double Ki = 1024.0;
+    const double Mi = Ki * 1024.0;
+    const double Gi = Mi * 1024.0;
+
+    if (n < 10000)
+      snprintf(buf, sizeof buf, "%" PRId64, s);
+    else if (n <= Ki*9.99)
+      snprintf(buf, sizeof buf, "%.2fKi", n / Ki);
+    else if (n <= Ki*99.9)
+      snprintf(buf, sizeof buf, "%.1fKi", n / Ki);
+    else if (n <= Ki*9999.0)
+      snprintf(buf, sizeof buf, "%.0fKi", n / Ki);
+
+    else if (n <= Mi*9.99)
+      snprintf(buf, sizeof buf, "%.2fMi", n / Mi);
+    else if (n <= Mi*99.9)
+      snprintf(buf, sizeof buf, "%.1fMi", n / Mi);
+    else if (n <= Mi*9999.0)
+      snprintf(buf, sizeof buf, "%.0fMi", n / Mi);
+    else
+      snprintf(buf, sizeof buf, "%gGi", n / Gi);
+
+    return buf;
+  }
+
   void report(double now, int64_t bytes, double elapsed)
   {
-    double mbps = elapsed > 0 ? bytes / 1e6 / elapsed : 0.0;
-    printf("%6.3f  %6.2fMB/s  %6.1fMbits/s ", now, mbps, mbps*8);
+    double bps = elapsed > 0 ? bytes / elapsed : 0.0;
+
+    printf("%7.3fs  ", now);
+    printf("%6sB/s   ", formatSI(bps).c_str());
+    printf("%5sbps  ", formatSI(bps * 8).c_str());
     if (sender_)
       printSender();
     else
@@ -75,10 +140,15 @@ class BandwidthReporter
 #elif __FreeBSD__
     int retrans = tcpi.tcpi_snd_rexmitpack;
 #endif
+    printf("%6s  ", formatIEC(snd_cwnd).c_str());
+    printf("%6s  ", formatIEC(tcpi.tcpi_snd_wnd).c_str());
+    printf("%6s  ", formatIEC(sndbuf).c_str());
+    printf("%8s  ", formatIEC(ssthresh).c_str());
+    if (tcpi.tcpi_rtt < 10000)
+      printf("%dus/%d ", tcpi.tcpi_rtt, tcpi.tcpi_rttvar);
+    else
+      printf("%.1fms/%d ", tcpi.tcpi_rtt / 1e3, tcpi.tcpi_rttvar);
 
-    printf(" sndbuf=%.1fK snd_cwnd=%.1fK ssthresh=%.1fK snd_wnd=%.1fK rtt=%d/%d",
-           sndbuf / 1024.0, snd_cwnd / 1024.0, ssthresh / 1024.0,
-           tcpi.tcpi_snd_wnd / 1024.0, tcpi.tcpi_rtt, tcpi.tcpi_rttvar);
     if (retrans - last_retrans_ > 0) {
       printf(" retrans=%d", retrans - last_retrans_);
     }
@@ -118,9 +188,10 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
   printf("Connected %s -> %s, congestion control: %s\n",
          stream->getLocalAddr().toIpPort().c_str(),
          stream->getPeerAddr().toIpPort().c_str(), cong);
+  printf("Time (s)  Throughput   Bitrate    Cwnd    Rwnd  sndbuf  ssthresh  rtt/var\n");
 
   const Timestamp start = Timestamp::now();
-  const int block_size = 64 * 1024;
+  const int block_size = 128 * 1024;
   std::string message(block_size, 'S');
   int seconds = 1;
   int64_t total_bytes = 0;
@@ -228,6 +299,11 @@ int64_t parseBytes(const char* arg)
   }
 }
 
+void help(const char* program)
+{
+  printf("Usage: %s [-s|-c IP] [-t sec] [-b bytes] [-p port]\n", program);
+}
+
 int main(int argc, char* argv[])
 {
   int opt;
@@ -257,7 +333,8 @@ int main(int argc, char* argv[])
         port = strtol(optarg, NULL, 10);
         break;
       default:
-        fprintf(stderr, "Usage: %s FIXME\n", argv[0]);
+        help(argv[0]);
+        return 1;
         break;
     }
   }
@@ -266,4 +343,6 @@ int main(int argc, char* argv[])
     runClient(InetAddress(serverAddr, port), bytes_limit, duration);
   else if (server)
     runServer(port);
+  else
+    help(argv[0]);
 }
