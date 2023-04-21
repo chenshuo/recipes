@@ -36,11 +36,13 @@ class BandwidthReporter
     last_bytes_ = total_bytes;
   }
 
-  void reportAll(double now, int64_t total_bytes, int64_t syscalls)
+  void reportAll(double now, int64_t total_bytes, const char* role)
   {
-    printf("Transferred %sBytes in %.3fs, %lld syscalls, %.1f Bytes/syscall\n",
-           formatSI(total_bytes).c_str(), now, (long long)syscalls,
-           total_bytes * 1.0 / syscalls);
+    printf("%s transferred %sBytes in %.3fs, throughput: ",
+           role, formatSI(total_bytes).c_str(), now);
+    double bps = total_bytes / now;
+    printf("%sBytes/s, ", formatSI(bps).c_str());
+    printf("%sbits/s\n", formatSI(bps * 8).c_str());
   }
 
  private:
@@ -163,7 +165,8 @@ class BandwidthReporter
     if (::getsockopt(fd_, SOL_SOCKET, SO_RCVBUF, &rcvbuf, &optlen) < 0)
       perror("getsockopt(RCVBUF)");
 
-    printf(" rcvbuf=%.1fK\n", rcvbuf / 1024.0);
+    printf("%6s", formatIEC(rcvbuf).c_str());
+    printf("\n");
   }
 
   const int fd_ = 0;
@@ -223,6 +226,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
   Timestamp shutdown = Timestamp::now();
   elapsed = timeDifference(shutdown, start);
   rpt.reportDelta(elapsed, total_bytes);
+  rpt.reportAll(elapsed, total_bytes, "Sender  ");
 
   char buf[1024];
   int nr = stream->receiveSome(buf, sizeof buf);
@@ -230,7 +234,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
     printf("nr = %d\n", nr);
   Timestamp end = Timestamp::now();
   elapsed = timeDifference(end, start);
-  rpt.reportAll(elapsed, total_bytes, syscalls);
+  rpt.reportAll(elapsed, total_bytes, "Receiver");
 }
 
 void runServer(int port)
@@ -245,6 +249,7 @@ void runServer(int port)
     printf("accepted no. %d client %s <- %s\n", count,
            stream->getLocalAddr().toIpPort().c_str(),
            stream->getPeerAddr().toIpPort().c_str());
+    printf("Time (s)  Throughput   Bitrate    rcvbuf\n");
 
     const Timestamp start = Timestamp::now();
     int seconds = 1;
@@ -270,7 +275,8 @@ void runServer(int port)
       }
     }
     elapsed = timeDifference(Timestamp::now(), start);
-    rpt.reportAll(elapsed, bytes, syscalls);
+    rpt.reportDelta(elapsed, bytes);
+    rpt.reportAll(elapsed, bytes, "Receiver");
     printf("Client no. %d done\n", count);
   }
 }
