@@ -46,6 +46,25 @@ class BandwidthReporter
     printf("%sbits/s\n", formatSI(bps * 8).c_str());
   }
 
+  void reportSender()
+  {
+    struct tcp_info tcpi = {0};
+    socklen_t len = sizeof(tcpi);
+    if (getsockopt(fd_, IPPROTO_TCP, TCP_INFO, &tcpi, &len) < 0)
+      perror("getsockopt(TCP_INFO)");
+
+    printf("min_rtt %s, ", formatMicrosecond(tcpi.tcpi_min_rtt).c_str());
+    printf("rto %s, ", formatMicrosecond(tcpi.tcpi_rto).c_str());
+    printf("data_segs_out %d, ", tcpi.tcpi_data_segs_out);
+    printf("total_retrans %d, ", tcpi.tcpi_total_retrans);
+    printf("bytes_retrans %lld, ", tcpi.tcpi_bytes_retrans);
+    printf("reord_seen %d\n", tcpi.tcpi_reord_seen);
+    printf("busy_time %s, ", formatMicrosecond(tcpi.tcpi_busy_time).c_str());
+    printf("rwnd_limited %s, ", formatMicrosecond(tcpi.tcpi_rwnd_limited).c_str());
+    printf("sndbuf_limited %s, ", formatMicrosecond(tcpi.tcpi_sndbuf_limited).c_str());
+    printf("\n");
+  }
+
  private:
 
   static std::string formatSI(double bps)
@@ -110,6 +129,23 @@ class BandwidthReporter
     return buf;
   }
 
+  static std::string formatMicrosecond(int us)
+  {
+    char buf[64];
+    if (us < 1000)
+      snprintf(buf, sizeof buf, "%dus", us);
+    else if (us < 10000)
+      snprintf(buf, sizeof buf, "%.2fms", us / 1e3);
+    else if (us < 100000)
+      snprintf(buf, sizeof buf, "%.1fms", us / 1e3);
+    else if (us < 1000000)
+      snprintf(buf, sizeof buf, "%.0fms", us / 1e3);
+    else
+      snprintf(buf, sizeof buf, "%.2fs", us / 1e6);
+
+    return buf;
+  }
+
   void report(double now, int64_t bytes, double elapsed)
   {
     double bps = elapsed > 0 ? bytes / elapsed : 0.0;
@@ -164,10 +200,7 @@ class BandwidthReporter
     printf("%5d  ", retr);
     printf("%2d  ", ca_state);
     printf("%6s  ", formatIEC(pacing).c_str());
-    if (tcpi.tcpi_rtt < 10000)
-      printf("%dus/%d ", tcpi.tcpi_rtt, tcpi.tcpi_rttvar);
-    else
-      printf("%.1fms/%d ", tcpi.tcpi_rtt / 1e3, tcpi.tcpi_rttvar);
+    printf("%s/%d", formatMicrosecond(tcpi.tcpi_rtt).c_str(), tcpi.tcpi_rttvar);
 
     printf("\n");
   }
@@ -242,7 +275,6 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
   elapsed = timeDifference(shutdown, start);
   rpt.reportDelta(elapsed, total_bytes);
   rpt.reportEnd(elapsed, total_bytes, "Tx");
-  // TODO: print segment count and retrans count
 
   char buf[1024];
   int nr = stream->receiveSome(buf, sizeof buf);
@@ -251,6 +283,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
   Timestamp end = Timestamp::now();
   elapsed = timeDifference(end, start);
   rpt.reportEnd(elapsed, total_bytes, "Rx");
+  rpt.reportSender();
 }
 
 void serverThr(int id, TcpStreamPtr stream)
@@ -283,6 +316,7 @@ void serverThr(int id, TcpStreamPtr stream)
   elapsed = timeDifference(Timestamp::now(), start);
   rpt.reportDelta(elapsed, bytes);
   rpt.reportEnd(elapsed, bytes, "Rx");
+  // TODO: tcpi_rcv_ooopack, rcv_rtt, rcv_space, rcv_ssthresh
   printf("Client no. %d done\n", id);
 }
 
