@@ -287,9 +287,9 @@ void serverThr(int id, TcpStreamPtr stream)
 }
 
 // a thread-per-connection discard server
-void runServer(int port)
+void runServer(int port, bool ipv6)
 {
-  InetAddress listenAddr(port);
+  InetAddress listenAddr(port, ipv6);
   Acceptor acceptor(listenAddr);
   int count = 0;
   while (true) {
@@ -331,7 +331,7 @@ int64_t parseBytes(const char* arg)
 
 void help(const char* program)
 {
-  printf("Usage: %s [-s|-c Server_IP] [-t sec] [-b bytes] [-p port]\n", program);
+  printf("Usage: %s [-s [-6]|-c Server_IP] [-t sec] [-b bytes] [-p port]\n", program);
 }
 
 int main(int argc, char* argv[])
@@ -340,15 +340,19 @@ int main(int argc, char* argv[])
   bool client = false, server = false;
   std::string serverAddr;
   int port = 2009;
+  bool ipv6 = false;
   const int64_t kGigaBytes = 1024 * 1024 * 1024;
   int64_t bytes_limit = 10 * kGigaBytes;
   double duration = 10;
 
   // TODO: set congestion control
-  while ((opt = getopt(argc, argv, "sc:t:b:p:")) != -1) {
+  while ((opt = getopt(argc, argv, "s6c:t:b:p:")) != -1) {
     switch (opt) {
       case 's':
         server = true;
+        break;
+      case '6':
+        ipv6 = true;
         break;
       case 'c':
         client = true;
@@ -371,11 +375,10 @@ int main(int argc, char* argv[])
   }
 
   // TODO: resolve host name
-  // TODO: support IPv6
   if (client)
     runClient(InetAddress(serverAddr, port), bytes_limit, duration);
   else if (server)
-    runServer(port);
+    runServer(port, ipv6);
   else
     help(argv[0]);
 }
