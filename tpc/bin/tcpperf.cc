@@ -18,6 +18,7 @@
 
 #include <inttypes.h>
 
+#include <thread>
 
 using muduo::Timestamp;
 
@@ -36,7 +37,7 @@ class BandwidthReporter
     last_bytes_ = total_bytes;
   }
 
-  void reportAll(double now, int64_t total_bytes, const char* role)
+  void reportEnd(double now, int64_t total_bytes, const char* role)
   {
     printf("%s %sBytes in %.3fs, throughput: ",
            role, formatSI(total_bytes).c_str(), now);
@@ -208,7 +209,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
   printf("Time (s)  Throughput   Bitrate    Cwnd    Rwnd  sndbuf  ssthresh  Retr  CA  Pacing  rtt/var\n");
 
   const Timestamp start = Timestamp::now();
-  const int block_size = 128 * 1024;
+  const int block_size = 64 * 1024;
   std::string message(block_size, 'S');
   int seconds = 1;
   int64_t total_bytes = 0;
@@ -240,7 +241,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
   Timestamp shutdown = Timestamp::now();
   elapsed = timeDifference(shutdown, start);
   rpt.reportDelta(elapsed, total_bytes);
-  rpt.reportAll(elapsed, total_bytes, "Tx");
+  rpt.reportEnd(elapsed, total_bytes, "Tx");
   // TODO: print segment count and retrans count
 
   char buf[1024];
@@ -249,50 +250,58 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
     printf("nr = %d\n", nr);
   Timestamp end = Timestamp::now();
   elapsed = timeDifference(end, start);
-  rpt.reportAll(elapsed, total_bytes, "Rx");
+  rpt.reportEnd(elapsed, total_bytes, "Rx");
 }
 
+void serverThr(int id, TcpStreamPtr stream)
+{
+  printf("Time (s)  Throughput   Bitrate    rcvbuf\n");
+
+  const Timestamp start = Timestamp::now();
+  int seconds = 1;
+  int64_t bytes = 0;
+  int64_t syscalls = 0;
+  double elapsed = 0;
+  BandwidthReporter rpt(stream->fd(), false);
+  rpt.reportDelta(elapsed, bytes);
+
+  char buf[65536];
+  while (true) {
+    int nr = stream->receiveSome(buf, sizeof buf);
+    if (nr <= 0)
+      break;
+    bytes += nr;
+    syscalls++;
+
+    elapsed = timeDifference(Timestamp::now(), start);
+    if (elapsed >= seconds) {
+      rpt.reportDelta(elapsed, bytes);
+      while (elapsed >= seconds)
+        ++seconds;
+    }
+  }
+  elapsed = timeDifference(Timestamp::now(), start);
+  rpt.reportDelta(elapsed, bytes);
+  rpt.reportEnd(elapsed, bytes, "Rx");
+  printf("Client no. %d done\n", id);
+}
+
+// a thread-per-connection discard server
 void runServer(int port)
 {
   InetAddress listenAddr(port);
   Acceptor acceptor(listenAddr);
   int count = 0;
   while (true) {
-    printf("Accepting on port %d ... Ctrl-C to exit\n", port);
+    printf("Listening on port %d ... Ctrl-C to exit\n", port);
     TcpStreamPtr stream = acceptor.accept();
     ++count;
     printf("accepted no. %d client %s <- %s\n", count,
            stream->getLocalAddr().toIpPort().c_str(),
            stream->getPeerAddr().toIpPort().c_str());
-    printf("Time (s)  Throughput   Bitrate    rcvbuf\n");
 
-    const Timestamp start = Timestamp::now();
-    int seconds = 1;
-    int64_t bytes = 0;
-    int64_t syscalls = 0;
-    double elapsed = 0;
-    BandwidthReporter rpt(stream->fd(), false);
-    rpt.reportDelta(elapsed, bytes);
-
-    char buf[65536];
-    while (true) {
-      int nr = stream->receiveSome(buf, sizeof buf);
-      if (nr <= 0)
-        break;
-      bytes += nr;
-      syscalls++;
-
-      elapsed = timeDifference(Timestamp::now(), start);
-      if (elapsed >= seconds) {
-        rpt.reportDelta(elapsed, bytes);
-        while (elapsed >= seconds)
-          ++seconds;
-      }
-    }
-    elapsed = timeDifference(Timestamp::now(), start);
-    rpt.reportDelta(elapsed, bytes);
-    rpt.reportAll(elapsed, bytes, "Rx");
-    printf("Client no. %d done\n", count);
+    std::thread thr(serverThr, count, std::move(stream));
+    thr.detach();
   }
 }
 
