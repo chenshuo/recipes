@@ -22,6 +22,15 @@
 
 using muduo::Timestamp;
 
+static struct tcp_info getTcpInfo(int fd)
+{
+  struct tcp_info tcpi = {0};
+  socklen_t len = sizeof(tcpi);
+  if (getsockopt(fd, IPPROTO_TCP, TCP_INFO, &tcpi, &len) < 0)
+    perror("getsockopt(TCP_INFO)");
+  return tcpi;
+}
+
 class BandwidthReporter
 {
  public:
@@ -48,10 +57,7 @@ class BandwidthReporter
 
   void reportSender()
   {
-    struct tcp_info tcpi = {0};
-    socklen_t len = sizeof(tcpi);
-    if (getsockopt(fd_, IPPROTO_TCP, TCP_INFO, &tcpi, &len) < 0)
-      perror("getsockopt(TCP_INFO)");
+    struct tcp_info tcpi = getTcpInfo(fd_);
 
     printf("min_rtt %s, ", formatMicrosecond(tcpi.tcpi_min_rtt).c_str());
     printf("rto %s, ", formatMicrosecond(tcpi.tcpi_rto).c_str());
@@ -166,10 +172,7 @@ class BandwidthReporter
     if (::getsockopt(fd_, SOL_SOCKET, SO_SNDBUF, &sndbuf, &optlen) < 0)
       perror("getsockopt(SNDBUF)");
 
-    struct tcp_info tcpi = {0};
-    socklen_t len = sizeof(tcpi);
-    if (getsockopt(fd_, IPPROTO_TCP, TCP_INFO, &tcpi, &len) < 0)
-      perror("getsockopt(TCP_INFO)");
+    struct tcp_info tcpi = getTcpInfo(fd_);
 
     // bytes_in_flight = tcpi.tcpi_bytes_sent - tcpi.tcpi_bytes_acked;
     // tcpi.tcpi_notsent_bytes;
@@ -212,7 +215,13 @@ class BandwidthReporter
     if (::getsockopt(fd_, SOL_SOCKET, SO_RCVBUF, &rcvbuf, &optlen) < 0)
       perror("getsockopt(RCVBUF)");
 
-    printf("%6s", formatIEC(rcvbuf).c_str());
+    struct tcp_info tcpi = getTcpInfo(fd_);
+
+    printf("%6s  ", formatIEC(rcvbuf).c_str());
+    printf("%9s  ", formatIEC(tcpi.tcpi_rcv_space).c_str());
+    printf("%11s  ", formatIEC(tcpi.tcpi_rcv_ssthresh).c_str());
+    printf("%7s  ", formatMicrosecond(tcpi.tcpi_rcv_rtt).c_str());
+    printf("%7s  ", formatMicrosecond(tcpi.tcpi_ato).c_str());
     printf("\n");
   }
 
@@ -231,14 +240,16 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
     perror("");
     return;
   }
+
   char cong[64] = "";
   socklen_t optlen = sizeof cong;
   if (::getsockopt(stream->fd(), IPPROTO_TCP, TCP_CONGESTION, cong, &optlen) < 0)
       perror("getsockopt(TCP_CONGESTION)");
-  printf("Connected %s -> %s, congestion control: %s\n",
+  struct tcp_info tcpi = getTcpInfo(stream->fd());
+  printf("Connected %s -> %s, MSS %d, congestion control: %s\n",
          stream->getLocalAddr().toIpPort().c_str(),
-         stream->getPeerAddr().toIpPort().c_str(), cong);
-  // TODO: print TCP metrics from NETLINK
+         stream->getPeerAddr().toIpPort().c_str(),
+         tcpi.tcpi_snd_mss, cong);
   printf("Time (s)  Throughput   Bitrate    Cwnd    Rwnd  sndbuf  ssthresh  Retr  CA  Pacing  rtt/var\n");
 
   const Timestamp start = Timestamp::now();
@@ -288,7 +299,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
 
 void serverThr(int id, TcpStreamPtr stream)
 {
-  printf("Time (s)  Throughput   Bitrate    rcvbuf\n");
+  printf("Time (s)  Throughput   Bitrate  rcvbuf  rcv_space rcv_ssthresh  rcv_rtt    ato\n");
 
   const Timestamp start = Timestamp::now();
   int seconds = 1;
@@ -316,8 +327,10 @@ void serverThr(int id, TcpStreamPtr stream)
   elapsed = timeDifference(Timestamp::now(), start);
   rpt.reportDelta(elapsed, bytes);
   rpt.reportEnd(elapsed, bytes, "Rx");
-  // TODO: tcpi_rcv_ooopack, rcv_rtt, rcv_space, rcv_ssthresh
+  struct tcp_info tcpi = getTcpInfo(stream->fd());
+  printf("rcv_ooopack %d\n", tcpi.tcpi_rcv_ooopack);
   printf("Client no. %d done\n", id);
+  printf("\n");
 }
 
 // a thread-per-connection discard server
@@ -326,11 +339,11 @@ void runServer(int port, bool ipv6)
   InetAddress listenAddr(port, ipv6);
   Acceptor acceptor(listenAddr);
   int count = 0;
+  printf("Listening on port %d ... Ctrl-C to exit\n", port);
   while (true) {
-    printf("Listening on port %d ... Ctrl-C to exit\n", port);
     TcpStreamPtr stream = acceptor.accept();
     ++count;
-    printf("accepted no. %d client %s <- %s\n", count,
+    printf("Accepted no. %d client %s <- %s\n", count,
            stream->getLocalAddr().toIpPort().c_str(),
            stream->getPeerAddr().toIpPort().c_str());
 
