@@ -38,7 +38,7 @@ class BandwidthReporter
 
   void reportAll(double now, int64_t total_bytes, const char* role)
   {
-    printf("%s transferred %sBytes in %.3fs, throughput: ",
+    printf("%s %sBytes in %.3fs, throughput: ",
            role, formatSI(total_bytes).c_str(), now);
     double bps = total_bytes / now;
     printf("%sBytes/s, ", formatSI(bps).c_str());
@@ -96,6 +96,13 @@ class BandwidthReporter
       snprintf(buf, sizeof buf, "%.1fMi", n / Mi);
     else if (n <= Mi*9999.0)
       snprintf(buf, sizeof buf, "%.0fMi", n / Mi);
+
+    else if (n <= Gi*9.99)
+      snprintf(buf, sizeof buf, "%.2fGi", n / Gi);
+    else if (n <= Gi*99.9)
+      snprintf(buf, sizeof buf, "%.1fGi", n / Gi);
+    else if (n <= Gi*9999.0)
+      snprintf(buf, sizeof buf, "%.0fGi", n / Gi);
     else
       snprintf(buf, sizeof buf, "%gGi", n / Gi);
 
@@ -142,20 +149,23 @@ class BandwidthReporter
 #elif __FreeBSD__
     int retrans = tcpi.tcpi_snd_rexmitpack;
 #endif
+    int retr = retrans - last_retrans_;
+    last_retrans_ = retrans;
+    int64_t rate = tcpi.tcpi_pacing_rate;
+
     printf("%6s  ", formatIEC(snd_cwnd).c_str());
     printf("%6s  ", formatIEC(tcpi.tcpi_snd_wnd).c_str());
     printf("%6s  ", formatIEC(sndbuf).c_str());
-    printf("%8s  ", formatIEC(ssthresh).c_str());
+    printf("%8s ", formatIEC(ssthresh).c_str());
+    printf("%5d  ", retr);
+    printf("%2d  ", tcpi.tcpi_ca_state);
+    printf("%6s  ", formatIEC(rate).c_str());
     if (tcpi.tcpi_rtt < 10000)
       printf("%dus/%d ", tcpi.tcpi_rtt, tcpi.tcpi_rttvar);
     else
       printf("%.1fms/%d ", tcpi.tcpi_rtt / 1e3, tcpi.tcpi_rttvar);
 
-    if (retrans - last_retrans_ > 0) {
-      printf(" retrans=%d", retrans - last_retrans_);
-    }
     printf("\n");
-    last_retrans_ = retrans;
   }
 
   void printReceiver() const
@@ -191,7 +201,8 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
   printf("Connected %s -> %s, congestion control: %s\n",
          stream->getLocalAddr().toIpPort().c_str(),
          stream->getPeerAddr().toIpPort().c_str(), cong);
-  printf("Time (s)  Throughput   Bitrate    Cwnd    Rwnd  sndbuf  ssthresh  rtt/var\n");
+  // TODO: print TCP metrics from NETLINK
+  printf("Time (s)  Throughput   Bitrate    Cwnd    Rwnd  sndbuf  ssthresh  Retr  CA  Pacing  rtt/var\n");
 
   const Timestamp start = Timestamp::now();
   const int block_size = 128 * 1024;
@@ -226,7 +237,8 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
   Timestamp shutdown = Timestamp::now();
   elapsed = timeDifference(shutdown, start);
   rpt.reportDelta(elapsed, total_bytes);
-  rpt.reportAll(elapsed, total_bytes, "Sender  ");
+  rpt.reportAll(elapsed, total_bytes, "Tx");
+  // TODO: print segment count and retrans count
 
   char buf[1024];
   int nr = stream->receiveSome(buf, sizeof buf);
@@ -234,7 +246,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
     printf("nr = %d\n", nr);
   Timestamp end = Timestamp::now();
   elapsed = timeDifference(end, start);
-  rpt.reportAll(elapsed, total_bytes, "Receiver");
+  rpt.reportAll(elapsed, total_bytes, "Rx");
 }
 
 void runServer(int port)
@@ -276,7 +288,7 @@ void runServer(int port)
     }
     elapsed = timeDifference(Timestamp::now(), start);
     rpt.reportDelta(elapsed, bytes);
-    rpt.reportAll(elapsed, bytes, "Receiver");
+    rpt.reportAll(elapsed, bytes, "Rx");
     printf("Client no. %d done\n", count);
   }
 }
