@@ -146,20 +146,23 @@ class BandwidthReporter
 
 #ifdef __linux
     int retrans = tcpi.tcpi_total_retrans;
+    int ca_state = tcpi.tcpi_ca_state;
+    int64_t pacing = tcpi.tcpi_pacing_rate;
 #elif __FreeBSD__
     int retrans = tcpi.tcpi_snd_rexmitpack;
+    int ca_state = tcpi.__tcpi_ca_state;
+    int64_t pacing = 0;
 #endif
     int retr = retrans - last_retrans_;
     last_retrans_ = retrans;
-    int64_t rate = tcpi.tcpi_pacing_rate;
 
     printf("%6s  ", formatIEC(snd_cwnd).c_str());
     printf("%6s  ", formatIEC(tcpi.tcpi_snd_wnd).c_str());
     printf("%6s  ", formatIEC(sndbuf).c_str());
-    printf("%8s ", formatIEC(ssthresh).c_str());
+    printf("%8s ",  formatIEC(ssthresh).c_str());
     printf("%5d  ", retr);
-    printf("%2d  ", tcpi.tcpi_ca_state);
-    printf("%6s  ", formatIEC(rate).c_str());
+    printf("%2d  ", ca_state);
+    printf("%6s  ", formatIEC(pacing).c_str());
     if (tcpi.tcpi_rtt < 10000)
       printf("%dus/%d ", tcpi.tcpi_rtt, tcpi.tcpi_rttvar);
     else
@@ -319,7 +322,7 @@ int64_t parseBytes(const char* arg)
 
 void help(const char* program)
 {
-  printf("Usage: %s [-s|-c IP] [-t sec] [-b bytes] [-p port]\n", program);
+  printf("Usage: %s [-s|-c Server_IP] [-t sec] [-b bytes] [-p port]\n", program);
 }
 
 int main(int argc, char* argv[])
@@ -332,6 +335,7 @@ int main(int argc, char* argv[])
   int64_t bytes_limit = 10 * kGigaBytes;
   double duration = 10;
 
+  // TODO: set congestion control
   while ((opt = getopt(argc, argv, "sc:t:b:p:")) != -1) {
     switch (opt) {
       case 's':
@@ -357,6 +361,8 @@ int main(int argc, char* argv[])
     }
   }
 
+  // TODO: resolve host name
+  // TODO: support IPv6
   if (client)
     runClient(InetAddress(serverAddr, port), bytes_limit, duration);
   else if (server)
