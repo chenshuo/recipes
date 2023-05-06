@@ -55,10 +55,8 @@ class BandwidthReporter
     printf("%sbits/s\n", formatSI(bps * 8).c_str());
   }
 
-  void reportSender()
+  void reportSender(const struct tcp_info& tcpi)
   {
-    struct tcp_info tcpi = getTcpInfo(fd_);
-
     printf("rto %s, ", formatMicrosecond(tcpi.tcpi_rto).c_str());
 #ifdef __linux
     printf("min_rtt %s, ", formatMicrosecond(tcpi.tcpi_min_rtt).c_str());
@@ -69,6 +67,8 @@ class BandwidthReporter
     printf("busy_time %s, ", formatMicrosecond(tcpi.tcpi_busy_time).c_str());
     printf("rwnd_limited %s, ", formatMicrosecond(tcpi.tcpi_rwnd_limited).c_str());
     printf("sndbuf_limited %s, ", formatMicrosecond(tcpi.tcpi_sndbuf_limited).c_str());
+#elif __FreeBSD__
+    printf("total_retrans %d", tcpi.tcpi_snd_rexmitpack);
 #endif
     printf("\n");
   }
@@ -219,20 +219,13 @@ class BandwidthReporter
 
     struct tcp_info tcpi = getTcpInfo(fd_);
 
-#ifdef __linux
-    int rcv_ssthresh = tcpi.tcpi_rcv_ssthresh;
-    int rcv_rtt = tcpi.tcpi_rcv_rtt;
-    int ato = tcpi.tcpi_ato;
-#elif __FreeBSD__
-    int rcv_ssthresh = tcpi.__tcpi_rcv_ssthresh;
-    int rcv_rtt = tcpi.__tcpi_rcv_rtt;
-    int ato = tcpi.__tcpi_ato;
-#endif
     printf("%6s  ", formatIEC(rcvbuf).c_str());
     printf("%9s  ", formatIEC(tcpi.tcpi_rcv_space).c_str());
-    printf("%11s  ", formatIEC(rcv_ssthresh).c_str());
-    printf("%7s  ", formatMicrosecond(rcv_rtt).c_str());
-    printf("%7s  ", formatMicrosecond(ato).c_str());
+#ifdef __linux
+    printf("%11s  ", formatIEC(tcpi.tcpi_rcv_ssthresh).c_str());
+    printf("%7s ", formatMicrosecond(tcpi.tcpi_rcv_rtt).c_str());
+    printf("%7s", formatMicrosecond(tcpi.tcpi_ato).c_str());
+#endif
     printf("\n");
   }
 
@@ -292,6 +285,11 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
     }
   }
 
+
+  // Get TCP_INFO before shutdown.
+  // On FreeBSD, it becomes unavailable after shutdown.
+  tcpi = getTcpInfo(stream->fd());
+
   stream->shutdownWrite();
   Timestamp shutdown = Timestamp::now();
   elapsed = timeDifference(shutdown, start);
@@ -305,12 +303,16 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
   Timestamp end = Timestamp::now();
   elapsed = timeDifference(end, start);
   rpt.reportEnd(elapsed, total_bytes, "Rx");
-  rpt.reportSender();
+  rpt.reportSender(tcpi);
 }
 
 void serverThr(int id, TcpStreamPtr stream)
 {
-  printf("Time (s)  Throughput   Bitrate  rcvbuf  rcv_space rcv_ssthresh  rcv_rtt    ato\n");
+#ifdef __linux
+  printf("Time (s)  Throughput   Bitrate  rcvbuf  rcv_space rcv_ssthresh  rcv_rtt     ato\n");
+#elif __FreeBSD__
+  printf("Time (s)  Throughput   Bitrate  rcvbuf  rcv_space\n");
+#endif
 
   const Timestamp start = Timestamp::now();
   int seconds = 1;
