@@ -59,8 +59,9 @@ class BandwidthReporter
   {
     struct tcp_info tcpi = getTcpInfo(fd_);
 
-    printf("min_rtt %s, ", formatMicrosecond(tcpi.tcpi_min_rtt).c_str());
     printf("rto %s, ", formatMicrosecond(tcpi.tcpi_rto).c_str());
+#ifdef __linux
+    printf("min_rtt %s, ", formatMicrosecond(tcpi.tcpi_min_rtt).c_str());
     printf("data_segs_out %d, ", tcpi.tcpi_data_segs_out);
     printf("total_retrans %d, ", tcpi.tcpi_total_retrans);
     printf("bytes_retrans %lld, ", tcpi.tcpi_bytes_retrans);
@@ -68,6 +69,7 @@ class BandwidthReporter
     printf("busy_time %s, ", formatMicrosecond(tcpi.tcpi_busy_time).c_str());
     printf("rwnd_limited %s, ", formatMicrosecond(tcpi.tcpi_rwnd_limited).c_str());
     printf("sndbuf_limited %s, ", formatMicrosecond(tcpi.tcpi_sndbuf_limited).c_str());
+#endif
     printf("\n");
   }
 
@@ -217,11 +219,20 @@ class BandwidthReporter
 
     struct tcp_info tcpi = getTcpInfo(fd_);
 
+#ifdef __linux
+    int rcv_ssthresh = tcpi.tcpi_rcv_ssthresh;
+    int rcv_rtt = tcpi.tcpi_rcv_rtt;
+    int ato = tcpi.tcpi_ato;
+#elif __FreeBSD__
+    int rcv_ssthresh = tcpi.__tcpi_rcv_ssthresh;
+    int rcv_rtt = tcpi.__tcpi_rcv_rtt;
+    int ato = tcpi.__tcpi_ato;
+#endif
     printf("%6s  ", formatIEC(rcvbuf).c_str());
     printf("%9s  ", formatIEC(tcpi.tcpi_rcv_space).c_str());
-    printf("%11s  ", formatIEC(tcpi.tcpi_rcv_ssthresh).c_str());
-    printf("%7s  ", formatMicrosecond(tcpi.tcpi_rcv_rtt).c_str());
-    printf("%7s  ", formatMicrosecond(tcpi.tcpi_ato).c_str());
+    printf("%11s  ", formatIEC(rcv_ssthresh).c_str());
+    printf("%7s  ", formatMicrosecond(rcv_rtt).c_str());
+    printf("%7s  ", formatMicrosecond(ato).c_str());
     printf("\n");
   }
 
