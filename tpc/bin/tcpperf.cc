@@ -190,20 +190,23 @@ class BandwidthReporter
     int retrans = tcpi.tcpi_total_retrans;
     // int ca_state = tcpi.tcpi_ca_state;
     int64_t pacing = tcpi.tcpi_pacing_rate;
+    int64_t delivery = tcpi.tcpi_delivery_rate;
 #elif __FreeBSD__
     int retrans = tcpi.tcpi_snd_rexmitpack;
     // int ca_state = tcpi.__tcpi_ca_state;
     int64_t pacing = 0;
+    int64_t delivery = 0;
 #endif
     int retr = retrans - last_retrans_;
     last_retrans_ = retrans;
 
+    printf("%6s  ", formatSI(pacing).c_str());
+    printf("%6s  ", formatSI(delivery).c_str());
     printf("%6s  ", formatIEC(snd_cwnd).c_str());
     printf("%6s  ", formatIEC(tcpi.tcpi_snd_wnd).c_str());
     printf("%6s  ", formatIEC(sndbuf).c_str());
-    printf("%7s  ",  formatIEC(ssthresh).c_str());
+    printf("%7s ",  formatIEC(ssthresh).c_str());
     // printf("%2d  ", ca_state);
-    printf("%5sbps ", formatSI(pacing*8).c_str());
     printf("%5d  ", retr);
     printf("%s/%s", formatMicrosecond(tcpi.tcpi_rtt).c_str(),
            formatMicrosecond(tcpi.tcpi_rttvar, false).c_str());
@@ -255,7 +258,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
          stream->getLocalAddr().toIpPort().c_str(),
          stream->getPeerAddr().toIpPort().c_str(),
          tcpi.tcpi_snd_mss, cong);
-  printf("Time (s)  Transfer   Bitrate    Cwnd    Rwnd  sndbuf ssthresh    Pacing  Retr  rtt/var\n");
+  printf("Time (s)  Transfer   Bitrate  Pacing Delivery   Cwnd    Rwnd  sndbuf ssthresh  Retr  rtt/var\n");
 
   const Timestamp start = Timestamp::now();
   const int block_size = 64 * 1024;
@@ -310,9 +313,9 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
 void serverThr(int id, TcpStreamPtr stream)
 {
 #ifdef __linux
-  printf("Time (s)  Throughput   Bitrate  rcvbuf  rcv_space rcv_ssthresh  rcv_rtt     ato\n");
+  printf("Time (s)  Transfer   Bitrate  rcvbuf  rcv_space rcv_ssthresh  rcv_rtt     ato\n");
 #elif __FreeBSD__
-  printf("Time (s)  Throughput   Bitrate  rcvbuf  rcv_space\n");
+  printf("Time (s)  Transfer   Bitrate  rcvbuf  rcv_space\n");
 #endif
 
   const Timestamp start = Timestamp::now();
