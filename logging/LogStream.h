@@ -156,7 +156,7 @@ class LogStream : boost::noncopyable
 
   Buffer buffer_;
 
-  static const int kMaxNumericSize = 32;
+  static const int kMaxNumericSize = 64;
 };
 
 class Fmt // : boost::noncopyable

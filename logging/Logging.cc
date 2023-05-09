@@ -90,8 +90,8 @@ Logger::Impl::Impl(LogLevel level, int savedErrno, const char* file, int line)
 
   formatTime();
   Fmt tid("%5d ", CurrentThread::tid());
-  assert(tid.length() == 6);
-  stream_ << T(tid.data(), 6);
+  // assert(tid.length() == 6);
+  stream_ << T(tid.data(), tid.length());
   stream_ << T(LogLevelName[level], 6);
   if (savedErrno != 0)
   {
