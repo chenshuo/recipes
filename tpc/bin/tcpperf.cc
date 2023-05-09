@@ -137,11 +137,11 @@ class BandwidthReporter
     return buf;
   }
 
-  static std::string formatMicrosecond(int us)
+  static std::string formatMicrosecond(int us, bool show_us = true)
   {
     char buf[64];
     if (us < 1000)
-      snprintf(buf, sizeof buf, "%dus", us);
+      snprintf(buf, sizeof buf, "%d%s", us, show_us ? "us" : "");
     else if (us < 10000)
       snprintf(buf, sizeof buf, "%.2fms", us / 1e3);
     else if (us < 100000)
@@ -159,7 +159,7 @@ class BandwidthReporter
     double bps = elapsed > 0 ? bytes / elapsed : 0.0;
 
     printf("%7.3fs  ", now);
-    printf("%6sB/s   ", formatSI(bps).c_str());
+    printf("%7sB  ", formatIEC(bytes).c_str());
     printf("%5sbps  ", formatSI(bps * 8).c_str());
     if (sender_)
       printSender();
@@ -188,11 +188,11 @@ class BandwidthReporter
 
 #ifdef __linux
     int retrans = tcpi.tcpi_total_retrans;
-    int ca_state = tcpi.tcpi_ca_state;
+    // int ca_state = tcpi.tcpi_ca_state;
     int64_t pacing = tcpi.tcpi_pacing_rate;
 #elif __FreeBSD__
     int retrans = tcpi.tcpi_snd_rexmitpack;
-    int ca_state = tcpi.__tcpi_ca_state;
+    // int ca_state = tcpi.__tcpi_ca_state;
     int64_t pacing = 0;
 #endif
     int retr = retrans - last_retrans_;
@@ -201,11 +201,12 @@ class BandwidthReporter
     printf("%6s  ", formatIEC(snd_cwnd).c_str());
     printf("%6s  ", formatIEC(tcpi.tcpi_snd_wnd).c_str());
     printf("%6s  ", formatIEC(sndbuf).c_str());
-    printf("%8s ",  formatIEC(ssthresh).c_str());
+    printf("%7s  ",  formatIEC(ssthresh).c_str());
+    // printf("%2d  ", ca_state);
+    printf("%5sbps ", formatSI(pacing*8).c_str());
     printf("%5d  ", retr);
-    printf("%2d  ", ca_state);
-    printf("%6s  ", formatIEC(pacing).c_str());
-    printf("%s/%d", formatMicrosecond(tcpi.tcpi_rtt).c_str(), tcpi.tcpi_rttvar);
+    printf("%s/%s", formatMicrosecond(tcpi.tcpi_rtt).c_str(),
+           formatMicrosecond(tcpi.tcpi_rttvar, false).c_str());
 
     printf("\n");
   }
@@ -254,7 +255,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
          stream->getLocalAddr().toIpPort().c_str(),
          stream->getPeerAddr().toIpPort().c_str(),
          tcpi.tcpi_snd_mss, cong);
-  printf("Time (s)  Throughput   Bitrate    Cwnd    Rwnd  sndbuf  ssthresh  Retr  CA  Pacing  rtt/var\n");
+  printf("Time (s)  Transfer   Bitrate    Cwnd    Rwnd  sndbuf ssthresh    Pacing  Retr  rtt/var\n");
 
   const Timestamp start = Timestamp::now();
   const int block_size = 64 * 1024;
