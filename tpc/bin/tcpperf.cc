@@ -240,7 +240,8 @@ class BandwidthReporter
   int last_retrans_ = 0;
 };
 
-void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double duration)
+void runClient(const InetAddress& serverAddr, int64_t bytes_limit,
+               double duration, const std::string& cong_ctrl)
 {
   TcpStreamPtr stream(TcpStream::connect(serverAddr));
   if (!stream) {
@@ -249,15 +250,24 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
     return;
   }
 
+  if (!cong_ctrl.empty()) {
+    if (::setsockopt(stream->fd(), IPPROTO_TCP, TCP_CONGESTION,
+                     cong_ctrl.data(), cong_ctrl.size()) < 0)
+      perror("setsockopt(TCP_CONGESTION)");
+  }
+
+  {
   char cong[64] = "";
   socklen_t optlen = sizeof cong;
   if (::getsockopt(stream->fd(), IPPROTO_TCP, TCP_CONGESTION, cong, &optlen) < 0)
       perror("getsockopt(TCP_CONGESTION)");
+
   struct tcp_info tcpi = getTcpInfo(stream->fd());
   printf("Connected %s -> %s, MSS %d, congestion control: %s\n",
          stream->getLocalAddr().toIpPort().c_str(),
          stream->getPeerAddr().toIpPort().c_str(),
          tcpi.tcpi_snd_mss, cong);
+  }
   printf("Time (s)  Transfer   Bitrate  Pacing Delivery   Cwnd    Rwnd  sndbuf ssthresh  Retr  rtt/var\n");
 
   const Timestamp start = Timestamp::now();
@@ -292,7 +302,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit, double durati
 
   // Get TCP_INFO before shutdown.
   // On FreeBSD, it becomes unavailable after shutdown.
-  tcpi = getTcpInfo(stream->fd());
+  struct tcp_info tcpi = getTcpInfo(stream->fd());
 
   stream->shutdownWrite();
   Timestamp shutdown = Timestamp::now();
@@ -395,14 +405,14 @@ int64_t parseBytes(const char* arg)
 
 void help(const char* program)
 {
-  printf("Usage: %s [-s [-6]|-c Server_IP] [-t sec] [-b bytes] [-p port]\n", program);
+  printf("Usage: %s [-s [-6]|-c Server_IP] [-t sec] [-b bytes] [-p port] [-C congestion_control]\n", program);
 }
 
 int main(int argc, char* argv[])
 {
   int opt;
   bool client = false, server = false;
-  std::string serverAddr;
+  std::string serverAddr, cong_ctrl;
   int port = 2009;
   bool ipv6 = false;
   const int64_t kGigaBytes = 1024 * 1024 * 1024;
@@ -410,7 +420,7 @@ int main(int argc, char* argv[])
   double duration = 10;
 
   // TODO: set congestion control
-  while ((opt = getopt(argc, argv, "s6c:t:b:p:")) != -1) {
+  while ((opt = getopt(argc, argv, "s6c:t:b:p:C:")) != -1) {
     switch (opt) {
       case 's':
         server = true;
@@ -431,6 +441,9 @@ int main(int argc, char* argv[])
       case 'p':
         port = strtol(optarg, NULL, 10);
         break;
+      case 'C':
+        cong_ctrl = optarg;
+        break;
       default:
         help(argv[0]);
         return 1;
@@ -440,7 +453,7 @@ int main(int argc, char* argv[])
 
   // TODO: resolve host name
   if (client)
-    runClient(InetAddress(serverAddr, port), bytes_limit, duration);
+    runClient(InetAddress(serverAddr, port), bytes_limit, duration, cong_ctrl);
   else if (server)
     runServer(port, ipv6);
   else
