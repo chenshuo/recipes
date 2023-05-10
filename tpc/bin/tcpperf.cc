@@ -176,8 +176,6 @@ class BandwidthReporter
 
     struct tcp_info tcpi = getTcpInfo(fd_);
 
-    // bytes_in_flight = tcpi.tcpi_bytes_sent - tcpi.tcpi_bytes_acked;
-    // tcpi.tcpi_notsent_bytes;
     int snd_cwnd = tcpi.tcpi_snd_cwnd;
     int ssthresh = tcpi.tcpi_snd_ssthresh;
 #ifdef __linux
@@ -190,22 +188,25 @@ class BandwidthReporter
     int retrans = tcpi.tcpi_total_retrans;
     // int ca_state = tcpi.tcpi_ca_state;
     int64_t pacing = tcpi.tcpi_pacing_rate;
-    int64_t delivery = tcpi.tcpi_delivery_rate;
+    //int64_t delivery = tcpi.tcpi_delivery_rate;
+    int bytes_in_flight = tcpi.tcpi_bytes_sent - tcpi.tcpi_bytes_acked + 1;  // SYN
+    // tcpi.tcpi_notsent_bytes;
 #elif __FreeBSD__
     int retrans = tcpi.tcpi_snd_rexmitpack;
     // int ca_state = tcpi.__tcpi_ca_state;
     int64_t pacing = 0;
-    int64_t delivery = 0;
+    //int64_t delivery = 0;
+    int bytes_in_flight = 0;
 #endif
     int retr = retrans - last_retrans_;
     last_retrans_ = retrans;
 
     printf("%6s  ", formatSI(pacing).c_str());
-    printf("%6s  ", formatSI(delivery).c_str());
+    printf("%6sB ", formatIEC(bytes_in_flight).c_str());
     printf("%6s  ", formatIEC(snd_cwnd).c_str());
     printf("%6s  ", formatIEC(tcpi.tcpi_snd_wnd).c_str());
     printf("%6s  ", formatIEC(sndbuf).c_str());
-    printf("%7s ",  formatIEC(ssthresh).c_str());
+    printf("%6sB ",  formatIEC(ssthresh).c_str());
     // printf("%2d  ", ca_state);
     printf("%5d  ", retr);
     printf("%s/%s", formatMicrosecond(tcpi.tcpi_rtt).c_str(),
@@ -268,7 +269,7 @@ void runClient(const InetAddress& serverAddr, int64_t bytes_limit,
          stream->getPeerAddr().toIpPort().c_str(),
          tcpi.tcpi_snd_mss, cong);
   }
-  printf("Time (s)  Transfer   Bitrate  Pacing Delivery   Cwnd    Rwnd  sndbuf ssthresh  Retr  rtt/var\n");
+  printf("Time (s)  Transfer   Bitrate  Pacing InFlight   Cwnd    Rwnd  sndbuf ssthresh  Retr  rtt/var\n");
 
   const Timestamp start = Timestamp::now();
   const int block_size = 64 * 1024;
