@@ -189,7 +189,7 @@ class BandwidthReporter
     // int ca_state = tcpi.tcpi_ca_state;
     int64_t pacing = tcpi.tcpi_pacing_rate;
     //int64_t delivery = tcpi.tcpi_delivery_rate;
-    int bytes_in_flight = tcpi.tcpi_bytes_sent - tcpi.tcpi_bytes_acked + 1;  // SYN
+    int bytes_in_flight = tcpi.tcpi_bytes_sent - tcpi.tcpi_bytes_acked - tcpi.tcpi_bytes_retrans + 1;  // SYN
     // tcpi.tcpi_notsent_bytes;
 #elif __FreeBSD__
     int retrans = tcpi.tcpi_snd_rexmitpack;
