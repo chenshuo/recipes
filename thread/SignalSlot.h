@@ -120,22 +120,25 @@ class Signal<RET(ARGS...)> : boost::noncopyable
   {
   }
 
-  Slot connect(Callback&& func)
+  template<typename Func>
+  Slot connect(Func&& func)
   {
     boost::shared_ptr<SlotImpl> slotImpl(
-        new SlotImpl(impl_, std::forward<Callback>(func)));
+        new SlotImpl(impl_, std::forward<Func>(func)));
     add(slotImpl);
     return slotImpl;
   }
 
-  Slot connect(Callback&& func, const boost::shared_ptr<void>& tie)
+  template<typename Func>
+  Slot connect(Func&& func, const boost::shared_ptr<void>& tie)
   {
-    boost::shared_ptr<SlotImpl> slotImpl(new SlotImpl(impl_, func, tie));
+    boost::shared_ptr<SlotImpl> slotImpl(new SlotImpl(impl_, std::forward<Func>(func), tie));
     add(slotImpl);
     return slotImpl;
   }
 
-  void call(ARGS&&... args)
+  template<typename... Args>
+  void call(Args&&... args)
   {
     SignalImpl& impl(*impl_);
     boost::shared_ptr<typename SignalImpl::SlotList> slots;
@@ -155,12 +158,12 @@ class Signal<RET(ARGS...)> : boost::noncopyable
           guard = slotImpl->tie_.lock();
           if (guard)
           {
-            slotImpl->cb_(args...);
+            slotImpl->cb_(std::forward<Args>(args)...);
           }
         }
         else
         {
-          slotImpl->cb_(args...);
+          slotImpl->cb_(std::forward<Args>(args)...);
         }
       }
     }

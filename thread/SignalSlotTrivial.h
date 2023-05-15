@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <functional>
 
 template<typename Signature>
 class SignalTrivial;
@@ -13,19 +14,21 @@ class SignalTrivial<RET(ARGS...)>
  public:
   typedef std::function<void (ARGS...)> Functor;
 
-  void connect(Functor&& func)
+  template<typename Func>
+  void connect(Func&& func)
   {
-    functors_.push_back(std::forward<Functor>(func));
+    functors_.push_back(std::forward<Func>(func));
   }
 
-  void call(ARGS&&... args)
+  template<typename... Args>
+  void call(Args&&... args)
   {
     // gcc 4.6 supports
     //for (const Functor& f: functors_)
     typename std::vector<Functor>::iterator it = functors_.begin();
     for (; it != functors_.end(); ++it)
     {
-      (*it)(args...);
+      (*it)(std::forward<Args>(args)...);
     }
   }
 
