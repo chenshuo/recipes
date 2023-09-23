@@ -15,6 +15,8 @@
 
 #if __FreeBSD__
 #include <pthread_np.h>
+#elif __APPLE__
+#include <mach/mach.h>
 #else
 #include <sys/prctl.h>
 #include <linux/unistd.h>
@@ -36,6 +38,11 @@ __thread pid_t t_cachedTid = 0;
 pid_t gettid()
 {
   return pthread_getthreadid_np();
+}
+#elif __APPLE__
+pid_t gettid()
+{
+  return mach_thread_self();
 }
 #else
 #if !__GLIBC_PREREQ(2,30)
@@ -96,6 +103,8 @@ struct ThreadData
 #if __FreeBSD__
     // setname_np() costs as much as creating a thread on FreeBSD 13.
     pthread_setname_np(pthread_self(), muduo::CurrentThread::t_threadName);
+#elif __APPLE__
+    pthread_setname_np(muduo::CurrentThread::t_threadName);
 #else
     ::prctl(PR_SET_NAME, muduo::CurrentThread::t_threadName);
 #endif
