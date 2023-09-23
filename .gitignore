@@ -4,3 +4,4 @@
 *.out
 profile*.pb.gz
 core
+*.dSYM
