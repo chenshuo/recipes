@@ -1,0 +1,112 @@
+.PS
+boxht = 0.2
+boxwid = 0.2
+movewid = 0.05
+
+box; move;
+box; move;
+box; move;
+box; move;
+box "7"; move;
+box; move;
+
+S: box invis wid 0.1 ht 0.3; move;
+P: box; move;
+box; move;
+box "7"; move;
+box; move;
+box; move;
+P5: box; move;
+box; move;
+box; move;
+box; move;
+box; move;
+
+line from S.sw to S.ne;
+line from S.ne right 2.5;
+
+box at P5+(0, 0.3); move;
+box; move;
+box "7"; move;
+box; move;
+box; move;
+
+P1: box at P-(0, 0.25); move;
+box; move;
+box; move;
+box; move;
+box; move;
+box; move;
+
+R1: box at P1-(0, 0.3); move;
+box; move;
+box; move;
+box; move;
+box; move;
+box "7"; move;
+box; move;
+
+line from R1.nw+(0, 0.05) right 1.45;
+
+P2: box at R1-(0, 0.25); move;
+box; move;
+P23: box; move;
+box; move;
+box; move;
+box; move;
+box; move;
+
+line from P2.sw-(0, 0.05) right 1.7;
+
+R2: box at P23-(0, 0.3); move;
+box "7"; move;
+box; move;
+box; move;
+box; move;
+box; move;
+
+P3: box at R2-(0, 0.25); move;
+box "7"; move;
+box; move;
+box; move;
+box; move;
+box; move;
+
+line from P3.sw-(0, 0.05) right 1.45;
+
+R3: box at P3-(0, 0.3); move;
+box; move;
+box; move;
+box; move;
+box; move;
+box; move;
+box; move;
+
+P4: box at R3-(0, 0.25); move;
+box; move;
+P43: box; move;
+box; move;
+box "7"; move;
+box; move;
+box; move;
+
+line from P4.sw-(0, 0.05) right 1.7;
+
+R4: box at P43-(0, 0.3); move;
+box; move;
+box; move;
+box; move;
+box; move;
+box; move;
+
+P5: box at R4-(0, 0.25); move;
+box; move;
+box; move;
+box; move;
+box; move;
+P51: box; move;
+
+line from P5.sw-(0, 0.05) right 1.45;
+
+box invis "0" at P51-(0, 0.3);
+.PE
